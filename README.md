@@ -16,20 +16,26 @@ This Chrome extension tracks and rates players in Blood on the Clocktower (BotC)
 ## Project Structure
 
 ```
-chrome-extension-project
-├── src
-│   ├── background.js        # Background service worker
-│   ├── content.js           # Content script interacting with botc.app pages
-│   └── popup
-│       ├── popup.html       # HTML structure for the popup interface
-│       ├── popup.js         # Main JavaScript logic for the popup
-│       ├── popup.css        # Styles for the popup interface
-│       ├── userManager.js   # Module for user data management (CRUD, history, search)
-│       └── sessionManager.js # Module for fetching and displaying session data
-├── manifest.json            # Extension configuration
-├── rules.json               # DeclarativeNetRequest rules
-├── samplesessions.json      # Sample session data (for testing/dev)
-└── README.md                # Project documentation
+botcraterdev
+├── .github
+│   └── workflows
+│       └── release.yml      # GitHub Actions workflow for release packaging
+├── botc-extension
+│   ├── src
+│   │   ├── background.js        # Background service worker
+│   │   └── popup
+│   │       ├── popup.html       # HTML structure for the popup interface
+│   │       ├── popup.js         # Main JavaScript logic for the popup
+│   │       ├── popup.css        # Styles for the popup interface
+│   │       ├── userManager.js   # Module for user data management (CRUD, history, search)
+│   │       └── sessionManager.js # Module for fetching and displaying session data
+│   ├── manifest.json            # Extension configuration
+│   ├── rules.json               # DeclarativeNetRequest rules
+│   ├── samplesessions.json      # Sample session data (for testing/dev)
+│   └── README.md                # This file (project documentation)
+├── .gitignore
+├── .gitattributes 
+└── README.md                # Main project README (this file)
 ```
 
 ## Code Organization
@@ -45,8 +51,26 @@ The codebase is organized into modular components:
 1. **Clone the repository** or download the project files.
 2. **Open Chrome** and navigate to `chrome://extensions/`.
 3. Enable **Developer mode** by toggling the switch in the top right corner.
-4. Click on **Load unpacked** and select the `chrome-extension-project` directory.
+4. Click on **Load unpacked** and select the `botc-extension` directory (inside `botcraterdev`).
 5. The extension should now be loaded and ready for use.
+
+## Release Workflow
+
+This project uses GitHub Actions to automate the creation of release ZIP files.
+
+1.  **Update Version**: Before creating a release, update the `"version"` in `botc-extension/manifest.json`.
+2.  **Commit Changes**: Commit the updated `manifest.json` and any other code changes for the release.
+    ```bash
+    git add botc-extension/manifest.json
+    git commit -m "Prepare release vX.Y.Z"
+    git push
+    ```
+3.  **Tag the Release**: Create and push a Git tag matching the version (e.g., `vX.Y.Z`). This will trigger the GitHub Action.
+    ```bash
+    git tag vX.Y.Z
+    git push origin vX.Y.Z
+    ```
+4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store.
 
 ## Usage Guidelines
 
