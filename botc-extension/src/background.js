@@ -18,12 +18,6 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
 );
 
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete' && tab.url && tab.url.includes("botc.app")) {
-        chrome.tabs.sendMessage(tabId, { action: "fetchSession" });
-    }
-});
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "storeAuthToken") {
         authToken = request.authToken;

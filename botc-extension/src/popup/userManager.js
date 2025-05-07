@@ -128,7 +128,7 @@ function createUsernameHistoryModal(history, currentName) {
                 historyItem.classList.add('username-history-change');
                 nameElement.innerHTML = `<span class="old-name">${entry.oldName}</span><span class="arrow"> &rarr; </span><span class="new-name">${entry.newName}</span>`;
             } else {
-                nameElement.textContent = entry.name || 'Unknown Change';
+                nameElement.textContent = entry.name || entry.username || 'Unknown Change';
             }
 
             const timeElement = document.createElement('span');
@@ -583,7 +583,7 @@ function toggleUsernameHistory(playerId, container) {
         if (entry.oldName && entry.newName) {
             nameSpan.innerHTML = `<span class="old-name">${entry.oldName}</span> &rarr; <span class="new-name">${entry.newName}</span>`;
         } else {
-            nameSpan.textContent = entry.name;
+            nameSpan.textContent = entry.name || entry.username || 'Unknown Change';
         }
 
         const dateSpan = document.createElement('span');

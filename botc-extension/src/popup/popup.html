@@ -18,7 +18,8 @@
         }
         .header-controls {
             display: flex;
-            justify-content: flex-end; /* Push button to the right */
+            justify-content: space-between; /* Align title left, button right */
+            align-items: center; /* Vertically align items */
             margin-bottom: 5px;
         }
         #open-in-tab-btn {
@@ -31,10 +32,9 @@
 <body>
     <div id="content">
         <div class="header-controls">
+            <h1>BotC Lobby and Player Tracker</h1>
             <button id="open-in-tab-btn" title="Open full view in a new tab">↗️ Open in Tab</button>
         </div>
-
-        <h1>BotC Lobby and Player Tracker</h1>
 
         <!-- Tab Navigation -->
         <div class="tab-navigation">

@@ -32,7 +32,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }} # Uses the tag that triggered the workflow
           release_name: Release ${{ env.VERSION }} # Names the release (e.g., Release 1.0.0)
-          body: "Automated release for version ${{ env.VERSION }}."
+          body_path: changelog.md # Use content of changelog.md as release body
           draft: false
           prerelease: false
 
