@@ -1,0 +1,47 @@
+name: Release Chrome Extension
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Triggers on tags like v1.0.0, v1.0.1 etc.
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create releases and upload assets
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Package extension
+        run: |
+          cd botc-extension
+          zip -r ../botc-tracker-${{ env.VERSION }}.zip .
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is automatically provided by GitHub
+        with:
+          tag_name: ${{ github.ref }} # Uses the tag that triggered the workflow
+          release_name: Release ${{ env.VERSION }} # Names the release (e.g., Release 1.0.0)
+          body: "Automated release for version ${{ env.VERSION }}."
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # URL from the 'Create Release' step
+          asset_path: ./botc-tracker-${{ env.VERSION }}.zip # Path to the ZIP file created
+          asset_name: botc-tracker-${{ env.VERSION }}.zip # Name of the asset in the release
+          asset_content_type: application/zip

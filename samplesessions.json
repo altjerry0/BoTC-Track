@@ -1,0 +1,3508 @@
+[
+    {
+        "name": "ordinary lemon lobby",
+        "phase": 1,
+        "ownerId": "7662492909722",
+        "edition": {
+            "id": "homebrew",
+            "logo": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/_meta.png",
+            "name": "The Wizards Meet",
+            "author": "Essler + Stell",
+            "almanac": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/almanac.html",
+            "isOfficial": false
+        },
+        "roles": [
+            {
+                "id": "scribethewizardsmeet2",
+                "name": "Scribe",
+                "team": "traveller",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/scribe_thewizardsmeet2.png",
+                "ability": "Each night, you learn the names of may learn any Submitted Spells: choose one: you learn the Spell's full text.",
+                "reminders": [
+                    "Scribed"
+                ],
+                "otherNight": 31,
+                "otherNightReminder": "Tell the Scribe the names of all the Spells submitted tonight and ask them to choose one. Place the \"Scribed\" token on the caster, then give the Scribe the full text of their chosen Spell."
+            },
+            {
+                "id": "skepticthewizardsmeet2",
+                "name": "Skeptic",
+                "team": "traveller",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/skeptic_thewizardsmeet2.png",
+                "ability": "You do not Submit Spells. Each night, you learn a Cast Spell Submitted by the other team and may choose to un-cast it. All players learn if you do so.",
+                "reminders": [
+                    "Un-Cast"
+                ],
+                "otherNight": 30,
+                "otherNightReminder": "Tell the Skeptic the full text of a Spell that was cast today by a player opposite their alignment, then ask the Skeptic if they'd like to un-cast it. If yes, place the \"Un-Cast\" token on the caster and publicly announce that the Skeptic has un-cast a spell."
+            },
+            {
+                "id": "wellspringthewizardsmeet2",
+                "name": "Wellspring",
+                "team": "traveller",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/wellspring_thewizardsmeet2.png",
+                "ability": "While you live, your Submitted Spells cannot be Drawn. If you die, all are Cast at once.",
+                "reminders": [
+                    "Magic Spring"
+                ],
+                "otherNight": 11,
+                "otherNightReminder": "If the Wellspring is dead, place the \"Magic Spring\" token on them and cast all their previously-submitted spells in order of submission, ignoring the maximum Spell limit. (Remember, any of these spells can be vetoed as \"Duds\"!)"
+            },
+            {
+                "id": "partymagicianthewizardsmeet2",
+                "name": "Party Magician",
+                "team": "traveller",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/partymagician_thewizardsmeet2.png",
+                "ability": "Your Submitted Spells cannot provide either team any benefit."
+            },
+            {
+                "id": "bardthewizardsmeet2",
+                "name": "Bard",
+                "team": "traveller",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/bard_thewizardsmeet2.png",
+                "ability": "Instead of Submitting a Spell each night, publicly Submit a song lyric. The Storyteller interprets this into a Spell.",
+                "otherNight": 10,
+                "otherNightReminder": "Interpret the Bard's song lyric into a Spell (following all standard spellcasting rules), then submit it on their behalf."
+            },
+            {
+                "id": "paladinthewizardsmeet2",
+                "name": "Paladin",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/paladin_thewizardsmeet2.png",
+                "ability": "Each night, you learn if an evil player's Spell was Drawn.",
+                "firstNight": 24,
+                "otherNight": 26,
+                "firstNightReminder": "If any evil players (or players who register as evil) have a \"Cast\" token, give the Paladin a \"YES\". Otherwise, give them a \"NO\".",
+                "otherNightReminder": "If any evil players (or players who register as evil) have a \"Cast\" token, give the Paladin a \"YES\". Otherwise, give them a \"NO\"."
+            },
+            {
+                "id": "druidthewizardsmeet2",
+                "name": "Druid",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/druid_thewizardsmeet2.png",
+                "ability": "Each night, you learn up to 10 consecutive words of a Drawn Spell.",
+                "firstNight": 25,
+                "otherNight": 25,
+                "firstNightReminder": "Tell the Druid up to 10 consecutive words of a Spell that was cast tonight.",
+                "otherNightReminder": "Tell the Druid up to 10 consecutive words of a Spell that was cast tonight."
+            },
+            {
+                "id": "thaumaturgethewizardsmeet2",
+                "name": "Thaumaturge",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/thaumaturge_thewizardsmeet2.png",
+                "ability": "Each night, you learn the name of the first Drawn Spell and may choose to make it a \"Dud\".",
+                "reminders": [
+                    "Dud"
+                ],
+                "firstNight": 18,
+                "otherNight": 23,
+                "firstNightReminder": "Tell the Thaumaturge the name of the first Spell you drew tonight and ask if they'd like to veto it. If yes, mark said Spell as a \"Dud\" and ignore its effects.",
+                "otherNightReminder": "Tell the Thaumaturge the name of the first Spell you drew tonight and ask if they'd like to veto it. If yes, mark said Spell as a \"Dud\" and ignore its effects."
+            },
+            {
+                "id": "archmagethewizardsmeet2",
+                "name": "Archmage",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/archmage_thewizardsmeet2.png",
+                "ability": "Each night, you may choose to raise or lower the Casting Maximum by 1 (or none).",
+                "reminders": [
+                    "+1 Cast",
+                    "-1 Cast"
+                ],
+                "firstNight": 11,
+                "otherNight": 2,
+                "firstNightReminder": "Ask the Archmage if they'd like to raise or lower the maximum amount of Spells that can be cast tonight. If they raise, add the \"+1 Cast\" token and you can cast an additional Spell. If they lower, add the \"-1 Cast\" token and you can cast one less Spell. Otherwise, you can cast up to [ ⅓ # of players, rounded ] Spells.",
+                "otherNightReminder": "Ask the Archmage if they'd like to raise or lower the maximum amount of Spells that can be cast tonight. If they raise, add the \"+1 Cast\" token and you can cast an additional Spell. If they lower, add the \"-1 Cast\" token and you can cast one less Spell. Otherwise, you can cast up to [ ⅓ # of players, rounded ] Spells."
+            },
+            {
+                "id": "clairvoyantthewizardsmeet2",
+                "name": "Clairvoyant",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/clairvoyant_thewizardsmeet2.png",
+                "ability": "Each night, choose a player: you learn the names of two Spells, only one of which they've Submitted.",
+                "reminders": [
+                    "Seen"
+                ],
+                "firstNight": 23,
+                "otherNight": 27,
+                "firstNightReminder": "Ask the Clairvoyant to choose a player. Tell the Clairvoyant the name of the Spell that player submitted tonight along with another fake Spell name (1-3 words).",
+                "otherNightReminder": "Ask the Clairvoyant to choose a player. Tell the Clairvoyant the name of the Spell that player submitted tonight along with another fake Spell name (1-3 words)."
+            },
+            {
+                "id": "illusionistthewizardsmeet2",
+                "name": "Illusionist",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/illusionist_thewizardsmeet2.png",
+                "ability": "Each night, choose a player: the Storyteller changes one word of their Submitted Spell. You learn which word.",
+                "reminders": [
+                    "Altered"
+                ],
+                "firstNight": 20,
+                "otherNight": 22,
+                "firstNightReminder": "Ask the Illusionist to choose a player. Change one word of that player's Spell, then tell the Illuionist what the word used to be and what the word is now.",
+                "otherNightReminder": "Ask the Illusionist to choose a player. Change one word of that player's Spell, then tell the Illuionist what the word used to be and what the word is now."
+            },
+            {
+                "id": "cryostatthewizardsmeet2",
+                "name": "Cryostat",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/cryostat_thewizardsmeet2.png",
+                "ability": "Each night*, choose a player: a minion, if chosen, learns this and cannot have their Spells Drawn until you die.",
+                "reminders": [
+                    "Frozen"
+                ],
+                "otherNight": 21,
+                "otherNightReminder": "Ask the Cryostat to choose a player. If a minion is chosen, place the \"Frozen\" token on that player, then immediately wake them up to inform them they've been chosen by the Cryostat. If the Cryostat is dead, remove any \"Frozen\" tokens from the grimoire."
+            },
+            {
+                "id": "abjurerthewizardsmeet2",
+                "name": "Abjurer",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/abjurer_thewizardsmeet2.png",
+                "ability": "Each night*, choose a player: if their Spell was Drawn, they are safe from the Demon and any Spells other than their own tonight.",
+                "reminders": [
+                    "Abjured"
+                ],
+                "otherNight": 9,
+                "otherNightReminder": "Ask the Abjurer to choose a player. If that player has the \"Cast\" or \"Dud\" token, place the \"Abjured\" token on said player."
+            },
+            {
+                "id": "enchantressthewizardsmeet2",
+                "name": "Enchantress",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/enchantress_thewizardsmeet2.png",
+                "setup": true,
+                "ability": "Each night*, choose a player: the first Outsider chosen this way becomes a not-in-play Townsfolk. [+0 or +1 Outsider]",
+                "reminders": [
+                    "No Ability",
+                    "Enchanted"
+                ],
+                "firstNight": 19,
+                "otherNight": 20,
+                "firstNightReminder": "Ask the Enchantress if they'd like to choose a player. If yes, place the \"No Ability\" token on the Enchantress. If an outsider is chosen, place the \"Enchanted\" token on that player, replace their character with a not-in-play Townsfolk, and immediately wake said player to inform them of their new character.",
+                "otherNightReminder": "Ask the Enchantress if they'd like to choose a player. If yes, place the \"No Ability\" token on the Enchantress. If an outsider is chosen, place the \"Enchanted\" token on that player, replace their character with a not-in-play Townsfolk, and immediately wake said player to inform them of their new character."
+            },
+            {
+                "id": "conjurorthewizardsmeet2",
+                "name": "Conjuror",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/conjuror_thewizardsmeet2.png",
+                "ability": "Once per game, at night, choose a Minion character: if not in play, gain that ability. If in play, you are drunk but your Spells function normally.",
+                "reminders": [
+                    "No Ability",
+                    "Drunk"
+                ],
+                "firstNight": 16,
+                "otherNight": 5,
+                "remindersGlobal": [
+                    "Is Conjuror"
+                ],
+                "firstNightReminder": "Ask the Conjuror if they'd like to choose a minion character. If yes, place the \"No Ability\" token on the Conjuror. If not in-play, place the \"is Conjuror\" token on the Conjuror and immediately replace their character with the chosen minion. Otherwise, place the \"Drunk\" token on the Conjuror. Wake them exactly as if they were the chosen minion.",
+                "otherNightReminder": "Ask the Conjuror if they'd like to choose a minion character. If yes, place the \"No Ability\" token on the Conjuror. If not in-play, place the \"is Conjuror\" token on the Conjuror and immediately replace their character with the chosen minion. Otherwise, place the \"Drunk\" token on the Conjuror. Wake them exactly as if they were the chosen minion."
+            },
+            {
+                "id": "sorcererthewizardsmeet2",
+                "name": "Sorcerer",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/sorcerer_thewizardsmeet2.png",
+                "ability": "If you become the targets of any Spells, they instead target the caster."
+            },
+            {
+                "id": "clericthewizardsmeet2",
+                "name": "Cleric",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/cleric_thewizardsmeet2.png",
+                "ability": "You may submit the 3rd Forbidden Spell without repercussions.",
+                "reminders": [
+                    "Resurrected"
+                ],
+                "otherNight": 28,
+                "otherNightReminder": "If a player was resurrected by the Cleric's spell, place the \"Ressurected\" token on said player."
+            },
+            {
+                "id": "ritualistthewizardsmeet2",
+                "name": "Ritualist",
+                "team": "townsfolk",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/ritualist_thewizardsmeet2.png",
+                "ability": "You may invoke one Curse even while alive. It does not cost you a ghost vote.",
+                "reminders": [
+                    "Invoked Curse"
+                ],
+                "otherNight": 29,
+                "otherNightReminder": "If the Ritualist has chosen to invoke a Curse, replace the \"Free Curse\" token with the \"Invoked Curse\" token."
+            },
+            {
+                "id": "entropistthewizardsmeet2",
+                "name": "Entropist",
+                "team": "outsider",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/entropist_thewizardsmeet2.png",
+                "ability": "Each night, your Submitted Spell must target one specific player. The Storyteller chooses who.",
+                "reminders": [
+                    "Must Target"
+                ],
+                "firstNight": 13,
+                "otherNight": 4,
+                "firstNightReminder": "Give the Entropist the name of a player (choose a specific player or choose at random), and place the \"Must Target\" token on them. Their Spell must target said player.",
+                "otherNightReminder": "Give the Entropist the name of a player (choose a specific player or choose at random), and place the \"Must Target\" token on them. Their Spell must target said player."
+            },
+            {
+                "id": "pyroclastthewizardsmeet2",
+                "name": "Pyroclast",
+                "team": "outsider",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/pyroclast_thewizardsmeet2.png",
+                "ability": "If you or your team become the target of any Successfully Cast Spell, the caster might die.",
+                "reminders": [
+                    "Targeted",
+                    "Dead"
+                ],
+                "firstNight": 26,
+                "otherNight": 32,
+                "firstNightReminder": "If any cast Spells targeted \"good\", \"outsiders\", \"the pyroclast\", or the Pyroclast player's name, place the \"Targeted\" token on the caster. You can kill any player who has the \"Targeted\" token. If so, replace said token with the \"Dead\" token.",
+                "otherNightReminder": "If any cast Spells targeted \"good\", \"outsiders\", \"the pyroclast\", or the Pyroclast player's name, place the \"Targeted\" token on the caster. You can kill any player who has the \"Targeted\" token. If so, replace said token with the \"Dead\" token."
+            },
+            {
+                "id": "acolytethewizardsmeet2",
+                "name": "Acolyte",
+                "team": "outsider",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/acolyte_thewizardsmeet2.png",
+                "ability": "You think you are a Townsfolk character, but you are not. Your Spells might be altered by the Storyteller.",
+                "firstNight": 12,
+                "otherNight": 3,
+                "remindersGlobal": [
+                    "Is Acolyte"
+                ],
+                "firstNightReminder": "Wake Acolyte exactly as if they were said townsfolk. You can alter their submitted Spell as you see fit.",
+                "otherNightReminder": "Wake the Acolyte exactly as if they were their assigned townsfolk. You can alter their submitted Spell as you see fit."
+            },
+            {
+                "id": "accursedthewizardsmeet2",
+                "name": "Accursed",
+                "team": "outsider",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/accursed_thewizardsmeet2.png",
+                "ability": "Your Spells must give some benefit to the opposite team. If you die by execution, you may not invoke a Curse.",
+                "reminders": [
+                    "Cannot Curse"
+                ]
+            },
+            {
+                "id": "warlockthewizardsmeet2",
+                "name": "Warlock",
+                "team": "minion",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/warlock_thewizardsmeet2.png",
+                "ability": "Each night*, instead of Submitting a Spell, you may choose one Successfully Cast yesterday (by name): the caster dies. If the demon dies while there are 5 or more players alive, you become \"The Demon\" but maintain your ability.",
+                "reminders": [
+                    "Dead",
+                    "Demon"
+                ],
+                "otherNight": 6,
+                "otherNightReminder": "If the Demon dies, place the \"Demon\" token on the Warlock. Ask the Warlock if they'd like to kill at the cost of submitting a Spell. If so, ask them for the name of a Spell that was cast yesterday. Immediately kill the player (unless already dead) and place the \"Dead\" token on them."
+            },
+            {
+                "id": "necromancerthewizardsmeet2",
+                "name": "Necromancer",
+                "team": "minion",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/necromancer_thewizardsmeet2.png",
+                "ability": "If your Spell is cast, a dead player might be resurrected. Your Curse does not cost a ghost vote.",
+                "reminders": [
+                    "Resurrected"
+                ],
+                "otherNight": 16,
+                "otherNightReminder": "If the Necromancer has a \"Cast\" or \"Dud\" token, you can resurrect a dead player and place the \"Resurrected\" token on them. If the Necromancer is dead, place the \"Free Curse\" token on them."
+            },
+            {
+                "id": "bloodmagethewizardsmeet2",
+                "name": "Blood Mage",
+                "team": "minion",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/bloodmage_thewizardsmeet2.png",
+                "ability": "You may submit Forbidden Spells without repercussions. While there are 5 or more players alive, you die if (and only if) one is Successfully Cast.",
+                "reminders": [
+                    "Dead"
+                ],
+                "otherNight": 15,
+                "otherNightReminder": "If the Blood Mage submitted a Forbidden Spell and it was successfully cast, place the \"Dead\" token on them and immediately kill them."
+            },
+            {
+                "id": "hecatombthewizardsmeet2",
+                "name": "Hecatomb",
+                "team": "minion",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/hecatomb_thewizardsmeet2.png",
+                "setup": true,
+                "ability": "If you die, Townsfolk Spells cannot be drawn tonight. Each night*, if 5 or more players live, you may choose to die. [+1 Outsider]",
+                "reminders": [
+                    "Sacrificed"
+                ],
+                "otherNight": 13,
+                "otherNightReminder": "Ask the Hecatomb if they'd like to die (if less than 4 players are alive, they cannot). If yes, kill the Hecatomb. If the Hecatomb is dead, place the \"Sacrificed\" token on them. No Townsfolk Spells can be cast tonight."
+            },
+            {
+                "id": "spellcastingthewizardsmeet2",
+                "name": "Spellcasting",
+                "team": "fabled",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/spellcasting_thewizardsmeet2.png",
+                "ability": "Each night, all living players may Submit a Spell. Submitted Spells can be no longer than 60 words. Spells must be named using 1-5 words which cannot contain player or character names. Spell names may be creative but not blatantly dishonest. The names of all Drawn Spells are publicly revealed at the start of each day including those made \"Dud\". A spell ",
+                "firstNight": 17,
+                "otherNight": 7,
+                "firstNightReminder": "Publicly call for all players to submit Spells. When everyone has submitted, draw Spells.",
+                "otherNightReminder": "Publicly call for all living players to submit Spells. When every living player has submitted, draw Spells."
+            },
+            {
+                "id": "spellcastingiithewizardsmeet2",
+                "name": "Spellcasting II",
+                "team": "fabled",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/spellcastingii_thewizardsmeet2.png",
+                "ability": "Without modification, up to [ ⅓ # of players, rounded down] Spells are Drawn to be Cast each night. The Storyteller can make any Drawn Spell a \"Dud\" making it have no effect. If a Spell Invokes ongoing effects, said effects will last only until another of the casters spells are drawn or dies. A Spell that was Drawn but made a \"Dud\" does not count as Successfully Cast.",
+                "firstNight": 21,
+                "otherNight": 24,
+                "remindersGlobal": [
+                    "Cast",
+                    "Cast",
+                    "Cast",
+                    "Cast",
+                    "Cast",
+                    "Cast",
+                    "Dud",
+                    "Dud",
+                    "Dud",
+                    "Dud",
+                    "Dud",
+                    "Dud",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse"
+                ],
+                "firstNightReminder": "Cast Spells in the order they were drawn even if those players died tonight. Remove any \"Ongoing Effect\" tokens from dead players or those who cast a new spell. Place a \"Cast\" token on each player whose spell was successfully cast (or a \"Dud\" token if vetoed). Place an \"Ongoing Effect\" token on any player whose cast spell includes a lasting effect.",
+                "otherNightReminder": "Cast Spells in the order they were drawn even if those players died tonight. Remove any \"Ongoing Effect\" tokens from dead players or those who cast a new spell. Place a \"Cast\" token on each player whose spell was successfully cast (or a \"Dud\" token if vetoed). Place an \"Ongoing Effect\" token on any player whose cast spell includes a lasting effect."
+            },
+            {
+                "id": "invokingacursethewizardsmeet2",
+                "name": "Invoking A Curse",
+                "team": "fabled",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/invokingacurse_thewizardsmeet2.png",
+                "ability": "A dead player may spend their ghost vote to Invoke a Curse -- a publicly-known Spell with an ongoing effect that remains until the end of the game. Curses cannot become a \"Dud\" but the Storyteller may work with the player to make an appropriate Curse.",
+                "otherNight": 8,
+                "otherNightReminder": "Ask dead players and the Ritualist if they'd like to invoke a Curse. Place an \"Invoked Curse\" token on any player whose Curse takes effect tonight."
+            },
+            {
+                "id": "forbiddenspellsthewizardsmeet2",
+                "name": "Forbidden Spells",
+                "team": "fabled",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/forbiddenspells_thewizardsmeet2.png",
+                "ability": "If a player submits any of the following spells, they die but their spell may still be drawn that night: (1) Changing Alignment, (2) Changing or deleting a players ability, and (3) Resurrection.",
+                "firstNight": 22,
+                "otherNight": 14,
+                "remindersGlobal": [
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead"
+                ],
+                "firstNightReminder": "Kill any player that submitted a forbidden spell, unless their ability allows it.",
+                "otherNightReminder": "Kill any player that submitted a forbidden spell, unless their ability allows it."
+            },
+            {
+                "id": "elderdrakethewizardsmeet2",
+                "name": "Elder Drake",
+                "team": "demon",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/elderdrake_thewizardsmeet2.png",
+                "ability": "Each night*, choose a player: they die. You may Submit up to 3 Spells each night, and an additional Spell is always cast.",
+                "reminders": [
+                    "Dead",
+                    "+1 Cast"
+                ],
+                "firstNight": 14,
+                "otherNight": 17,
+                "firstNightReminder": "Place the \"+1 Cast\" token on the Elder Drake.",
+                "otherNightReminder": "Ask the Elder Drake to choose a player. Kill that player and place a \"Dead\" token on them."
+            },
+            {
+                "id": "scourgethewizardsmeet2",
+                "name": "Scourge",
+                "team": "demon",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/scourge_thewizardsmeet2.png",
+                "ability": "Each night*, choose a player: they die. Each night*, If the Evil team becomes the target of any Drawn Spell or if an evil player becomes the target of any Drawn Spell, you learn the caster and may choose to kill them too.",
+                "reminders": [
+                    "Targeted",
+                    "Dead"
+                ],
+                "otherNight": 18,
+                "otherNightReminder": "If any cast Spells target an evil player, evil character, or the evil team, place the \"Targeted\" token on the caster. If any players have the \"Targeted\" token, tell the Scourge one their names and ask if they'd like to kill said player. Then, ask the Scourge to choose a(nother) player to kill. Kill the player(s) and place a \"Dead\" token on them."
+            },
+            {
+                "id": "infernusthewizardsmeet2",
+                "name": "Infernus",
+                "team": "demon",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/infernus_thewizardsmeet2.png",
+                "ability": "Each night*, choose a player: you learn the Spell they Submitted tonight and may choose to \"reinterpret\" it, describing a new effect based on its name. The chance of their Spell being Cast tonight is doubled. Then, they die.",
+                "reminders": [
+                    "Dead"
+                ],
+                "otherNight": 12,
+                "otherNightReminder": "Ask the Infernus to choose a player. Tell the Infernus the full text (and name) of the Spell and ask them to rewrite it to their liking. Then after Spellcasting II, kill that player and place a \"Dead\" token on them."
+            },
+            {
+                "id": "theveiledonethewizardsmeet2",
+                "name": "The Veiled One",
+                "team": "demon",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/theveiledone_thewizardsmeet2.png",
+                "setup": true,
+                "ability": "Each night*, choose a player: they die. You see the Grimoire and may learn any Submitted Spells. You may Submit Forbidden Spells without repercussions. Your Submitted Spells are always drawn first. [No Minions]",
+                "special": [
+                    {
+                        "name": "grimoire",
+                        "time": "night",
+                        "type": "signal"
+                    }
+                ],
+                "reminders": [
+                    "SPELL PRIORITY",
+                    "Dead"
+                ],
+                "firstNight": 15,
+                "otherNight": 19,
+                "firstNightReminder": "Place the \"SPELL PRIORITY\" token on The Veiled One. ALWAYS DRAW THE VEILED ONE'S SPELL FIRST.",
+                "otherNightReminder": "ALWAYS DRAW THE VEILED ONE'S SPELL FIRST. Show The Veiled One the grimoire and all cast/submitted Spells, then ask them to choose a player. Kill that player and place a \"Dead\" token on them."
+            }
+        ],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8051092783258"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7278175060122"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6955031298202"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7810411004058"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8072018133146"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7787388731546"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7959119921306"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7976965734554"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7076535402650"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7858287214746"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8163654828186"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6296200282266"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "7662492909722"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "7278175060122",
+                "username": "drazhar",
+                "isOnline": true
+            },
+            {
+                "id": "7662492909722",
+                "username": "LemonSneeze",
+                "isOnline": true
+            },
+            {
+                "id": "6955031298202",
+                "username": "Seneca",
+                "isOnline": true
+            },
+            {
+                "id": "8163654828186",
+                "username": "duck",
+                "isOnline": true
+            },
+            {
+                "id": "8051092783258",
+                "username": "Steamseed",
+                "isOnline": true
+            },
+            {
+                "id": "7976965734554",
+                "username": "Aaron",
+                "isOnline": true
+            },
+            {
+                "id": "7959119921306",
+                "username": "KittyPower",
+                "isOnline": true
+            },
+            {
+                "id": "7133580525722",
+                "username": "Furhammer🦊",
+                "isOnline": true
+            },
+            {
+                "id": "7858287214746",
+                "username": "Starbearers (Inky)",
+                "isOnline": true
+            },
+            {
+                "id": "7076535402650",
+                "username": "TrappedCosmos",
+                "isOnline": true
+            },
+            {
+                "id": "7548973645978",
+                "username": "Thebestusername",
+                "isOnline": true
+            },
+            {
+                "id": "7810411004058",
+                "username": "🌸DarkChloe🌸",
+                "isOnline": true
+            },
+            {
+                "id": "7787388731546",
+                "username": "Bernard",
+                "isOnline": true
+            },
+            {
+                "id": "6296200282266",
+                "username": "NotNotShay",
+                "isOnline": true
+            },
+            {
+                "id": "8072018133146",
+                "username": "Wren",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 84594160,
+        "chatServer": "us",
+        "fabled": [
+            {
+                "id": "spellcastingthewizardsmeet2",
+                "name": "Spellcasting",
+                "team": "fabled",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/spellcasting_thewizardsmeet2.png",
+                "ability": "Each night, all living players may Submit a Spell. Submitted Spells can be no longer than 60 words. Spells must be named using 1-5 words which cannot contain player or character names. Spell names may be creative but not blatantly dishonest. The names of all Drawn Spells are publicly revealed at the start of each day including those made \"Dud\". A spell ",
+                "firstNight": 17,
+                "otherNight": 7,
+                "firstNightReminder": "Publicly call for all players to submit Spells. When everyone has submitted, draw Spells.",
+                "otherNightReminder": "Publicly call for all living players to submit Spells. When every living player has submitted, draw Spells."
+            },
+            {
+                "id": "spellcastingiithewizardsmeet2",
+                "name": "Spellcasting II",
+                "team": "fabled",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/spellcastingii_thewizardsmeet2.png",
+                "ability": "Without modification, up to [ ⅓ # of players, rounded down] Spells are Drawn to be Cast each night. The Storyteller can make any Drawn Spell a \"Dud\" making it have no effect. If a Spell Invokes ongoing effects, said effects will last only until another of the casters spells are drawn or dies. A Spell that was Drawn but made a \"Dud\" does not count as Successfully Cast.",
+                "firstNight": 21,
+                "otherNight": 24,
+                "remindersGlobal": [
+                    "Cast",
+                    "Cast",
+                    "Cast",
+                    "Cast",
+                    "Cast",
+                    "Cast",
+                    "Dud",
+                    "Dud",
+                    "Dud",
+                    "Dud",
+                    "Dud",
+                    "Dud",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse",
+                    "Ongoing Effect",
+                    "Invoked Curse"
+                ],
+                "firstNightReminder": "Cast Spells in the order they were drawn even if those players died tonight. Remove any \"Ongoing Effect\" tokens from dead players or those who cast a new spell. Place a \"Cast\" token on each player whose spell was successfully cast (or a \"Dud\" token if vetoed). Place an \"Ongoing Effect\" token on any player whose cast spell includes a lasting effect.",
+                "otherNightReminder": "Cast Spells in the order they were drawn even if those players died tonight. Remove any \"Ongoing Effect\" tokens from dead players or those who cast a new spell. Place a \"Cast\" token on each player whose spell was successfully cast (or a \"Dud\" token if vetoed). Place an \"Ongoing Effect\" token on any player whose cast spell includes a lasting effect."
+            },
+            {
+                "id": "invokingacursethewizardsmeet2",
+                "name": "Invoking A Curse",
+                "team": "fabled",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/invokingacurse_thewizardsmeet2.png",
+                "ability": "A dead player may spend their ghost vote to Invoke a Curse -- a publicly-known Spell with an ongoing effect that remains until the end of the game. Curses cannot become a \"Dud\" but the Storyteller may work with the player to make an appropriate Curse.",
+                "otherNight": 8,
+                "otherNightReminder": "Ask dead players and the Ritualist if they'd like to invoke a Curse. Place an \"Invoked Curse\" token on any player whose Curse takes effect tonight."
+            },
+            {
+                "id": "forbiddenspellsthewizardsmeet2",
+                "name": "Forbidden Spells",
+                "team": "fabled",
+                "image": "https://www.bloodstar.xyz/p/LemonSneeze/The-Wizards-Meet-2/forbiddenspells_thewizardsmeet2.png",
+                "ability": "If a player submits any of the following spells, they die but their spell may still be drawn that night: (1) Changing Alignment, (2) Changing or deleting a players ability, and (3) Resurrection.",
+                "firstNight": 22,
+                "otherNight": 14,
+                "remindersGlobal": [
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead",
+                    "Dead"
+                ],
+                "firstNightReminder": "Kill any player that submitted a forbidden spell, unless their ability allows it.",
+                "otherNightReminder": "Kill any player that submitted a forbidden spell, unless their ability allows it."
+            },
+            {
+                "id": "bootlegger"
+            },
+            {
+                "id": "gardener"
+            }
+        ],
+        "isRunning": true,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 1,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "dinosaurs",
+        "phase": 1,
+        "ownerId": "7839968329882",
+        "edition": {
+            "id": "custom",
+            "name": "Drop of a Hat",
+            "author": "spleen",
+            "isOfficial": false
+        },
+        "roles": [
+            {
+                "id": "apprentice"
+            },
+            {
+                "id": "barista"
+            },
+            {
+                "id": "butcher"
+            },
+            {
+                "id": "gnome"
+            },
+            {
+                "id": "scapegoat"
+            },
+            {
+                "id": "knight"
+            },
+            {
+                "id": "chef"
+            },
+            {
+                "id": "librarian"
+            },
+            {
+                "id": "balloonist"
+            },
+            {
+                "id": "villageidiot"
+            },
+            {
+                "id": "fortuneteller"
+            },
+            {
+                "id": "dreamer"
+            },
+            {
+                "id": "oracle"
+            },
+            {
+                "id": "soldier"
+            },
+            {
+                "id": "amnesiac"
+            },
+            {
+                "id": "ravenkeeper"
+            },
+            {
+                "id": "fool"
+            },
+            {
+                "id": "magician"
+            },
+            {
+                "id": "drunk"
+            },
+            {
+                "id": "plaguedoctor"
+            },
+            {
+                "id": "hatter"
+            },
+            {
+                "id": "mutant"
+            },
+            {
+                "id": "witch"
+            },
+            {
+                "id": "cerenovus"
+            },
+            {
+                "id": "vizier"
+            },
+            {
+                "id": "baron"
+            },
+            {
+                "id": "pukka"
+            },
+            {
+                "id": "nodashii"
+            },
+            {
+                "id": "vigormortis"
+            },
+            {
+                "id": "lleech"
+            }
+        ],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6872399904922"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7927934419098"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7316112081050"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8039831240858"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7430195347610"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7939791618202"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6457720602778"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7871096225946"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7554323742874"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7386406224026"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7415527768218"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8010166141082"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7843031580826"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6874388758682"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7922932940954"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "7645930258586"
+            },
+            {
+                "id": "7841808515226"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "7871096225946",
+                "username": "chids",
+                "isOnline": true
+            },
+            {
+                "id": "6457720602778",
+                "username": "miny ☼",
+                "isOnline": true
+            },
+            {
+                "id": "7430195347610",
+                "username": "Fafa",
+                "isOnline": true
+            },
+            {
+                "id": "7569087135898",
+                "username": "Siviomi",
+                "isOnline": true
+            },
+            {
+                "id": "8039831240858",
+                "username": "🐕Rich🍓",
+                "isOnline": true
+            },
+            {
+                "id": "7645930258586",
+                "username": "Zak",
+                "isOnline": true
+            },
+            {
+                "id": "7948023693466",
+                "username": "Campofrío",
+                "isOnline": true
+            },
+            {
+                "id": "7841808515226",
+                "username": "Palax",
+                "isOnline": true
+            },
+            {
+                "id": "7386406224026",
+                "username": "Nathen",
+                "isOnline": true
+            },
+            {
+                "id": "7415527768218",
+                "username": "WonderFlame",
+                "isOnline": true
+            },
+            {
+                "id": "7927934419098",
+                "username": "Smog",
+                "isOnline": true
+            },
+            {
+                "id": "7316112081050",
+                "username": "Smokey🍁",
+                "isOnline": true
+            },
+            {
+                "id": "7382054371482",
+                "username": "Ginny🐢",
+                "isOnline": true
+            },
+            {
+                "id": "7983666462874",
+                "username": "Cuttersmom",
+                "isOnline": true
+            },
+            {
+                "id": "7239399407770",
+                "username": "gorbage",
+                "isOnline": true
+            },
+            {
+                "id": "7922932940954",
+                "username": "Julia",
+                "isOnline": true
+            },
+            {
+                "id": "7939791618202",
+                "username": "Bio",
+                "isOnline": true
+            },
+            {
+                "id": "6872399904922",
+                "username": "aFoxy1",
+                "isOnline": true
+            },
+            {
+                "id": "7554323742874",
+                "username": "Attie",
+                "isOnline": true
+            },
+            {
+                "id": "7843031580826",
+                "username": "Waffles",
+                "isOnline": true
+            },
+            {
+                "id": "7844731977882",
+                "username": "beevee🐝",
+                "isOnline": true
+            },
+            {
+                "id": "8010166141082",
+                "username": "Qwerty",
+                "isOnline": true
+            },
+            {
+                "id": "6874388758682",
+                "username": "Maddie",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 85749511,
+        "chatServer": "us",
+        "fabled": [
+            {
+                "id": "djinn"
+            }
+        ],
+        "isRunning": true,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 0,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "19074",
+        "phase": 6,
+        "ownerId": "7738253574298",
+        "edition": {
+            "id": "custom",
+            "name": "Everyone Can Play",
+            "author": "Ben Burns",
+            "isOfficial": false
+        },
+        "roles": [
+            {
+                "id": "librarian"
+            },
+            {
+                "id": "clockmaker"
+            },
+            {
+                "id": "grandmother"
+            },
+            {
+                "id": "fortuneteller"
+            },
+            {
+                "id": "empath"
+            },
+            {
+                "id": "monk"
+            },
+            {
+                "id": "undertaker"
+            },
+            {
+                "id": "gambler"
+            },
+            {
+                "id": "artist"
+            },
+            {
+                "id": "slayer"
+            },
+            {
+                "id": "fool"
+            },
+            {
+                "id": "ravenkeeper"
+            },
+            {
+                "id": "mayor"
+            },
+            {
+                "id": "drunk"
+            },
+            {
+                "id": "recluse"
+            },
+            {
+                "id": "saint"
+            },
+            {
+                "id": "moonchild"
+            },
+            {
+                "id": "baron"
+            },
+            {
+                "id": "poisoner"
+            },
+            {
+                "id": "assassin"
+            },
+            {
+                "id": "devilsadvocate"
+            },
+            {
+                "id": "spy"
+            },
+            {
+                "id": "scarletwoman"
+            },
+            {
+                "id": "imp"
+            }
+        ],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7768925470874"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "7609012387994"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "7342679851162"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "7312949182618"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6311986495642"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8095111544986"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "7957709062298"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8090400293018"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "6896122331290"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8161601421466"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8152940249242"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8017805836442"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "7738253574298"
+            },
+            {
+                "id": "7601909563546"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "7342679851162",
+                "username": "Matey ⚔",
+                "isOnline": true
+            },
+            {
+                "id": "8017805836442",
+                "username": "AG38",
+                "isOnline": true
+            },
+            {
+                "id": "7738253574298",
+                "username": "Gargron",
+                "isOnline": true
+            },
+            {
+                "id": "7601909563546",
+                "username": "Amelia",
+                "isOnline": true
+            },
+            {
+                "id": "8152940249242",
+                "username": "Everest",
+                "isOnline": true
+            },
+            {
+                "id": "7609012387994",
+                "username": "Zhan",
+                "isOnline": true
+            },
+            {
+                "id": "8161601421466",
+                "username": "ToothlessDaydreamer",
+                "isOnline": true
+            },
+            {
+                "id": "7944472952986",
+                "username": "Josh :D",
+                "isOnline": true
+            },
+            {
+                "id": "7312949182618",
+                "username": "Jaxson301",
+                "isOnline": true
+            },
+            {
+                "id": "8090400293018",
+                "username": "Tao_of_Sanchez",
+                "isOnline": true
+            },
+            {
+                "id": "7957709062298",
+                "username": "taff",
+                "isOnline": true
+            },
+            {
+                "id": "6896122331290",
+                "username": "Parker27",
+                "isOnline": true
+            },
+            {
+                "id": "7768925470874",
+                "username": "GJH",
+                "isOnline": true
+            },
+            {
+                "id": "6311986495642",
+                "username": "Jason",
+                "isOnline": true
+            },
+            {
+                "id": "8095111544986",
+                "username": "SlicedRye",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 83140999,
+        "chatServer": "eu",
+        "fabled": [],
+        "isRunning": true,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 1,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 2
+        },
+        "language": "en"
+    },
+    {
+        "name": "kitsuki",
+        "phase": 0,
+        "ownerId": "7591703380122",
+        "edition": {
+            "id": "bmr",
+            "isOfficial": true
+        },
+        "roles": [],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6916907008154"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7393869758618"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "7591703380122"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "7591703380122",
+                "username": "Kitsuki🍓",
+                "isOnline": true
+            },
+            {
+                "id": "7393869758618",
+                "username": "Agila",
+                "isOnline": true
+            },
+            {
+                "id": "6916907008154",
+                "username": "Parker",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 85787475,
+        "chatServer": "us",
+        "fabled": [],
+        "isRunning": false,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 0,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "tb or s&v",
+        "phase": 9,
+        "ownerId": "7371983847578",
+        "edition": {
+            "id": "custom",
+            "name": "Trouble with Hats",
+            "author": "Bones About It !!!",
+            "isOfficial": false
+        },
+        "roles": [
+            {
+                "id": "gangster"
+            },
+            {
+                "id": "bonecollector"
+            },
+            {
+                "id": "apprentice"
+            },
+            {
+                "id": "scapegoat"
+            },
+            {
+                "id": "knight"
+            },
+            {
+                "id": "chef"
+            },
+            {
+                "id": "washerwoman"
+            },
+            {
+                "id": "librarian"
+            },
+            {
+                "id": "empath"
+            },
+            {
+                "id": "fortuneteller"
+            },
+            {
+                "id": "undertaker"
+            },
+            {
+                "id": "monk"
+            },
+            {
+                "id": "slayer"
+            },
+            {
+                "id": "ravenkeeper"
+            },
+            {
+                "id": "mayor"
+            },
+            {
+                "id": "virgin"
+            },
+            {
+                "id": "magician"
+            },
+            {
+                "id": "drunk"
+            },
+            {
+                "id": "recluse"
+            },
+            {
+                "id": "saint"
+            },
+            {
+                "id": "hatter"
+            },
+            {
+                "id": "mutant"
+            },
+            {
+                "id": "poisoner"
+            },
+            {
+                "id": "spy"
+            },
+            {
+                "id": "witch"
+            },
+            {
+                "id": "marionette"
+            },
+            {
+                "id": "baron"
+            },
+            {
+                "id": "imp"
+            },
+            {
+                "id": "lordoftyphon"
+            }
+        ],
+        "players": [
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "6301257564314"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8000241762458"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8128968360090"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "8080852517018"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8125596336282"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7898239041690"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "7648551338138"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8141038157978"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "7476360904858"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7974381420698"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "7763758481562"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "8006814728346"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7752240267418"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "8107652481178"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "7974381420698",
+                "username": "Theseus",
+                "isOnline": true
+            },
+            {
+                "id": "7763758481562",
+                "username": "Sophie",
+                "isOnline": true
+            },
+            {
+                "id": "6535408058522",
+                "username": "Cori",
+                "isOnline": true
+            },
+            {
+                "id": "6301257564314",
+                "username": "Edynol🌳",
+                "isOnline": true
+            },
+            {
+                "id": "7476360904858",
+                "username": "Hannes",
+                "isOnline": true
+            },
+            {
+                "id": "8006814728346",
+                "username": "Kurt",
+                "isOnline": true
+            },
+            {
+                "id": "8141038157978",
+                "username": "NanoscopicDino",
+                "isOnline": true
+            },
+            {
+                "id": "8128968360090",
+                "username": "Bluffin",
+                "isOnline": true
+            },
+            {
+                "id": "7051583979674",
+                "username": "Affenkopf",
+                "isOnline": true
+            },
+            {
+                "id": "7898239041690",
+                "username": "JadubC",
+                "isOnline": true
+            },
+            {
+                "id": "7648551338138",
+                "username": "Errid",
+                "isOnline": true
+            },
+            {
+                "id": "8125596336282",
+                "username": "Cerys",
+                "isOnline": true
+            },
+            {
+                "id": "8000241762458",
+                "username": "CiscoDeKid",
+                "isOnline": true
+            },
+            {
+                "id": "8107652481178",
+                "username": "☠️ Bones ☠️",
+                "isOnline": true
+            },
+            {
+                "id": "8080852517018",
+                "username": "Savvy",
+                "isOnline": true
+            },
+            {
+                "id": "7752240267418",
+                "username": "Emery",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 84470868,
+        "chatServer": "us3",
+        "fabled": [
+            {
+                "id": "djinn"
+            }
+        ],
+        "isRunning": true,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 0,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "base three",
+        "phase": 6,
+        "ownerId": "6812331638938",
+        "edition": {
+            "id": "tb",
+            "isOfficial": true
+        },
+        "roles": [],
+        "players": [
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "8114994708634"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8161705722010"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "7924427849882"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8042493083802"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "5924610539674"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6715085652122"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8092115959962"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8079566241946"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8118062612634"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "8079140913306"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7700549468314"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7328966279322"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "6812331638938"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "6715085652122",
+                "username": "Grim",
+                "isOnline": true
+            },
+            {
+                "id": "8114994708634",
+                "username": "Twisted",
+                "isOnline": true
+            },
+            {
+                "id": "8079140913306",
+                "username": "Lazlo",
+                "isOnline": true
+            },
+            {
+                "id": "8042493083802",
+                "username": "Lainey",
+                "isOnline": true
+            },
+            {
+                "id": "5924610539674",
+                "username": "Ross C",
+                "isOnline": true
+            },
+            {
+                "id": "8161705722010",
+                "username": "Mechmoon",
+                "isOnline": true
+            },
+            {
+                "id": "8167306854554",
+                "username": "emjay",
+                "isOnline": true
+            },
+            {
+                "id": "8129161134234",
+                "username": "Soupo",
+                "isOnline": true
+            },
+            {
+                "id": "7700549468314",
+                "username": "Jason",
+                "isOnline": true
+            },
+            {
+                "id": "7924427849882",
+                "username": "syddy",
+                "isOnline": true
+            },
+            {
+                "id": "6812331638938",
+                "username": "Sigmeow",
+                "isOnline": true
+            },
+            {
+                "id": "8118062612634",
+                "username": "Beestian",
+                "isOnline": true
+            },
+            {
+                "id": "8079566241946",
+                "username": "Toryn",
+                "isOnline": true
+            },
+            {
+                "id": "7328966279322",
+                "username": "Danno",
+                "isOnline": true
+            },
+            {
+                "id": "8092115959962",
+                "username": "Llama",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 83528463,
+        "chatServer": "us2",
+        "fabled": [],
+        "isRunning": true,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 0,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "tederino",
+        "phase": 1,
+        "ownerId": "8120480497818",
+        "edition": {
+            "id": "tb",
+            "isOfficial": true
+        },
+        "roles": [],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7792104702106"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8168171503770"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7523292676250"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8093315072154"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8167776092314"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8152120361114"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8166345343130"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6295397171354"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7374154465434"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8097006157978"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7434390208666"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8089791037594"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7903929827482"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "7670538600602"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "6295397171354",
+                "username": "Josh",
+                "isOnline": true
+            },
+            {
+                "id": "7792104702106",
+                "username": "Archi",
+                "isOnline": true
+            },
+            {
+                "id": "8093315072154",
+                "username": "Austy",
+                "isOnline": true
+            },
+            {
+                "id": "8089791037594",
+                "username": "Jessicuh",
+                "isOnline": true
+            },
+            {
+                "id": "8166345343130",
+                "username": "TheRealTeals2",
+                "isOnline": true
+            },
+            {
+                "id": "8167776092314",
+                "username": "Gabudell",
+                "isOnline": true
+            },
+            {
+                "id": "8168171503770",
+                "username": "normaldavid",
+                "isOnline": true
+            },
+            {
+                "id": "8152120361114",
+                "username": "Alexa",
+                "isOnline": true
+            },
+            {
+                "id": "6955612143770",
+                "username": "Rob",
+                "isOnline": true
+            },
+            {
+                "id": "7670538600602",
+                "username": "Mitchel",
+                "isOnline": true
+            },
+            {
+                "id": "7374154465434",
+                "username": "The Ham",
+                "isOnline": true
+            },
+            {
+                "id": "7523292676250",
+                "username": "Jacob",
+                "isOnline": true
+            },
+            {
+                "id": "7434390208666",
+                "username": "Nixie",
+                "isOnline": true
+            },
+            {
+                "id": "7903929827482",
+                "username": "zonk ponkle",
+                "isOnline": true
+            },
+            {
+                "id": "8097006157978",
+                "username": "Silent g",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 85065674,
+        "chatServer": "us",
+        "fabled": [],
+        "isRunning": true,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 1,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "whale buffet",
+        "phase": 2,
+        "ownerId": "8049542594714",
+        "edition": {
+            "id": "homebrew",
+            "name": "Whalebuffet",
+            "author": "",
+            "bootlegger": [
+                "On the 1st night, all players choose a character (of their assigned character type) to become.",
+                "The Storyteller may offer you the chance to reconsider if they think your choice will be unfun for you or others. Evil learns which character(s) this happened for.",
+                "The Atheist, Engineer & Pit-Hag are banned. The Drunk, Lunatic and Marionette cannot be chosen.",
+                "Only a Demon may choose to become the Summoner. If so, the summoned player chooses which Demon they become.",
+                "If there is more than 1 of the same character, 1 or more of the extras might be drunk.",
+                "The only character with a setup effect that applies is the Bounty Hunter."
+            ],
+            "isOfficial": false
+        },
+        "roles": [
+            {
+                "id": "chooseyourowntrv",
+                "name": "Choose a Traveller",
+                "team": "traveller",
+                "ability": "On the 1st night, choose a Traveller character to become.",
+                "special": [
+                    {
+                        "name": "bag-duplicate",
+                        "type": "selection"
+                    },
+                    {
+                        "name": "card",
+                        "type": "signal",
+                        "value": "Reconsider?"
+                    }
+                ],
+                "firstNight": 1,
+                "remindersGlobal": [
+                    "Drunk",
+                    "Drunk",
+                    "Drunk"
+                ],
+                "firstNightReminder": "The Traveller player chooses a character."
+            },
+            {
+                "id": "bureaucrat"
+            },
+            {
+                "id": "thief"
+            },
+            {
+                "id": "chooseyourowntf",
+                "name": "Choose a Townsfolk",
+                "team": "townsfolk",
+                "ability": "On the 1st night, choose a Townsfolk character to become.",
+                "special": [
+                    {
+                        "name": "bag-duplicate",
+                        "type": "selection"
+                    },
+                    {
+                        "name": "card",
+                        "type": "signal",
+                        "value": "Reconsider?"
+                    }
+                ],
+                "firstNight": 1,
+                "remindersGlobal": [
+                    "Drunk",
+                    "Drunk",
+                    "Drunk"
+                ],
+                "firstNightReminder": "The Townsfolk player chooses a character."
+            },
+            {
+                "id": "acrobat"
+            },
+            {
+                "id": "alchemist"
+            },
+            {
+                "id": "alsaahir"
+            },
+            {
+                "id": "amnesiac"
+            },
+            {
+                "id": "artist"
+            },
+            {
+                "id": "balloonist"
+            },
+            {
+                "id": "banshee"
+            },
+            {
+                "id": "bountyhunter"
+            },
+            {
+                "id": "cannibal"
+            },
+            {
+                "id": "chambermaid"
+            },
+            {
+                "id": "chef"
+            },
+            {
+                "id": "choirboy"
+            },
+            {
+                "id": "clockmaker"
+            },
+            {
+                "id": "courtier"
+            },
+            {
+                "id": "cultleader"
+            },
+            {
+                "id": "dreamer"
+            },
+            {
+                "id": "empath"
+            },
+            {
+                "id": "exorcist"
+            },
+            {
+                "id": "farmer"
+            },
+            {
+                "id": "fisherman"
+            },
+            {
+                "id": "flowergirl"
+            },
+            {
+                "id": "fool"
+            },
+            {
+                "id": "fortuneteller"
+            },
+            {
+                "id": "gambler"
+            },
+            {
+                "id": "general"
+            },
+            {
+                "id": "gossip"
+            },
+            {
+                "id": "grandmother"
+            },
+            {
+                "id": "highpriestess"
+            },
+            {
+                "id": "huntsman"
+            },
+            {
+                "id": "innkeeper"
+            },
+            {
+                "id": "investigator"
+            },
+            {
+                "id": "juggler"
+            },
+            {
+                "id": "king"
+            },
+            {
+                "id": "knight"
+            },
+            {
+                "id": "librarian"
+            },
+            {
+                "id": "lycanthrope"
+            },
+            {
+                "id": "magician"
+            },
+            {
+                "id": "mathematician"
+            },
+            {
+                "id": "mayor"
+            },
+            {
+                "id": "minstrel"
+            },
+            {
+                "id": "monk"
+            },
+            {
+                "id": "nightwatchman"
+            },
+            {
+                "id": "noble"
+            },
+            {
+                "id": "oracle"
+            },
+            {
+                "id": "pacifist"
+            },
+            {
+                "id": "philosopher"
+            },
+            {
+                "id": "pixie"
+            },
+            {
+                "id": "poppygrower"
+            },
+            {
+                "id": "preacher"
+            },
+            {
+                "id": "professor"
+            },
+            {
+                "id": "ravenkeeper"
+            },
+            {
+                "id": "sage"
+            },
+            {
+                "id": "sailor"
+            },
+            {
+                "id": "savant"
+            },
+            {
+                "id": "seamstress"
+            },
+            {
+                "id": "shugenja"
+            },
+            {
+                "id": "slayer"
+            },
+            {
+                "id": "snakecharmer"
+            },
+            {
+                "id": "soldier"
+            },
+            {
+                "id": "steward"
+            },
+            {
+                "id": "tealady"
+            },
+            {
+                "id": "towncrier"
+            },
+            {
+                "id": "undertaker"
+            },
+            {
+                "id": "villageidiot"
+            },
+            {
+                "id": "virgin"
+            },
+            {
+                "id": "washerwoman"
+            },
+            {
+                "id": "chooseyourownout",
+                "name": "Choose an Outsider",
+                "team": "outsider",
+                "ability": "On the 1st night, choose an Outsider character to become.",
+                "special": [
+                    {
+                        "name": "bag-duplicate",
+                        "type": "selection"
+                    },
+                    {
+                        "name": "card",
+                        "type": "signal",
+                        "value": "Reconsider?"
+                    }
+                ],
+                "firstNight": 1,
+                "remindersGlobal": [
+                    "Drunk",
+                    "Drunk",
+                    "Drunk"
+                ],
+                "firstNightReminder": "The Outsider player chooses a character."
+            },
+            {
+                "id": "barber"
+            },
+            {
+                "id": "butler"
+            },
+            {
+                "id": "damsel"
+            },
+            {
+                "id": "drunk"
+            },
+            {
+                "id": "golem"
+            },
+            {
+                "id": "goon"
+            },
+            {
+                "id": "hatter"
+            },
+            {
+                "id": "heretic"
+            },
+            {
+                "id": "klutz"
+            },
+            {
+                "id": "lunatic"
+            },
+            {
+                "id": "moonchild"
+            },
+            {
+                "id": "mutant"
+            },
+            {
+                "id": "ogre"
+            },
+            {
+                "id": "plaguedoctor"
+            },
+            {
+                "id": "politician"
+            },
+            {
+                "id": "puzzlemaster"
+            },
+            {
+                "id": "recluse"
+            },
+            {
+                "id": "saint"
+            },
+            {
+                "id": "snitch"
+            },
+            {
+                "id": "sweetheart"
+            },
+            {
+                "id": "tinker"
+            },
+            {
+                "id": "zealot"
+            },
+            {
+                "id": "chooseyourownmin",
+                "name": "Choose a Minion",
+                "team": "minion",
+                "ability": "On the 1st night, choose a Minion character to become.",
+                "special": [
+                    {
+                        "name": "bag-duplicate",
+                        "type": "selection"
+                    },
+                    {
+                        "name": "card",
+                        "type": "signal",
+                        "value": "Reconsider?"
+                    }
+                ],
+                "firstNight": 1,
+                "remindersGlobal": [
+                    "Drunk",
+                    "Drunk",
+                    "Drunk"
+                ],
+                "firstNightReminder": "The Minion player chooses a character."
+            },
+            {
+                "id": "assassin"
+            },
+            {
+                "id": "baron"
+            },
+            {
+                "id": "boffin"
+            },
+            {
+                "id": "boomdandy"
+            },
+            {
+                "id": "cerenovus"
+            },
+            {
+                "id": "devilsadvocate"
+            },
+            {
+                "id": "eviltwin"
+            },
+            {
+                "id": "fearmonger"
+            },
+            {
+                "id": "goblin"
+            },
+            {
+                "id": "godfather"
+            },
+            {
+                "id": "harpy"
+            },
+            {
+                "id": "marionette"
+            },
+            {
+                "id": "mastermind"
+            },
+            {
+                "id": "mezepheles"
+            },
+            {
+                "id": "organgrinder"
+            },
+            {
+                "id": "poisoner"
+            },
+            {
+                "id": "psychopath"
+            },
+            {
+                "id": "scarletwoman"
+            },
+            {
+                "id": "spy"
+            },
+            {
+                "id": "summoner"
+            },
+            {
+                "id": "vizier"
+            },
+            {
+                "id": "widow"
+            },
+            {
+                "id": "witch"
+            },
+            {
+                "id": "wizard"
+            },
+            {
+                "id": "xaan"
+            },
+            {
+                "id": "chooseyourowndem",
+                "name": "Choose a Demon",
+                "team": "demon",
+                "ability": "On the 1st night, choose a Demon character to become.",
+                "special": [
+                    {
+                        "name": "bag-duplicate",
+                        "type": "selection"
+                    },
+                    {
+                        "name": "card",
+                        "type": "signal",
+                        "value": "Reconsider?"
+                    }
+                ],
+                "firstNight": 1,
+                "remindersGlobal": [
+                    "Drunk",
+                    "Drunk",
+                    "Drunk"
+                ],
+                "firstNightReminder": "The Demon player chooses a character."
+            },
+            {
+                "id": "alhadikhia"
+            },
+            {
+                "id": "fanggu"
+            },
+            {
+                "id": "imp"
+            },
+            {
+                "id": "kazali"
+            },
+            {
+                "id": "legion"
+            },
+            {
+                "id": "leviathan"
+            },
+            {
+                "id": "lilmonsta"
+            },
+            {
+                "id": "lleech"
+            },
+            {
+                "id": "lordoftyphon"
+            },
+            {
+                "id": "nodashii"
+            },
+            {
+                "id": "ojo"
+            },
+            {
+                "id": "po"
+            },
+            {
+                "id": "pukka"
+            },
+            {
+                "id": "riot"
+            },
+            {
+                "id": "shabaloth"
+            },
+            {
+                "id": "vigormortis"
+            },
+            {
+                "id": "vortox"
+            },
+            {
+                "id": "yaggababble"
+            },
+            {
+                "id": "zombuul"
+            }
+        ],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8052174618778"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8038493126810"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8052173897882"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6647099162778"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8101223563418"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8049927028890"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7709887692954"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7252172832922"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "8049542594714"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "8101223563418",
+                "username": "uberdan",
+                "isOnline": true
+            },
+            {
+                "id": "7968473743514",
+                "username": "Viktoria",
+                "isOnline": true
+            },
+            {
+                "id": "6647099162778",
+                "username": "Sam",
+                "isOnline": true
+            },
+            {
+                "id": "7252172832922",
+                "username": "french toast",
+                "isOnline": true
+            },
+            {
+                "id": "8038493126810",
+                "username": "Rubinpdf",
+                "isOnline": true
+            },
+            {
+                "id": "8049927028890",
+                "username": "fartninja101",
+                "isOnline": true
+            },
+            {
+                "id": "8052174618778",
+                "username": "AjaxMonkey",
+                "isOnline": true
+            },
+            {
+                "id": "7709887692954",
+                "username": "Swump",
+                "isOnline": true
+            },
+            {
+                "id": "7934694686874",
+                "username": "Freck The Snake Charmer",
+                "isOnline": true
+            },
+            {
+                "id": "8052173897882",
+                "username": "Hugh-Man222222",
+                "isOnline": true
+            },
+            {
+                "id": "8049542594714",
+                "username": "PhoenixWrong",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 83091269,
+        "chatServer": "eu4",
+        "fabled": [
+            {
+                "id": "sentinel"
+            },
+            {
+                "id": "bootlegger"
+            },
+            {
+                "id": "djinn"
+            }
+        ],
+        "isRunning": true,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 1,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "games",
+        "phase": 1,
+        "ownerId": "7936157253786",
+        "edition": {
+            "id": "custom",
+            "name": "Sink Or Swim",
+            "author": "Kinky Joe",
+            "isOfficial": false
+        },
+        "roles": [
+            {
+                "id": "shugenja"
+            },
+            {
+                "id": "pixie"
+            },
+            {
+                "id": "empath"
+            },
+            {
+                "id": "general"
+            },
+            {
+                "id": "dreamer"
+            },
+            {
+                "id": "balloonist"
+            },
+            {
+                "id": "fortuneteller"
+            },
+            {
+                "id": "monk"
+            },
+            {
+                "id": "savant"
+            },
+            {
+                "id": "amnesiac"
+            },
+            {
+                "id": "soldier"
+            },
+            {
+                "id": "cannibal"
+            },
+            {
+                "id": "banshee"
+            },
+            {
+                "id": "puzzlemaster"
+            },
+            {
+                "id": "plaguedoctor"
+            },
+            {
+                "id": "mutant"
+            },
+            {
+                "id": "barber"
+            },
+            {
+                "id": "widow"
+            },
+            {
+                "id": "poisoner"
+            },
+            {
+                "id": "summoner"
+            },
+            {
+                "id": "cerenovus"
+            },
+            {
+                "id": "goblin"
+            },
+            {
+                "id": "lordoftyphon"
+            },
+            {
+                "id": "po"
+            },
+            {
+                "id": "fanggu"
+            }
+        ],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7911193673882"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6698348118170"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8058167722138"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6996789821594"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8039099465882"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7892437205146"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7765557936282"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8037101437082"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7938696446106"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "7806915641498"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "8037101437082",
+                "username": "Muz",
+                "isOnline": true
+            },
+            {
+                "id": "7892437205146",
+                "username": "BBL",
+                "isOnline": true
+            },
+            {
+                "id": "7938696446106",
+                "username": "classyLoops",
+                "isOnline": true
+            },
+            {
+                "id": "8039099465882",
+                "username": "Loops",
+                "isOnline": true
+            },
+            {
+                "id": "7992202428570",
+                "username": "Mike D",
+                "isOnline": true
+            },
+            {
+                "id": "7765557936282",
+                "username": "Sophie808",
+                "isOnline": true
+            },
+            {
+                "id": "7911193673882",
+                "username": "Griego",
+                "isOnline": true
+            },
+            {
+                "id": "6996789821594",
+                "username": "Ves",
+                "isOnline": true
+            },
+            {
+                "id": "8058167722138",
+                "username": "stephllama",
+                "isOnline": true
+            },
+            {
+                "id": "6698348118170",
+                "username": "Olly",
+                "isOnline": true
+            },
+            {
+                "id": "7806915641498",
+                "username": "Karthik",
+                "isOnline": true
+            },
+            {
+                "id": "7861509259418",
+                "username": "ky.",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 172800000,
+        "chatServer": "eu2",
+        "fabled": [
+            {
+                "id": "bootlegger"
+            },
+            {
+                "id": "djinn"
+            },
+            {
+                "id": "gardener"
+            },
+            {
+                "id": "hellslibrarian"
+            }
+        ],
+        "isRunning": true,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 0,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "come play :)",
+        "phase": 0,
+        "ownerId": "7962094862490",
+        "edition": {
+            "id": "snv",
+            "isOfficial": true
+        },
+        "roles": [],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "7962094862490"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "7962094862490",
+                "username": "SnowyCactus",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 86266498,
+        "chatServer": "eu4",
+        "fabled": [],
+        "isRunning": false,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 0,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "forlux",
+        "phase": 8,
+        "ownerId": "6492242477210",
+        "edition": {
+            "id": "custom",
+            "name": "coraline 2.15 2.0",
+            "author": "lux quinn",
+            "isOfficial": false
+        },
+        "roles": [
+            {
+                "id": "clockmaker"
+            },
+            {
+                "id": "grandmother"
+            },
+            {
+                "id": "empath"
+            },
+            {
+                "id": "villageidiot"
+            },
+            {
+                "id": "dreamer"
+            },
+            {
+                "id": "fortuneteller"
+            },
+            {
+                "id": "flowergirl"
+            },
+            {
+                "id": "innkeeper"
+            },
+            {
+                "id": "acrobat"
+            },
+            {
+                "id": "savant"
+            },
+            {
+                "id": "artist"
+            },
+            {
+                "id": "soldier"
+            },
+            {
+                "id": "tealady"
+            },
+            {
+                "id": "drunk"
+            },
+            {
+                "id": "tinker"
+            },
+            {
+                "id": "sweetheart"
+            },
+            {
+                "id": "saint"
+            },
+            {
+                "id": "poisoner"
+            },
+            {
+                "id": "widow"
+            },
+            {
+                "id": "marionette"
+            },
+            {
+                "id": "scarletwoman"
+            },
+            {
+                "id": "yaggababble"
+            },
+            {
+                "id": "kazali"
+            },
+            {
+                "id": "lleech"
+            },
+            {
+                "id": "vigormortis"
+            }
+        ],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7057863147674"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "6798911439002"
+            },
+            {
+                "isDead": true,
+                "isVoteless": true,
+                "id": "6839191699610"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "6516914749594"
+            },
+            {
+                "isDead": true,
+                "isVoteless": true,
+                "id": "6553849135258"
+            },
+            {
+                "isDead": true,
+                "isVoteless": false,
+                "id": "6929710514330"
+            },
+            {
+                "isDead": true,
+                "isVoteless": true,
+                "id": "6363210481818"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6862238941338"
+            },
+            {
+                "isDead": true,
+                "isVoteless": true,
+                "id": "7343383707802"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "6492242477210"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "6553849135258",
+                "username": "Ghost",
+                "isOnline": true
+            },
+            {
+                "id": "7057863147674",
+                "username": "Lux(20)",
+                "isOnline": true
+            },
+            {
+                "id": "6567615856794",
+                "username": "MarioXTurn",
+                "isOnline": true
+            },
+            {
+                "id": "6292659208346",
+                "username": "Andre",
+                "isOnline": true
+            },
+            {
+                "id": "6862238941338",
+                "username": "Fangcide",
+                "isOnline": true
+            },
+            {
+                "id": "6839191699610",
+                "username": "Dodgydisc",
+                "isOnline": true
+            },
+            {
+                "id": "6798911439002",
+                "username": "Lisa",
+                "isOnline": true
+            },
+            {
+                "id": "6929710514330",
+                "username": "inkle",
+                "isOnline": true
+            },
+            {
+                "id": "6363210481818",
+                "username": "Eevee",
+                "isOnline": true
+            },
+            {
+                "id": "6516914749594",
+                "username": "EBEZA",
+                "isOnline": true
+            },
+            {
+                "id": "6492242477210",
+                "username": "DAVE",
+                "isOnline": true
+            },
+            {
+                "id": "7343383707802",
+                "username": "Stealth 🚒",
+                "isOnline": true
+            },
+            {
+                "id": "6129406869658",
+                "username": "TheLost &Tony",
+                "isOnline": true
+            },
+            {
+                "id": "6964905050266",
+                "username": "🔅Apollo🔅",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 85759761,
+        "chatServer": "us4",
+        "fabled": [
+            {
+                "id": "djinn"
+            },
+            {
+                "id": "gardener"
+            }
+        ],
+        "isRunning": false,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 0,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "en"
+    },
+    {
+        "name": "logia",
+        "phase": 0,
+        "ownerId": "7598906507418",
+        "edition": {
+            "id": "tb",
+            "isOfficial": true
+        },
+        "roles": [],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7771830517914"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "6734214267034"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7402050912410"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7335804240026"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": null
+            }
+        ],
+        "storytellers": [],
+        "usersAll": [
+            {
+                "id": "7598906507418",
+                "username": "Logia Escarlata",
+                "isOnline": true
+            },
+            {
+                "id": "7335804240026",
+                "username": "Gadrid",
+                "isOnline": true
+            },
+            {
+                "id": "7771830517914",
+                "username": "Gret",
+                "isOnline": true
+            },
+            {
+                "id": "6734214267034",
+                "username": "Oscarina",
+                "isOnline": true
+            },
+            {
+                "id": "7788350242970",
+                "username": "Torresnos",
+                "isOnline": true
+            },
+            {
+                "id": "7402050912410",
+                "username": "Roxy Poppy Hunter",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 85973579,
+        "chatServer": "eu2",
+        "fabled": [],
+        "isRunning": false,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 0,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "es"
+    },
+    {
+        "name": "koko",
+        "phase": 2,
+        "ownerId": "7363991175322",
+        "edition": {
+            "id": "tb",
+            "isOfficial": true
+        },
+        "roles": [],
+        "players": [
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7393487913114"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7615084495002"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8114515050650"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7279396192410"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8123624587418"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "8102688293018"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7237572624538"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7538359632026"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7371420041370"
+            },
+            {
+                "isDead": false,
+                "isVoteless": false,
+                "id": "7267688644762"
+            }
+        ],
+        "storytellers": [
+            {
+                "id": "7439808069786"
+            }
+        ],
+        "usersAll": [
+            {
+                "id": "8114515050650",
+                "username": "მანუჩარ",
+                "isOnline": true
+            },
+            {
+                "id": "7615084495002",
+                "username": "nick",
+                "isOnline": true
+            },
+            {
+                "id": "7439808069786",
+                "username": "Buzu",
+                "isOnline": true
+            },
+            {
+                "id": "6540780863642",
+                "username": "Shavkaca",
+                "isOnline": true
+            },
+            {
+                "id": "8128407044250",
+                "username": "ილია",
+                "isOnline": true
+            },
+            {
+                "id": "7235085992090",
+                "username": "𝓜𝓪𝓵𝓼𝔂",
+                "isOnline": true
+            },
+            {
+                "id": "7538359632026",
+                "username": "გოგუა",
+                "isOnline": true
+            },
+            {
+                "id": "7371420041370",
+                "username": "SPIRIT",
+                "isOnline": true
+            },
+            {
+                "id": "7244662407322",
+                "username": "🅼🆉🅶🅰🐈ツ",
+                "isOnline": true
+            },
+            {
+                "id": "7267688644762",
+                "username": "Gega",
+                "isOnline": true
+            },
+            {
+                "id": "7393487913114",
+                "username": "სოლომონ",
+                "isOnline": true
+            },
+            {
+                "id": "7286142009498",
+                "username": "Koksi",
+                "isOnline": true
+            },
+            {
+                "id": "7392548356250",
+                "username": "ოფიკო🐣",
+                "isOnline": true
+            },
+            {
+                "id": "7279396192410",
+                "username": "ნუცუკი",
+                "isOnline": true
+            },
+            {
+                "id": "8123624587418",
+                "username": "Bloom",
+                "isOnline": true
+            },
+            {
+                "id": "7237572624538",
+                "username": "Enfoncerr",
+                "isOnline": true
+            },
+            {
+                "id": "8102688293018",
+                "username": "ALFA SHELBY",
+                "isOnline": true
+            }
+        ],
+        "boostDuration": 81045608,
+        "chatServer": "eu4",
+        "fabled": [],
+        "isRunning": true,
+        "isPublic": true,
+        "tags": {
+            "locked": false,
+            "cameras": 0,
+            "grimoire": 0,
+            "streaming": false,
+            "difficulty": 0,
+            "travellers": 0
+        },
+        "language": "ka"
+    }
+]
