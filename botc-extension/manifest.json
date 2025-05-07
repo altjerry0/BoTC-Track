@@ -4,7 +4,6 @@
   "version": "1.0",
   "description": "Track and rate players in Blood on the Clocktower games, with username history tracking and player analysis.",
   "permissions": [
-    "activeTab",
     "declarativeNetRequest",
     "webRequest",
     "storage"
@@ -15,16 +14,8 @@
   "background": {
     "service_worker": "src/background.js"
   },
-  "content_scripts": [
-    {
-      "matches": ["*://botc.app/*"],
-      "js": ["src/content.js"]
-    }
-  ],
   "action": {
-    "default_popup": "src/popup/popup.html",
-    "default_icon": {
-    }
+    "default_popup": "src/popup/popup.html"
   },
   "declarative_net_request": {
     "rule_resources": [
@@ -34,17 +25,5 @@
         "path": "rules.json"
       }
     ]
-  },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "src/popup/userManager.js",
-        "src/popup/sessionManager.js"
-      ],
-      "matches": ["*://botc.app/*"]
-    }
-  ],
-  "icons": {
-
   }
 }
