@@ -2,6 +2,17 @@
 
 This Chrome extension tracks and rates players in Blood on the Clocktower (BotC) games, helping you recognize familiar players across sessions and track username changes.
 
+⚠️ **Important: Back Up Your Player Data!** ⚠️
+
+Your player ratings, notes, and history are stored locally by this extension. If you uninstall the extension, this data will be **permanently deleted** by Chrome.
+
+🛡️ **To keep your data safe or transfer it to another computer:**
+
+*   **ALWAYS use the "Export Players (CSV)" button** (found in the "Manage Users" tab) to save your data to a file **before** uninstalling or if you want a backup.
+*   You can use the "Import Players (CSV)" button to restore your data from a previously saved CSV file.
+
+Regularly exporting your data is a good habit!
+
 ## Features
 
 - **Session Tracking**: View active BotC game sessions and their details
