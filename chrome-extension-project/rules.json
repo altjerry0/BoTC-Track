@@ -1,0 +1,13 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "allow"
+    },
+    "condition": {
+      "urlFilter": "https://botc.app/*",
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  }
+]

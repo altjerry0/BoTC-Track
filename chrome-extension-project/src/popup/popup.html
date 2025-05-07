@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="popup.css">
+    <title>BOTC Session Helper</title>
+    <style>
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* Adjust spacing */
+            margin-bottom: 10px;
+        }
+        .fetch-stats {
+            font-size: 0.9em;
+            color: #555;
+        }
+        .header-controls {
+            display: flex;
+            justify-content: flex-end; /* Push button to the right */
+            margin-bottom: 5px;
+        }
+        #open-in-tab-btn {
+            padding: 3px 8px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <div class="header-controls">
+            <button id="open-in-tab-btn" title="Open full view in a new tab">↗️ Open in Tab</button>
+        </div>
+
+        <h1>BotC Lobby and Player Tracker</h1>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="sessions">Sessions</button>
+            <button class="tab-button" data-tab="userManagement">Manage Users</button>
+        </div>
+
+        <!-- Tab Content Area -->
+        <div class="tab-content-area">
+
+            <!-- Sessions Tab Content -->
+            <div class="tab-content active" id="sessions">
+                <div class="session-controls">
+                    <button id="fetchButton">Fetch Active Games</button>
+                    <div class="filter-controls">
+                        <label for="officialOnlyCheckbox">
+                            <input type="checkbox" id="officialOnlyCheckbox">
+                            Official Only
+                        </label>
+                        <span id="fetchStats" class="fetch-stats"></span> <!-- Added stats display area -->
+                    </div>
+                </div>
+                <div id="sessionResults" class="results-container">
+                    <div class="controls">
+                        <button id="fetchSessions">Fetch Sessions</button>
+                        <label><input type="checkbox" id="officialOnly"> Official Only</label>
+                        <span id="fetchStats"></span> 
+                    </div>
+                    <details id="onlineFavoritesSection" class="online-favorites-section">
+                        <summary>Online Favorites (<span id="onlineFavoritesCount">0</span>)</summary>
+                        <div id="onlineFavoritesList" class="online-favorites-list">
+                            <!-- Favorite players will be listed here -->
+                            <p>No favorite players currently online.</p> 
+                        </div>
+                    </details>
+                    <div id="loadingIndicator" style="display: none;">Loading sessions...</div>
+                    <div id="sessionList"></div>
+                </div>
+            </div>
+
+            <!-- User Management Tab Content -->
+            <div class="tab-content" id="userManagement">
+                <div class="user-management-controls">
+                    <button id="add-player-button">Add Player Manually</button>
+                    <button id="export-players-button">Export Players (CSV)</button>
+                    <button id="import-players-button">Import Players (CSV)</button>
+                    <input type="file" id="import-file-input" accept=".csv" style="display: none;" />
+                    <div id="import-status" class="import-status-message" style="display: none; margin-left: 10px;"></div> <!-- For import feedback -->
+                </div>
+                <div class="search-container">
+                    <h2>Search Known Players</h2>
+                    <input type="text" id="userSearch" placeholder="Search by name, notes, score..." />
+                </div>
+
+                <div id="knownPlayers" class="results-container"></div> 
+            </div>
+
+        </div> 
+    </div>
+    <script src="userManager.js"></script>
+    <script src="sessionManager.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>
