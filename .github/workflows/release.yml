@@ -22,7 +22,7 @@ jobs:
       - name: Package extension
         run: |
           cd botc-extension
-          zip -r ../botc-tracker-${{ env.VERSION }}.zip .
+          zip -r ../botc-tracker-${{ env.VERSION }}.zip . -x "_metadata/*"
 
       - name: Create GitHub Release
         id: create_release
