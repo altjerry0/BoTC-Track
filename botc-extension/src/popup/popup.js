@@ -186,37 +186,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
     fetchButton.addEventListener('click', () => {
         if (sessionListDiv) {
-            sessionListDiv.innerHTML = '<p class="loading-message">Fetching sessions...</p>'; // Show loading message in the list area
+            sessionListDiv.innerHTML = '<p class="loading-message">Fetching sessions...</p>';
         }
-        if (loadingIndicator) loadingIndicator.style.display = 'block'; // Or use this for a more distinct loader
-        
-        // Ensure sessionResultsDiv itself is not cleared if it has other persistent elements (though it shouldn't now)
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        if (sessionListDiv) sessionListDiv.style.display = 'none'; // Hide list while loading
 
         fetchAndDisplaySessions(
             loadPlayerData, 
             addPlayer,      
-            createUsernameHistoryModal, // Pass function
-            updateOnlineFavoritesList, // Pass the new function
-            sessionResultsDiv,
+            createUsernameHistoryModal, 
+            updateOnlineFavoritesList, 
+            sessionListDiv, // Pass sessionListDiv as the target for session cards
             { officialOnly: showOfficialOnly }, 
-            (sessions) => {
-            latestSessionData = sessions; // Store updated session data
-            lastFetchedSessions = sessions; // Store fetched sessions
-        });
+            (sessions, finalPlayerData) => { // Modified callback to receive final data
+                latestSessionData = sessions; 
+                lastFetchedSessions = sessions; 
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                if (sessionListDiv) sessionListDiv.style.display = 'block'; // Show list again
+                // updateOnlineFavoritesList is already called within checkHistoryAndRender
+            }
+        );
     });
 
     officialOnlyCheckbox.addEventListener('change', () => {
         showOfficialOnly = officialOnlyCheckbox.checked;
         if (sessionListDiv) {
-            sessionListDiv.innerHTML = '<p class="loading-message">Applying filter...</p>'; // Indicate activity
+            sessionListDiv.innerHTML = '<p class="loading-message">Applying filter...</p>';
+            sessionListDiv.style.display = 'block'; // Ensure it's visible if previously hidden
         }
-        // Re-render the stored sessions with the new filter state
+        if (loadingIndicator) loadingIndicator.style.display = 'none'; // Hide if it was somehow visible
+        
         loadPlayerData(playerData => {
-            // renderSessions now targets sessionListDiv (implicitly via sessionResultsDiv if not changed in sessionManager)
-            // Ensure renderSessions in sessionManager.js correctly targets where sessions should go.
-            // For now, assuming renderSessions clears and appends to its passed 'resultDiv' argument.
-            // If renderSessions exclusively uses sessionListDiv, then pass that directly.
-            renderSessions(lastFetchedSessions, playerData, sessionResultsDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal);
+            // Directly call renderSessions from sessionManager.js (assuming it's globally available or imported)
+            // This assumes renderSessions is exposed on the window object or properly imported if using modules.
+            if (window.renderSessions) {
+                window.renderSessions(lastFetchedSessions, playerData, sessionListDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal);
+            } else {
+                console.error('renderSessions function not found. Cannot re-render with filter.');
+                if (sessionListDiv) sessionListDiv.innerHTML = '<p class="error-message">Error applying filter.</p>';
+            }
         });
     });
 
@@ -365,9 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
         addPlayer,      // Pass function
         createUsernameHistoryModal, // Pass function
         updateOnlineFavoritesList, // Pass the new function
-        sessionResultsDiv,
+        sessionListDiv, // Pass sessionListDiv as the target for session cards
         { officialOnly: showOfficialOnly }, 
-        (sessions) => {
+        (sessions, finalPlayerData) => {
         latestSessionData = sessions; // Store initially fetched sessions
         lastFetchedSessions = sessions; // Store initially fetched sessions
         // Load initial players for the hidden management tab
