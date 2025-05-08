@@ -25,6 +25,16 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 
 - [x] ~~Fix `updateFavorites` function that is currently causing errors.~~ (Resolved by passing function as parameter and implementing UI update in `popup.js`)
 - [x] ~~Verify `isFavorite` Flag Persistence and UI~~ (Verified and fixed in v1.0.5)
+- [x] ~~Add manual dark mode toggle to popup header (remove settings modal)~~ (Completed in v1.0.7)
+- [x] ~~Implement 'Time Since Last Seen' feature~~ (Completed in v1.0.6)
+- [x] ~~Implement 'Clear All Player Data' button~~ (Completed in v1.0.5)
+- [x] ~~Fix `chrome.tabs.onUpdated` error by removing listener~~ (Completed in v1.0.4)
+- [x] ~~Remove unused permissions and dead code~~ (Completed in v1.0.3)
+- [x] ~~Refactor player data functions to be async and use central save~~ (Completed in v1.0.2)
+- [x] ~~UI & Styling Overhaul (v1.0.9)~~:
+  - ~~Comprehensive dark mode improvements for modals, session content, and player cards.~~
+  - ~~Player card ratings now displayed via `border-left-color` (1-5 scale) for better visibility in all themes.~~
+  - ~~Resolved CSS issues for rating display in dark mode.~~
 - [ ] **Investigate Player Not Found**: Debug logs indicate instances where players are not found in player data during session history updates. This may require further investigation into player data management and synchronization, especially with WebSocket updates.
 - [ ] **Refine UI for Current Game Players (Post-MVP)**: Once WebSocket interception is stable and core logic is robust, revisit displaying players from the *current* live game in a dedicated UI section in the popup (feature was previously on 'current-game-sockets' branch and removed for MVP focus).
     - Consider how to differentiate these from players in fetched historical/recent sessions.

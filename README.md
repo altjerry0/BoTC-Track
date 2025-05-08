@@ -1,4 +1,4 @@
-**Current Version (local):** `1.0.8` | **Chrome Web Store Version:** `1.0.1` Pending `1.0.4`
+**Current Version (local):** `1.0.9` | **Chrome Web Store Version:** `1.0.1` Pending `1.0.4`
 ***
 
 # BotC Player Tracker Chrome Extension
@@ -200,6 +200,10 @@ This project uses GitHub Actions to automate the creation of release ZIP files.
     ```
 session-tracking
 4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store.
+
+### UI Enhancements & Dark Mode
+- **Comprehensive Dark Mode**: Significantly improved styling across the extension (modals, session content, player cards) for a consistent and visually comfortable experience in dark mode.
+- **Player Card Rating Display**: Player ratings (1-5) are now indicated by the color of the card's left border (Green for 5, Blue for 4, Orange for 3, Light Red for 2, Dark Red for 1). This provides a clear visual cue that works effectively in both light and dark themes, replacing the previous method of changing the entire card background.
 
 ### Recent Fixes & Improvements
 

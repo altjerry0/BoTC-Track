@@ -140,6 +140,12 @@ function updateUsernameHistory(id, username, playerData) {
  * @param {string} currentName - Current username
  */
 function createUsernameHistoryModal(history, currentName) {
+    // Remove any existing modal first to prevent duplicates
+    const existingModal = document.querySelector('.username-history-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
     const modal = document.createElement('div');
     modal.className = 'username-history-modal';
 

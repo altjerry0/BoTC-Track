@@ -5,6 +5,22 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-08.
 # BotC Player Tracker Extension - Changelog
 ---
 
+## [v1.0.9] - 2025-05-08
+
+### Added
+- N/A
+
+### Changed
+- **UI & Styling**: Enhanced dark mode styling for modals, session content, and player cards, ensuring better visibility and consistency throughout the extension.
+- **Player Card Ratings**: Updated player card rating display to use distinct left-border colors for ratings 1 through 5 (5: Green, 4: Blue, 3: Orange, 2: Light Red, 1: Dark Red). This replaces full background changes for ratings, improving visual clarity in both light and dark themes.
+- Refined CSS for player cards to ensure rating border colors are correctly displayed, particularly addressing previous issues in dark mode.
+
+### Fixed
+- Resolved CSS specificity issues that previously caused rating indicators (now border colors) to be incorrectly displayed or hidden in dark mode.
+
+### Removed
+- N/A
+
 ## [v1.0.8] - 2025-05-08
 
 ### Added

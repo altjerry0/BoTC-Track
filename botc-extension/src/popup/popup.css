@@ -200,8 +200,18 @@ button:hover {
 }
 
 .session-content {
-    padding: 16px;
-    background-color: white;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    background-color: var(--card-bg); /* Use card background for default */
+    color: var(--text-color);
+    border: 1px solid var(--card-border);
+}
+
+body.dark-mode .session-content {
+    background-color: var(--card-bg); /* Ensure it uses the dark card background */
+    color: var(--text-color); /* Ensure it uses the dark text color */
+    border-color: var(--card-border);
 }
 
 .player-card {
@@ -213,9 +223,28 @@ button:hover {
     align-items: center;
     border: 1px solid var(--card-border);
     background-color: var(--card-bg);
-    border-left: 5px solid #ccc; /* Default border for all cards */
+    border-left: 5px solid var(--card-border); /* Use variable for left border */
     width: 100%; /* Ensure card takes full width of container */
+    color: var(--text-color); /* Ensure text color is also variable-based */
     box-sizing: border-box; /* Include padding/border in width calculation */
+}
+
+body.dark-mode .player-card {
+    background-color: var(--card-bg); /* Should be dark from variables */
+    color: var(--text-color);       /* Should be light from variables */
+    border-color: var(--card-border); /* Covers main border and left border if not overridden */
+}
+
+.player-card.rating-good {
+    border-left-color: #31c48d; /* Green */
+}
+
+.player-card.rating-bad {
+    border-left-color: #ef4444; /* Darker Red */
+}
+
+.player-card.rating-neutral {
+    border-left-color: #f59e0b; /* Orange */
 }
 
 .player-card.known-player {
@@ -290,13 +319,41 @@ button:hover {
     margin-left: 4px; /* Spacing */
 }
 
-/* Rating-based colors */
-.rating-5 { background-color: var(--score-high-bg); border: 1px solid #31c48d; }
-.rating-4 { background-color: var(--score-med-bg); border: 1px solid #3b82f6; }
-.rating-3 { background-color: var(--score-med-bg); border: 1px solid #f59e0b; }
-.rating-2 { background-color: var(--score-low-bg); border: 1px solid #f98080; }
-.rating-1 { background-color: var(--score-low-bg); border: 1px solid #ef4444; }
-.rating-unknown { background-color: #f3f4f6; border: 1px solid #d1d5db; }
+/* Rating-based colors for player card left borders */
+
+/* Individual Rating Styles - Light Mode Defaults for Player Cards - now only border-left-color */
+.player-card.rating-5 { 
+    border-left-color: #31c48d; /* Green */
+}
+.player-card.rating-4 { 
+    border-left-color: #3b82f6; /* Blue */
+}
+.player-card.rating-3 { 
+    border-left-color: #f59e0b; /* Orange */
+}
+.player-card.rating-2 { 
+    border-left-color: #f98080; /* Light Red */
+}
+.player-card.rating-1 { 
+    border-left-color: #ef4444; /* Darker Red */
+}
+
+/* Dark Mode Adjustments for Player Card Rating Borders */
+body.dark-mode .player-card.rating-5 {
+    border-left-color: #31c48d; /* Green */
+}
+body.dark-mode .player-card.rating-4 {
+    border-left-color: #3b82f6; /* Blue */
+}
+body.dark-mode .player-card.rating-3 {
+    border-left-color: #f59e0b; /* Orange */
+}
+body.dark-mode .player-card.rating-2 {
+    border-left-color: #f98080; /* Light Red */
+}
+body.dark-mode .player-card.rating-1 {
+    border-left-color: #ef4444; /* Darker Red */
+}
 
 .search-container {
     margin-bottom: 16px;
@@ -590,254 +647,6 @@ button:hover {
     margin-top: 4px;
 }
 
-/* Rating-based coloring for known players */
-.player-card.rating-good {
-    border-left-color: var(--score-high-bg);
-}
-
-.player-card.rating-bad {
-    border-left-color: var(--score-low-bg);
-}
-
-.player-card.rating-neutral {
-    border-left-color: var(--score-med-bg);
-}
-
-/* Container for header buttons like 'Open in Tab' */
-.header-controls {
-    display: flex;
-    justify-content: flex-end; /* Aligns items (button) to the right */
-    align-items: center; /* Vertically align if needed */
-    padding: 5px 0; /* Add some spacing */
-    margin-bottom: 5px;
-}
-
-/* Styling for the 'Open in Tab' button */
-#open-in-tab-btn {
-    padding: 4px 10px;
-    font-size: 0.85em;
-    /* Inherits general button styles, can add specifics here */
-    /* e.g., background-color: transparent; border: 1px solid var(--button-bg); */
-}
-
-/* --- Tabs --- */
-.tabs {
-    display: flex;
-    border-bottom: 1px solid var(--tab-border);
-    margin-bottom: 10px;
-}
-
-.tab-button {
-    padding: 10px 15px;
-    cursor: pointer;
-    border: none;
-    background-color: var(--bg-color); /* Match body bg */
-    color: var(--text-color);
-    border-bottom: 3px solid transparent; /* Space for active indicator */
-    margin-bottom: -1px; /* Overlap border-bottom */
-    font-size: 14px;
-}
-
-.tab-button.active {
-    border-bottom-color: var(--tab-active-border);
-    font-weight: bold;
-}
-
-.tab-button:hover {
-    background-color: var(--tab-hover-bg);
-}
-
-.tab-content {
-    display: none; /* Hide tabs by default */
-}
-
-.tab-content.active {
-    display: block; /* Show active tab */
-}
-
-.user-management-controls {
-    display: flex;
-    justify-content: flex-start; /* Align buttons to the start */
-    align-items: center; /* Vertically align items */
-    margin-bottom: 15px;
-    padding: 10px;
-    border-bottom: 1px solid #444; /* Separator */
-}
-
-.user-management-controls button {
-    margin-right: 10px; /* Space between buttons */
-    padding: 8px 12px;
-    /* Use existing button styles or add specific ones */
-}
-
-.import-status-message {
-    font-style: italic;
-    color: #aaa; /* Adjust color as needed */
-}
-
-/* --- Utility Classes --- */
-.hidden {
-    display: none !important;
-}
-
-/* --- Username History Modal --- */
-.username-history-modal {
-    background-color: #ffffff; /* White background for light mode */
-    color: #333333; /* Dark text for light mode */
-    border: 1px solid #cccccc;
-    padding: 15px;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    position: fixed; /* Or absolute, depending on context */
-    z-index: 1001; /* Ensure it's above other elements */
-}
-
-body.dark-mode .username-history-modal {
-    background-color: #333333; /* Dark background for dark mode */
-    color: #f0f0f0; /* Light text for dark mode */
-    border-color: #555555;
-}
-
-.username-history-modal ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-}
-
-.username-history-modal li {
-    padding: 5px 0;
-    border-bottom: 1px solid #eeeeee; /* Light separator for light mode */
-}
-
-body.dark-mode .username-history-modal li {
-    border-bottom: 1px solid #444444; /* Darker separator for dark mode */
-}
-
-.username-history-modal li:last-child {
-    border-bottom: none;
-}
-
-.close-modal-btn {
-    background-color: #f44336; /* Red */
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 14px;
-    border-radius: 4px;
-    cursor: pointer;
-    float: right;
-    margin-top: -10px; /* Adjust as needed */
-    margin-right: -5px; /* Adjust as needed */
-}
-
-body.dark-mode .close-modal-btn {
-    background-color: #d32f2f; /* Darker red for dark mode */
-}
-
-.close-modal-btn:hover {
-    opacity: 0.8;
-}
-
-body.dark-mode .username-history-modal {
-    background-color: #282c34; /* Example dark background */
-    color: #abb2bf;
-    border: 1px solid #3f444e;
-}
-
-body.dark-mode .username-history-close {
-    color: #9da5b4;
-}
-
-body.dark-mode .username-history-close:hover {
-    color: #61afef; /* Example dark primary */
-}
-
-body.dark-mode .username-history-title {
-    color: #e5c07b; /* Example dark heading */
-    border-bottom: 1px solid #3f444e;
-}
-
-body.dark-mode .username-history-current strong {
-    color: #9da5b4;
-}
-
-body.dark-mode .username-history-item {
-    border-bottom: 1px solid #3a3f4a;
-}
-
-body.dark-mode .username-history-time {
-    color: #9da5b4;
-}
-
-body.dark-mode .username-history-list p {
-    color: #9da5b4;
-}
-
-body.dark-mode .username-history-change .old-name {
-    color: #e06c75; 
-}
-
-body.dark-mode .username-history-change .new-name {
-    color: #98c379; 
-}
-
-/* --- Containers & Layout --- */
-#sessionsList, #knownPlayersList, #onlineFavoritesList {
-    max-height: 350px; /* Limit height and allow scrolling */
-    overflow-y: auto;
-    padding-right: 5px; /* Add a little space for scrollbar */
-    margin-top: 10px;
-}
-
-#knownPlayersList {
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* Keep the gap between cards consistent */
-}
-
-/* Button Styles */
-.button {
-    background-color: var(--primary-color);
-    color: var(--text-color);
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-right: 8px;
-}
-
-.button:hover {
-    background-color: var(--primary-hover-color);
-}
-
-.phase-zero-indicator {
-    color: orange;
-    font-weight: bold;
-    margin-left: 10px;
-}
-
-.player-notes {
-    font-size: 0.9em;
-    color: var(--subtle-text-color);
-    margin-top: 4px;
-}
-
-/* Rating-based coloring for known players */
-.player-card.rating-good {
-    border-left-color: var(--score-high-bg);
-}
-
-.player-card.rating-bad {
-    border-left-color: var(--score-low-bg);
-}
-
-.player-card.rating-neutral {
-    border-left-color: var(--score-med-bg);
-}
-
 /* Container for header buttons like 'Open in Tab' */
 .header-controls {
     display: flex;
@@ -980,18 +789,6 @@ body.dark-mode .username-history-change .new-name {
     cursor: pointer;
 }
 
-.setting-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.setting-item label {
-    font-size: 14px;
-    color: var(--text-color);
-}
-
 /* Toggle Switch Styles */
 .switch {
     position: relative;
@@ -1051,4 +848,258 @@ input:checked + .slider:before {
     height: 1px;
     background-color: var(--border-color);
     margin: 20px 0;
+}
+
+/* Username History Modal Styling */
+.username-history-modal { /* This is the overlay */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--modal-backdrop, rgba(0, 0, 0, 0.6)); /* Darker overlay, use variable */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it's above other popup elements but below system UI */
+    padding: 15px; /* Padding for smaller screens so content doesn't touch edges */
+}
+
+.username-history-content { /* This is the actual modal box */
+    background-color: var(--modal-bg, #ffffff); /* White background for light mode */
+    color: var(--text-color, #333333); /* Dark text for light mode */
+    border: 1px solid var(--modal-border, #cccccc);
+    padding: 20px 25px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    position: relative; /* For positioning the close button */
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* Specific styling for dark mode if the modal needs it */
+body.dark-mode .username-history-content {
+    background-color: var(--modal-bg, #333333); /* Dark background for dark mode */
+    color: var(--text-color, #f0f0f0); /* Light text for dark mode */
+    border-color: var(--modal-border, #555555);
+}
+
+.username-history-title {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.4em;
+    color: var(--heading-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.username-history-current {
+    margin-bottom: 16px;
+    font-size: 1.1em;
+}
+
+.username-history-current strong {
+    color: var(--subtle-text-color);
+}
+
+/* Styling for the list within the modal */
+.username-history-list {
+    list-style-type: none; /* Though it's divs, ensures no accidental markers */
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.username-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 5px;
+    border-bottom: 1px solid var(--border-color-light, #eeeeee);
+}
+
+body.dark-mode .username-history-item {
+    border-bottom-color: var(--border-color-light, #444444);
+}
+
+.username-history-item:last-child {
+    border-bottom: none;
+}
+
+.username-history-name {
+    flex-grow: 1;
+    margin-right: 15px;
+}
+
+.username-history-change .old-name {
+    color: #cc5555; /* Consider var(--player-indicator-bad-text) */
+    text-decoration: line-through;
+}
+
+.username-history-change .arrow {
+    margin: 0 5px;
+}
+
+.username-history-change .new-name {
+    color: #55aa55; /* Consider var(--player-indicator-good-text) */
+    font-weight: bold;
+}
+
+.username-history-time {
+    color: var(--subtle-text-color);
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.username-history-list p { /* Style for 'no history' message */
+    font-style: italic;
+    color: var(--subtle-text-color);
+    text-align: center;
+    padding: 10px 0;
+}
+
+/* Close button for username history modal (was .close-modal-btn, now .username-history-close) */
+.username-history-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px; /* Make it larger */
+    font-weight: bold;
+    color: var(--modal-close-text, #aaa);
+    cursor: pointer;
+    line-height: 1; /* Ensure tight fit */
+    padding: 0 5px; /* Small padding for clickability */
+    z-index: 10; /* Above content in the modal */
+}
+
+.username-history-close:hover {
+    color: var(--modal-close-hover-text, #333);
+}
+
+/* Remove the generic .close-modal-btn styles if they were only for this and are now superseded */
+/* If .close-modal-btn is used elsewhere, the lint fix might apply there too or it needs separate handling */
+
+/* Ensure other .close-modal-btn usage is checked if any exists */
+/* For now, assuming the fix on .username-history-close is sufficient for the modal */
+
+/* --- Containers & Layout --- */
+#sessionsList, #knownPlayersList, #onlineFavoritesList {
+    max-height: 350px; /* Limit height and allow scrolling */
+    overflow-y: auto;
+    padding-right: 5px; /* Add a little space for scrollbar */
+    margin-top: 10px;
+}
+
+#knownPlayersList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Keep the gap between cards consistent */
+}
+
+/* Button Styles */
+.button {
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.button:hover {
+    background-color: var(--primary-hover-color);
+}
+
+.phase-zero-indicator {
+    color: orange;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.player-notes {
+    font-size: 0.9em;
+    color: var(--subtle-text-color);
+    margin-top: 4px;
+}
+
+/* Container for header buttons like 'Open in Tab' */
+.header-controls {
+    display: flex;
+    justify-content: flex-end; /* Aligns items (button) to the right */
+    align-items: center; /* Vertically align if needed */
+    padding: 5px 0; /* Add some spacing */
+    margin-bottom: 5px;
+}
+
+/* Styling for the 'Open in Tab' button */
+#open-in-tab-btn {
+    padding: 4px 10px;
+    font-size: 0.85em;
+    /* Inherits general button styles, can add specifics here */
+    /* e.g., background-color: transparent; border: 1px solid var(--button-bg); */
+}
+
+/* --- Tabs --- */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid var(--tab-border);
+    margin-bottom: 10px;
+}
+
+.tab-button {
+    padding: 10px 15px;
+    cursor: pointer;
+    border: none;
+    background-color: var(--bg-color); /* Match body bg */
+    color: var(--text-color);
+    border-bottom: 3px solid transparent; /* Space for active indicator */
+    margin-bottom: -1px; /* Overlap border-bottom */
+    font-size: 14px;
+}
+
+.tab-button.active {
+    border-bottom-color: var(--tab-active-border);
+    font-weight: bold;
+}
+
+.tab-button:hover {
+    background-color: var(--tab-hover-bg);
+}
+
+.tab-content {
+    display: none; /* Hide tabs by default */
+}
+
+.tab-content.active {
+    display: block; /* Show active tab */
+}
+
+.user-management-controls {
+    display: flex;
+    justify-content: flex-start; /* Align buttons to the start */
+    align-items: center; /* Vertically align items */
+    margin-bottom: 15px;
+    padding: 10px;
+    border-bottom: 1px solid #444; /* Separator */
+}
+
+.user-management-controls button {
+    margin-right: 10px; /* Space between buttons */
+    padding: 8px 12px;
+    /* Use existing button styles or add specific ones */
+}
+
+.import-status-message {
+    font-style: italic;
+    color: #aaa; /* Adjust color as needed */
+}
+
+/* --- Utility Classes --- */
+.hidden {
+    display: none !important;
 }
