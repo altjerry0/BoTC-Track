@@ -16,7 +16,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabContents = document.querySelectorAll('.tab-content');
 
     // Content Area References
-    const sessionResultsDiv = document.getElementById('sessionResults');
+    const sessionResultsDiv = document.getElementById('sessionResults'); // This is now just a container for loadingIndicator and sessionList
+    const sessionListDiv = document.getElementById('sessionList'); // Specific div for session cards
+    const loadingIndicator = document.getElementById('loadingIndicator');
     const knownPlayersDiv = document.getElementById('knownPlayers');
 
     // State
@@ -60,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {function(Set<string>)} callback - Receives a Set of online player IDs.
      */
     function fetchOnlinePlayerIds(callback) {
-        console.log("[Debug Flow] Fetching online player IDs...");
         chrome.runtime.sendMessage({ action: "fetchSessions" }, (response) => {
             const onlineIds = new Set();
             if (response && response.sessions && Array.isArray(response.sessions)) {
@@ -73,19 +74,73 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                 });
-                console.log(`[Debug Flow] Found ${onlineIds.size} unique online player IDs.`);
             } else {
-                console.warn("[Debug Flow] No sessions found or invalid format when fetching online IDs.", response);
+                console.warn("No sessions found or invalid format when fetching online IDs.", response);
             }
             callback(onlineIds);
         });
     }
 
     /**
+     * Updates the list of online favorite players in the UI.
+     * @param {Object} playerData - The complete player data object.
+     * @param {Map<string, string>} onlinePlayersMap - Map of online player IDs to their session names.
+     */
+    function updateOnlineFavoritesList(playerData, onlinePlayersMap) {
+        const favoritesListDiv = document.getElementById('onlineFavoritesList');
+        const favoritesCountSpan = document.getElementById('onlineFavoritesCount');
+
+        if (!favoritesListDiv || !favoritesCountSpan) {
+            console.warn('onlineFavoritesList DIV or onlineFavoritesCount SPAN not found in popup.html.');
+            return;
+        }
+
+        favoritesListDiv.innerHTML = ''; // Clear previous list
+        favoritesCountSpan.textContent = '0'; // Reset count
+
+        if (!playerData || Object.keys(playerData).length === 0) {
+            favoritesListDiv.textContent = 'No player data available.';
+            return;
+        }
+
+        const onlineFavorites = [];
+        for (const playerId in playerData) {
+            if (playerData[playerId].isFavorite && onlinePlayersMap.has(playerId)) {
+                onlineFavorites.push({
+                    ...playerData[playerId],
+                    id: playerId, // Ensure player ID is part of the object
+                    sessionName: onlinePlayersMap.get(playerId) // Corrected to sessionName for clarity from onlinePlayersMap
+                });
+            }
+        }
+
+        favoritesCountSpan.textContent = onlineFavorites.length.toString();
+
+        if (onlineFavorites.length === 0) {
+            favoritesListDiv.textContent = 'No favorite players are currently online in fetched sessions.';
+            return;
+        }
+
+        const ul = document.createElement('ul');
+        ul.classList.add('player-list'); // Add a class for potential styling
+        onlineFavorites.forEach(player => {
+            const li = document.createElement('li');
+            li.classList.add('player-item'); // Add a class for potential styling
+            li.innerHTML = `
+                <span class="player-name">${player.name}</span> 
+                <span class="player-rating">(Rating: ${player.score || 'N/A'})</span> - 
+                <span class="player-session">Online in: ${player.sessionName}</span>
+            `;
+            // Add more details or styling as needed, e.g., link to session or player notes
+            ul.appendChild(li);
+        });
+        favoritesListDiv.appendChild(ul);
+    }
+
+    /**
      * Refreshes the content of the User Management tab.
      */
     function refreshUserManagementTab() {
-        console.log("[Refresh UI] Refreshing User Management Tab");
         if (!knownPlayersDiv) {
             console.error('User list container not found for refresh.');
             return;
@@ -125,25 +180,46 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     fetchButton.addEventListener('click', () => {
-        sessionResultsDiv.innerHTML = '<p>Fetching sessions...</p>'; // Show loading message
-        // Pass the current filter state and required functions to the fetch function
+        if (sessionListDiv) {
+            sessionListDiv.innerHTML = '<p class="loading-message">Fetching sessions...</p>';
+        }
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        if (sessionListDiv) sessionListDiv.style.display = 'none'; // Hide list while loading
+
         fetchAndDisplaySessions(
-            loadPlayerData, // Pass function
-            addPlayer,      // Pass function
-            createUsernameHistoryModal, // Pass function
-            sessionResultsDiv,
+            loadPlayerData, 
+            addPlayer,      
+            createUsernameHistoryModal, 
+            updateOnlineFavoritesList, 
+            sessionListDiv, // Pass sessionListDiv as the target for session cards
             { officialOnly: showOfficialOnly }, 
-            (sessions) => {
-            latestSessionData = sessions; // Store updated session data
-            lastFetchedSessions = sessions; // Store fetched sessions
-        });
+            (sessions, finalPlayerData) => { // Modified callback to receive final data
+                latestSessionData = sessions; 
+                lastFetchedSessions = sessions; 
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                if (sessionListDiv) sessionListDiv.style.display = 'block'; // Show list again
+                // updateOnlineFavoritesList is already called within checkHistoryAndRender
+            }
+        );
     });
 
     officialOnlyCheckbox.addEventListener('change', () => {
         showOfficialOnly = officialOnlyCheckbox.checked;
-        // Re-render the stored sessions with the new filter state
+        if (sessionListDiv) {
+            sessionListDiv.innerHTML = '<p class="loading-message">Applying filter...</p>';
+            sessionListDiv.style.display = 'block'; // Ensure it's visible if previously hidden
+        }
+        if (loadingIndicator) loadingIndicator.style.display = 'none'; // Hide if it was somehow visible
+        
         loadPlayerData(playerData => {
-            renderSessions(lastFetchedSessions, playerData, sessionResultsDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal); // Pass addPlayer/createHistory again if needed by render logic
+            // Directly call renderSessions from sessionManager.js (assuming it's globally available or imported)
+            // This assumes renderSessions is exposed on the window object or properly imported if using modules.
+            if (window.renderSessions) {
+                window.renderSessions(lastFetchedSessions, playerData, sessionListDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal);
+            } else {
+                console.error('renderSessions function not found. Cannot re-render with filter.');
+                if (sessionListDiv) sessionListDiv.innerHTML = '<p class="error-message">Error applying filter.</p>';
+            }
         });
     });
 
@@ -197,7 +273,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Assume new players are not favorites by default
                 window.addPlayer(id, name, score, notes, false, (success, message) => {
                     if (success) {
-                        console.log(`Player ${id} added/updated via manual button.`);
                         refreshUserManagementTab(); // Refresh the list
                     } else {
                         alert(`Failed to add/update player: ${message}`);
@@ -291,9 +366,10 @@ document.addEventListener('DOMContentLoaded', function() {
         loadPlayerData, // Pass function
         addPlayer,      // Pass function
         createUsernameHistoryModal, // Pass function
-        sessionResultsDiv,
+        updateOnlineFavoritesList, // Pass the new function
+        sessionListDiv, // Pass sessionListDiv as the target for session cards
         { officialOnly: showOfficialOnly }, 
-        (sessions) => {
+        (sessions, finalPlayerData) => {
         latestSessionData = sessions; // Store initially fetched sessions
         lastFetchedSessions = sessions; // Store initially fetched sessions
         // Load initial players for the hidden management tab

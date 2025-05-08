@@ -1,4 +1,4 @@
-**Current Version (local):** `1.0.5` | **Chrome Web Store Version:** `1.0.1`
+**Current Version (local):** `1.0.5` | **Chrome Web Store Version:** `1.0.5`
 ***
 
 # BotC Player Tracker Chrome Extension
@@ -56,6 +56,9 @@ The easiest way to install the BotC Player Tracker is by using the latest releas
 - **Game Info**: View game edition information (official/custom scripts)
 - **Storyteller Highlights**: Easily identify game storytellers
 - **Import/Export**: Save and load player data via CSV files.
+- **Online Favorites Display**: Lists favorite players who are currently active in any of the fetched game sessions, along with a count. (Recently fixed and improved)
+- **Improved Session Tracking**: Enhanced session tracking to use session names as unique identifiers and centralized history updates.
+- **General Bug Fixes**: Version 1.0.5 includes numerous fixes to improve stability, user experience, and data accuracy.
 
 ## Screenshots
 
@@ -174,4 +177,20 @@ This project uses GitHub Actions to automate the creation of release ZIP files.
     git tag vX.Y.Z
     git push origin vX.Y.Z
     ```
+session-tracking
+4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store.
+
+### Recent Fixes & Improvements
+
+*   **Resolved `updateOnlineFavoritesList` Error**: Fixed a `ReferenceError` related to updating the display of online favorite players. The feature now correctly shows a list and count of favorited players active in fetched sessions within the 'Sessions' tab.
+*   **Session Tracking Logic**: Refined session tracking to use session names as unique identifiers and centralized history updates in `checkHistoryAndRender`.
+*   **Background `userId` Processing**: Enhanced `background.js` to update `lastSeenTimestamp`, `sessionHistory`, and `uniqueSessionCount` for known players identified via WebSocket messages, and to save these changes to storage.
+*   **No Message Handler for `fetchSessions`**: Resolved an error where the popup could not receive session data due to a missing message handler in `background.js`. The handler now correctly fetches data and uses `sendResponse` asynchronously.
+*   **Invalid OAuth2 Client ID in `getAuthToken`**: Modified `background.js` to prevent errors by removing a direct call to `chrome.identity.getAuthToken` when `oauth2` client details are not in `manifest.json`, relying instead on passively captured tokens.
+*   **Online Favorites List**: You can now easily see which of your favorite players are currently online and in what session, right from the 'Active Games' tab.
+*   **Session Tracking Reliability**: Fixed issues with `uniqueSessionCount` and `sessionHistory` to ensure they are accurately tracked and persist correctly across browser sessions.
+*   **UI & DOM Stability**: Resolved several bugs related to UI elements not being found or being inadvertently cleared, particularly around the session results and online favorites display.
+*   **Data Initialization**: Corrected errors in player data initialization, such as the `isFavorite` status and session history fields, preventing unexpected behavior when adding new players or processing existing ones.
+*   **Reduced Console Noise**: Removed many debug messages for a cleaner console.
+=======
 4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store or Local Installation.
