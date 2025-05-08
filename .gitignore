@@ -1,3 +1,4 @@
 botc-extension/samplesessions.json
 botc-extension/_metadata
 /.windsurf
+botc-extension/src/firebase-config.js
