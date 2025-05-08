@@ -177,6 +177,7 @@ This project uses GitHub Actions to automate the creation of release ZIP files.
     git tag vX.Y.Z
     git push origin vX.Y.Z
     ```
+session-tracking
 4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store.
 
 ### Recent Fixes & Improvements
@@ -191,3 +192,5 @@ This project uses GitHub Actions to automate the creation of release ZIP files.
 *   **UI & DOM Stability**: Resolved several bugs related to UI elements not being found or being inadvertently cleared, particularly around the session results and online favorites display.
 *   **Data Initialization**: Corrected errors in player data initialization, such as the `isFavorite` status and session history fields, preventing unexpected behavior when adding new players or processing existing ones.
 *   **Reduced Console Noise**: Removed many debug messages for a cleaner console.
+=======
+4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store or Local Installation.
