@@ -1,4 +1,4 @@
-**Current Version (local):** `1.0.5` | **Chrome Web Store Version:** `1.0.5`
+**Current Version (local):** `1.0.6` | **Chrome Web Store Version:** `1.0.6`
 ***
 
 # BotC Player Tracker Chrome Extension
@@ -58,7 +58,7 @@ The easiest way to install the BotC Player Tracker is by using the latest releas
 - **Import/Export**: Save and load player data via CSV files.
 - **Online Favorites Display**: Lists favorite players who are currently active in any of the fetched game sessions, along with a count. (Recently fixed and improved)
 - **Improved Session Tracking**: Enhanced session tracking to use session names as unique identifiers and centralized history updates.
-- **General Bug Fixes**: Version 1.0.5 includes numerous fixes to improve stability, user experience, and data accuracy.
+- **General Bug Fixes**: Version 1.0.6 includes numerous fixes to improve stability, user experience, and data accuracy.
 
 ## Screenshots
 
@@ -192,5 +192,3 @@ session-tracking
 *   **UI & DOM Stability**: Resolved several bugs related to UI elements not being found or being inadvertently cleared, particularly around the session results and online favorites display.
 *   **Data Initialization**: Corrected errors in player data initialization, such as the `isFavorite` status and session history fields, preventing unexpected behavior when adding new players or processing existing ones.
 *   **Reduced Console Noise**: Removed many debug messages for a cleaner console.
-=======
-4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store or Local Installation.
