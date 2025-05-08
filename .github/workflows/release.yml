@@ -29,7 +29,7 @@ jobs:
               found_section = 1;
               next;
             }
-            found_section && $0 ~ /^## \\[/ {
+            found_section && $0 ~ /^## / { # Simplified regex to find start of next section
               exit;
             }
             found_section { print; }
