@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const importPlayersButton = document.getElementById('import-players-button');
     const importFileInput = document.getElementById('import-file-input');
     const importStatusDiv = document.getElementById('import-status');
+    const addPlayerButton = document.getElementById('add-player-button'); // Added for completeness
+    const clearAllPlayerDataButton = document.getElementById('clear-all-player-data-button'); // New button
+
+    // Dark Mode Toggle (moved from modal)
+    const darkModeToggle = document.getElementById('darkModeToggle');
 
     // Tab References
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -26,6 +31,49 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastFetchedSessions = []; // Store the last fetched sessions
     let showOfficialOnly = false; // Store the filter state
     let searchTimeout = null;
+
+    // --- Dark Mode Functionality ---
+    function setDarkMode(isDark) {
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+        // Save preference
+        const themeToSave = isDark ? 'dark' : 'light';
+        chrome.storage.local.set({ theme: themeToSave }, function() {
+            if (chrome.runtime.lastError) {
+                console.error('Error saving theme preference:', chrome.runtime.lastError);
+            }
+        });
+    }
+
+    // Load theme preference
+    chrome.storage.local.get(['theme'], function(result) {
+        if (chrome.runtime.lastError) {
+            console.error('Error loading theme preference:', chrome.runtime.lastError);
+            setDarkMode(false); // Default to light mode on error
+            if (darkModeToggle) darkModeToggle.checked = false;
+            return;
+        }
+        if (result.theme === 'dark') {
+            setDarkMode(true);
+            if (darkModeToggle) darkModeToggle.checked = true;
+        } else {
+            setDarkMode(false); // Default to light mode or if no preference found
+            if (darkModeToggle) darkModeToggle.checked = false;
+        }
+    });
+
+    // Dark Mode Toggle Logic (no longer needs to be conditional on settings modal elements)
+    if (darkModeToggle && typeof darkModeToggle.addEventListener === 'function') {
+        darkModeToggle.addEventListener('change', function() {
+            setDarkMode(this.checked);
+        });
+    } else {
+        console.error('darkModeToggle is NOT valid or addEventListener is missing after UI change. This should not happen.');
+        // Fallback or further error logging if needed, but the element should exist directly in the header now.
+    }
 
     // Function to show a specific tab
     function showTab(tabId) {
@@ -243,7 +291,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add Player Manually Button (Handles both Add and Update via window.addPlayer)
-    const addPlayerButton = document.getElementById('add-player-button');
     if (addPlayerButton) {
         addPlayerButton.addEventListener('click', () => {
             const playerId = prompt("Enter Player ID (required):");
@@ -361,6 +408,47 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('Import file input or status div not found.');
     }
 
+    if (clearAllPlayerDataButton) {
+        clearAllPlayerDataButton.addEventListener('click', function() {
+            if (confirm("Are you sure you want to clear ALL player data? This action cannot be undone and is primarily for testing.")) {
+                // Save an empty object to the 'playerData' key
+                chrome.storage.local.set({ playerData: {} }, function() {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error clearing player data:', chrome.runtime.lastError);
+                        alert('Error clearing player data. Please try again.');
+                    } else {
+                        console.log('All player data cleared.');
+                        alert('All player data has been cleared.');
+                        
+                        // Update the local cache in userManager.js as well if it's used directly
+                        // This assumes allPlayerData from userManager might be exposed or accessible
+                        if (typeof window.allPlayerData !== 'undefined') {
+                             window.allPlayerData = {}; 
+                        } else if (typeof allPlayerData !== 'undefined') { // if popup.js has its own copy
+                            allPlayerData = {};
+                        }
+
+                        // Refresh the display in the User Management tab
+                        if (typeof refreshUserManagementTab === 'function') {
+                            refreshUserManagementTab();
+                        } else if (typeof displayKnownPlayers === 'function' && typeof window.createUsernameHistoryModal === 'function') {
+                            const knownPlayersDiv = document.getElementById('knownPlayers');
+                            if (knownPlayersDiv) {
+                                // Attempt to call displayKnownPlayers with necessary parameters
+                                // Note: refreshUserManagementTab itself might be the intended callback here
+                                displayKnownPlayers(knownPlayersDiv, '', {}, null, window.createUsernameHistoryModal, refreshUserManagementTab || displayKnownPlayers); 
+                            }
+                        } else {
+                            const knownPlayersDiv = document.getElementById('knownPlayers');
+                            if(knownPlayersDiv) knownPlayersDiv.innerHTML = '<p>No players found. Please switch tabs or reload to refresh.</p>';
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    // Initial setup
     // Initial fetch on load, respecting checkbox state (which is initially false)
     fetchAndDisplaySessions(
         loadPlayerData, // Pass function
@@ -380,6 +468,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Show the default tab (sessions)
     showTab('sessions'); 
+
+    // Load initial player data for known users tab (if it's the default or becomes active)
+    // This might be redundant if showTab handles it, but good for initial explicit load.
+    if (document.getElementById('userManagement').classList.contains('active')) {
+        refreshUserManagementTab();
+    }
 
     // --- Event Listener for Open in Tab --- 
     const openInTabBtn = document.getElementById('open-in-tab-btn');

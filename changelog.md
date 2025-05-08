@@ -3,13 +3,16 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-08.
 -->
 
 # BotC Player Tracker Extension - Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ---
+
+## [v1.0.7] - 2025-05-08
+
+### Added
+- **Display "Last Seen Time"**: Shows a human-readable "time ago" (e.g., "5 minutes ago", "2 days ago") for offline players in the "Manage Users" tab, utilizing the `lastSeenTimestamp` player data property. This enhances visibility into player recent activity.
+- **Manual Dark Mode Toggle**: Implemented a toggle switch in the popup header to manually enable/disable dark mode. This replaces reliance on system settings for dark mode preference. (Note: Further styling refinements for dark mode are ongoing).
+
+### Fixed
+- **CSV Import/Export Reliability**: Significantly improved the reliability of CSV data import. Implemented a robust CSV parsing function (`parseCsvRow`) to correctly handle complex data fields, particularly `sessionHistory` and `usernameHistory` (which are stored as JSON strings), preventing data corruption and parsing errors previously encountered.
 
 ## [v1.0.6] - 2025-05-08
 

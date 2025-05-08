@@ -33,7 +33,14 @@
     <div id="content">
         <div class="header-controls">
             <h1>BotC Lobby and Player Tracker</h1>
-            <button id="open-in-tab-btn" title="Open full view in a new tab">↗️ Open in Tab</button>
+            <div>
+                <button id="open-in-tab-btn" title="Open full view in a new tab">↗️ Open in Tab</button>
+                <!-- Dark Mode Toggle directly in header -->
+                <label class="switch" title="Toggle Dark Mode" style="margin-left: 10px;"> <!-- Added some margin for spacing -->
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
         </div>
 
         <!-- Tab Navigation -->
@@ -81,6 +88,7 @@
                     <button id="import-players-button">Import Players (CSV)</button>
                     <input type="file" id="import-file-input" accept=".csv" style="display: none;" />
                     <div id="import-status" class="import-status-message" style="display: none; margin-left: 10px;"></div> <!-- For import feedback -->
+                    <button id="clear-all-player-data-button" style="background-color: #dc3545; color: white; margin-top: 10px;">Clear All Player Data</button> 
                 </div>
                 <div class="search-container">
                     <h2>Search Known Players</h2>
@@ -92,6 +100,7 @@
 
         </div> 
     </div>
+
     <script src="userManager.js"></script>
     <script src="sessionManager.js"></script>
     <script src="popup.js"></script>

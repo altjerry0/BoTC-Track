@@ -42,6 +42,51 @@ function formatTimestamp(timestamp) {
 }
 
 /**
+ * Formats a timestamp into a human-readable 'time ago' string.
+ * e.g., "5 minutes ago", "2 hours ago", "3 days ago".
+ * @param {number} timestamp - The Unix timestamp in milliseconds.
+ * @returns {string} A human-readable string representing the time since the timestamp, or "Not seen yet" if timestamp is invalid.
+ */
+function formatTimeSince(timestamp) {
+    if (!timestamp || isNaN(timestamp) || timestamp <= 0) {
+        return "Not seen yet";
+    }
+
+    const now = Date.now();
+    const seconds = Math.round((now - timestamp) / 1000);
+
+    if (seconds < 0) { // Timestamp is in the future
+        return "In the future"; // Or handle as an error/default
+    }
+    if (seconds < 60) {
+        return seconds + " sec ago";
+    }
+
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) {
+        return minutes + (minutes === 1 ? " min ago" : " mins ago");
+    }
+
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) {
+        return hours + (hours === 1 ? " hour ago" : " hours ago");
+    }
+
+    const days = Math.round(hours / 24);
+    if (days < 30) {
+        return days + (days === 1 ? " day ago" : " days ago");
+    }
+
+    const months = Math.round(days / 30);
+    if (months < 12) {
+        return months + (months === 1 ? " month ago" : " months ago");
+    }
+
+    const years = Math.round(months / 12);
+    return years + (years === 1 ? " year ago" : " years ago");
+}
+
+/**
  * Update username history for a player
  * @param {string} id - Player ID
  * @param {string} username - Current username
@@ -356,6 +401,13 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
                 sessionNameSpan.textContent = ` (in: ${sessionName})`;
                 infoContainer.appendChild(sessionNameSpan);
             }
+        } else if (player.lastSeenTimestamp) { // Player is offline, show last seen time
+            const lastSeenText = formatTimeSince(player.lastSeenTimestamp);
+            const lastSeenElement = document.createElement('small');
+            lastSeenElement.textContent = ` (Last seen: ${lastSeenText})`;
+            lastSeenElement.style.color = 'var(--subtle-text-color)';
+            lastSeenElement.style.fontStyle = 'italic';
+            infoContainer.appendChild(lastSeenElement);
         }
 
         infoContainer.appendChild(document.createElement('br')); // Line break
@@ -675,7 +727,7 @@ function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerDat
             callback(true, updatedData); // Update occurred
         });
     } else {
-        callback(false, currentPlayerData); // No update occurred
+        callback(false, currentPlayerData);
     }
 }
 
@@ -798,6 +850,40 @@ function escapeCsvValue(value) {
 }
 
 /**
+ * Helper function to parse a single CSV row, handling quoted fields and escaped quotes.
+ * @param {string} rowString The string for a single CSV row.
+ * @returns {string[]} An array of strings, representing the values in the row.
+ */
+function parseCsvRow(rowString) {
+    const values = [];
+    let currentVal = '';
+    let inQuotes = false;
+    for (let i = 0; i < rowString.length; i++) {
+        const char = rowString[i];
+
+        if (char === '"') {
+            if (inQuotes && i + 1 < rowString.length && rowString[i+1] === '"') {
+                // Escaped double quote within a quoted field
+                currentVal += '"';
+                i++; // Skip the second quote of the pair
+            } else {
+                // Start or end of a quoted field
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            // Comma separator, and not inside a quoted field
+            values.push(currentVal);
+            currentVal = '';
+        } else {
+            // Regular character
+            currentVal += char;
+        }
+    }
+    values.push(currentVal); // Add the last value
+    return values;
+}
+
+/**
  * Exports current player data to a CSV file.
  */
 function exportPlayerDataCSV() {
@@ -807,7 +893,11 @@ function exportPlayerDataCSV() {
             return;
         }
 
-        const headers = ['id', 'name', 'score', 'notes', 'isFavorite']; // Changed 'rating' to 'score'
+        const headers = [
+            'id', 'name', 'score', 'notes', 'isFavorite', 
+            'lastSeenSessionId', 'lastSeenTimestamp', 'sessionHistory', 
+            'uniqueSessionCount', 'usernameHistory'
+        ];
         const csvRows = [headers.join(',')]; // Header row
 
         // Convert player data object to rows
@@ -816,9 +906,14 @@ function exportPlayerDataCSV() {
             const row = [
                 escapeCsvValue(id),
                 escapeCsvValue(player.name || ''),
-                escapeCsvValue(player.score ?? ''), // Changed player.rating to player.score
+                escapeCsvValue(player.score ?? ''),
                 escapeCsvValue(player.notes || ''),
-                escapeCsvValue(player.isFavorite ? 'true' : 'false')
+                escapeCsvValue(player.isFavorite ? 'true' : 'false'),
+                escapeCsvValue(player.lastSeenSessionId || ''),
+                escapeCsvValue(player.lastSeenTimestamp || ''),
+                escapeCsvValue(JSON.stringify(player.sessionHistory || [])),
+                escapeCsvValue(player.uniqueSessionCount || 0),
+                escapeCsvValue(JSON.stringify(player.usernameHistory || []))
             ];
             csvRows.push(row.join(','));
         });
@@ -863,41 +958,41 @@ function importPlayerDataCSV(csvContent, callback, refreshDisplayFunc) {
         return;
     }
 
-    // Very basic CSV header parsing (assumes no escaped commas in header)
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const expectedHeaders = ['id', 'name', 'score', 'notes', 'isfavorite']; // Changed 'rating' to 'score'
-    
-    // Check if all expected headers are present (order doesn't strictly matter for lookup, but ID must be there)
-    if (!headers.includes('id') || !headers.includes('name')) {
-         callback(false, 'CSV must contain at least \'id\' and \'name\' columns.');
+    const headers = parseCsvRow(lines[0]).map(h => h.trim().toLowerCase());
+    const expectedBaseHeaders = ['id', 'name']; // Minimal required
+    const allExpectedHeaders = [
+        'id', 'name', 'score', 'notes', 'isfavorite', 
+        'lastseensessionid', 'lastseentimestamp', 'sessionhistory', 
+        'uniquesessioncount', 'usernamehistory'
+    ]; // Note: all lowercase for easier matching
+
+    if (!expectedBaseHeaders.every(h => headers.includes(h))) {
+         callback(false, `CSV must contain at least '${expectedBaseHeaders.join(', ')}' columns.`);
          return;
     }
     
     // Find the index of each column we care about
-    const idIndex = headers.indexOf('id');
-    const nameIndex = headers.indexOf('name');
-    const scoreIndex = headers.indexOf('score'); // Changed ratingIndex to scoreIndex
-    const notesIndex = headers.indexOf('notes');
-    const favoriteIndex = headers.indexOf('isfavorite'); // Note the lowercase 'isfavorite'
+    const colIndices = {};
+    allExpectedHeaders.forEach(header => {
+        colIndices[header.replace(/\s+/g, '')] = headers.indexOf(header);
+    });
 
     loadPlayerData(existingPlayerData => {
-        let updatedPlayerData = { ...existingPlayerData }; // Start with existing data
+        let updatedPlayerData = { ...existingPlayerData }; 
         let importedCount = 0;
-        let updatedCount = 0; // Keep this, although we won't update, for potential future use?
-        let skippedCount = 0; // Counter for duplicates
+        let skippedCount = 0; 
         let errorCount = 0;
         const errors = [];
 
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i];
-            if (!line.trim()) continue; // Skip empty lines
+            if (!line.trim()) continue; 
 
-            // Basic CSV value splitting (doesn't handle escaped quotes/commas within fields perfectly)
-            // For robust parsing, a library would be better, but this handles simple cases.
-            const values = line.split(','); // WARNING: This is naive CSV parsing
+            // Parse the CSV row
+            const values = parseCsvRow(line); 
 
-            const id = values[idIndex]?.trim();
-            const name = values[nameIndex]?.trim();
+            const id = colIndices.id !== -1 && values[colIndices.id] ? values[colIndices.id].trim() : null;
+            const name = colIndices.name !== -1 && values[colIndices.name] ? values[colIndices.name].trim() : null;
 
             if (!id || !name) {
                 console.warn(`[Import CSV] Skipping row ${i + 1}: Missing ID or Name.`);
@@ -906,51 +1001,95 @@ function importPlayerDataCSV(csvContent, callback, refreshDisplayFunc) {
                 continue;
             }
 
-            // Check if player already exists
             if (updatedPlayerData[id]) {
-                // Player exists - SKIP instead of updating
                 console.log(`[Import CSV] Skipping duplicate player ID ${id} ('${name}'). Data already exists.`);
                 errors.push(`Row ${i + 1}: Skipped duplicate ID ${id} ('${name}')`);
-                skippedCount++; // Increment skipped counter
-                continue; // Move to the next line
+                skippedCount++;
+                continue; 
             }
 
-            // --- Player does not exist - Add New --- 
             console.log(`[Import CSV] Adding new player ID ${id} ('${name}')`);
 
-            // Get optional values, providing defaults if missing or column doesn't exist
-            const score = (scoreIndex !== -1 ? values[scoreIndex]?.trim() : '') || ''; // Changed rating to score
-            const notes = (notesIndex !== -1 ? values[notesIndex]?.trim() : '') || '';   // Default to empty string
-            const isFavoriteStr = favoriteIndex !== -1 ? values[favoriteIndex]?.trim().toLowerCase() : undefined;
-            const isFavorite = isFavoriteStr === 'true'; // Default to false if column missing or not 'true'
-            
-            // Add using a structure similar to addPlayerManually
-            updatedPlayerData[id] = {
-                id: id,
-                name: name,
-                notes: notes,
-                score: score, // Changed rating to score
-                isFavorite: isFavorite,
-                // Initialize history and session tracking for the new player
-                usernameHistory: [{ username: name, timestamp: Date.now() }],
-                sessionHistory: [], // Initialize sessionHistory
-                uniqueSessionCount: 0, // Initialize uniqueSessionCount
-                lastSeenSessionId: null,
-                lastSeenTimestamp: null
+            const score = colIndices.score !== -1 && values[colIndices.score] ? values[colIndices.score].trim() : '';
+            const notes = colIndices.notes !== -1 && values[colIndices.notes] ? values[colIndices.notes].trim() : '';
+            const isFavoriteStr = colIndices.isfavorite !== -1 && values[colIndices.isfavorite] ? values[colIndices.isfavorite].trim().toLowerCase() : 'false';
+            const isFavorite = isFavoriteStr === 'true';
+
+            const lastSeenSessionId = colIndices.lastseensessionid !== -1 && values[colIndices.lastseensessionid] ? values[colIndices.lastseensessionid].trim() : null;
+            const lastSeenTimestampStr = colIndices.lastseentimestamp !== -1 && values[colIndices.lastseentimestamp] ? values[colIndices.lastseentimestamp].trim() : null;
+            const uniqueSessionCountStr = colIndices.uniquesessioncount !== -1 && values[colIndices.uniquesessioncount] ? values[colIndices.uniquesessioncount].trim() : '0';
+
+            const newPlayer = {
+                id,
+                name,
+                score: score ? parseInt(score, 10) : null,
+                notes,
+                isFavorite,
+                lastSeenSessionId,
+                lastSeenTimestamp: lastSeenTimestampStr ? parseInt(lastSeenTimestampStr, 10) : null,
+                sessionHistory: [], // Default, to be parsed
+                uniqueSessionCount: uniqueSessionCountStr ? parseInt(uniqueSessionCountStr, 10) : 0,
+                usernameHistory: [{ timestamp: Date.now(), name: name }] // Default, to be parsed
             };
+
+            // Parse sessionHistory
+            if (colIndices.sessionhistory !== -1 && values[colIndices.sessionhistory]) {
+                let sessionHistoryStr = values[colIndices.sessionhistory].trim();
+                if (sessionHistoryStr.startsWith('"') && sessionHistoryStr.endsWith('"')) {
+                    sessionHistoryStr = sessionHistoryStr.substring(1, sessionHistoryStr.length - 1).replace(/""/g, '"');
+                }
+                try {
+                    newPlayer.sessionHistory = JSON.parse(sessionHistoryStr);
+                } catch (e) {
+                    console.warn(`[Import CSV] Row ${i + 1}, ID ${id}: Could not parse sessionHistory '${values[colIndices.sessionhistory]}'. Defaulting to empty. Error: ${e.message}`);
+                    errors.push(`Row ${i + 1}, ID ${id}: Error parsing sessionHistory: ${e.message}`);
+                    // newPlayer.sessionHistory remains [] as per default
+                    errorCount++;
+                }
+            } else {
+                 newPlayer.sessionHistory = []; // Ensure it's an array if column missing or empty
+            }
+
+            // Parse usernameHistory
+            if (colIndices.usernamehistory !== -1 && values[colIndices.usernamehistory]) {
+                let usernameHistoryStr = values[colIndices.usernamehistory].trim();
+                if (usernameHistoryStr.startsWith('"') && usernameHistoryStr.endsWith('"')) {
+                    usernameHistoryStr = usernameHistoryStr.substring(1, usernameHistoryStr.length - 1).replace(/""/g, '"');
+                }
+                try {
+                    const parsedHistory = JSON.parse(usernameHistoryStr);
+                    if (Array.isArray(parsedHistory) && parsedHistory.length > 0) {
+                        newPlayer.usernameHistory = parsedHistory;
+                    } else {
+                        // If parsed but empty or not an array, use default
+                        console.warn(`[Import CSV] Row ${i + 1}, ID ${id}: usernameHistory was empty or invalid after parsing. Defaulting.`);
+                         newPlayer.usernameHistory = [{ timestamp: Date.now(), name: name }];
+                    }
+                } catch (e) {
+                    console.warn(`[Import CSV] Row ${i + 1}, ID ${id}: Could not parse usernameHistory '${values[colIndices.usernamehistory]}'. Defaulting. Error: ${e.message}`);
+                    errors.push(`Row ${i + 1}, ID ${id}: Error parsing usernameHistory: ${e.message}`);
+                    // newPlayer.usernameHistory remains default as set above
+                    errorCount++;
+                }
+            } else {
+                // Ensure it's a default array if column missing or empty
+                newPlayer.usernameHistory = [{ timestamp: Date.now(), name: name }];
+            }
+
+
+            updatedPlayerData[id] = newPlayer;
             importedCount++;
         }
 
-        // Save the potentially modified data (only additions now)
         savePlayerData(updatedPlayerData, () => {
             let message = `Import complete. Added: ${importedCount}, Skipped (Duplicates): ${skippedCount}.`;
             if (errorCount > 0) {
-                 message += ` Other Errors: ${errorCount}. First few errors: ${errors.filter(e => !e.includes('Skipped duplicate')).slice(0,3).join('; ')}`; // Show non-skip errors
+                 message += ` Other Errors: ${errorCount}. First few errors: ${errors.filter(e => !e.includes('Skipped duplicate')).slice(0,3).join('; ')}`;
             }
             console.log(`[Import CSV] ${message}`);
             callback(true, message);
             if (refreshDisplayFunc) {
-                refreshDisplayFunc(); // Refresh the UI
+                refreshDisplayFunc();
             }
         });
     });

@@ -1,4 +1,4 @@
-**Current Version (local):** `1.0.6` | **Chrome Web Store Version:** `1.0.1` Pending `1.0.4`
+**Current Version (local):** `1.0.7` | **Chrome Web Store Version:** `1.0.1` Pending `1.0.4`
 ***
 
 # BotC Player Tracker Chrome Extension
@@ -59,6 +59,7 @@ The easiest way to install the BotC Player Tracker is by using the latest releas
 - **Online Favorites Display**: Lists favorite players who are currently active in any of the fetched game sessions, along with a count. (Recently fixed and improved)
 - **Improved Session Tracking**: Enhanced session tracking to use session names as unique identifiers and centralized history updates.
 - **General Bug Fixes**: Version 1.0.6 includes numerous fixes to improve stability, user experience, and data accuracy.
+- **Last Seen Time**: For offline players in the "Manage Users" tab, displays how long ago they were last active (e.g., "5 mins ago", "2 days ago").
 
 ## Screenshots
 
@@ -181,6 +182,11 @@ session-tracking
 4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store.
 
 ### Recent Fixes & Improvements
+
+#### v1.0.7
+*   **Display "Last Seen Time"**: Shows how long ago offline players were last active in the "Manage Users" tab.
+*   **Dark Mode Toggle**: Implemented a manual dark mode toggle in the popup header, replacing reliance on system settings. (Note: Styling improvements are ongoing).
+*   **Improved CSV Import/Export**: Enhanced CSV parsing logic to reliably handle complex data fields (like session and username history), resolving errors during import.
 
 *   **Resolved `updateOnlineFavoritesList` Error**: Fixed a `ReferenceError` related to updating the display of online favorite players. The feature now correctly shows a list and count of favorited players active in fetched sessions within the 'Sessions' tab.
 *   **Session Tracking Logic**: Refined session tracking to use session names as unique identifiers and centralized history updates in `checkHistoryAndRender`.

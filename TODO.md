@@ -4,7 +4,7 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 
 ## Features to Implement
 
-- [x] ~~Implement "Time Since Last Seen" for Players~~ (Completed in v1.0.4)
+- [x] ~~Implement "Time Since Last Seen" for Players~~ (Verified and enhanced in v1.0.7)
   - **Goal**: Display how recently a player was last encountered in a game session.
   - **Current State**: The player data model has a `lastSeenSessionId` field, which is currently not fully utilized to calculate and display this information (often `null`).
   - **Implementation Ideas**:
@@ -28,6 +28,7 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 - [ ] **Investigate Player Not Found**: Debug logs indicate instances where players are not found in player data during session history updates. This may require further investigation into player data management and synchronization, especially with WebSocket updates.
 - [ ] **Refine UI for Current Game Players (Post-MVP)**: Once WebSocket interception is stable and core logic is robust, revisit displaying players from the *current* live game in a dedicated UI section in the popup (feature was previously on 'current-game-sockets' branch and removed for MVP focus).
     - Consider how to differentiate these from players in fetched historical/recent sessions.
+- [ ] **Refine Dark Mode Styling**: Improve the visual appearance and consistency of dark mode across all extension components.
 
 ## Future Enhancements / Ideas
 
@@ -54,6 +55,8 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 - [x] ~~Console Output Cleanup: Remove excessive debug `console.log` statements.~~ (Completed in v1.0.5 for popup/manager scripts)
 - [ ] **Background Script Console Output Cleanup**: Review and remove any remaining unnecessary debug logs from `background.js`.
 - [ ] **Error Handling**: Enhance error handling and user feedback for API request failures or unexpected data formats beyond current console messages.
+- [x] ~~**Import/Export Errors**: Fix the errors being presented when exporting and importing.~~ (Resolved in v1.0.7 by implementing robust CSV parsing)
+  - [x] ~~Expand export to include more data.~~ (Completed in v1.0.6, all relevant fields included)
 
 ## Long Term / Wishlist
 
