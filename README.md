@@ -1,4 +1,4 @@
-**Current Version (local):** `1.0.5` | **Chrome Web Store Version:** `1.0.1`
+**Current Version (local):** `1.0.5` | **Chrome Web Store Version:** `1.0.5`
 ***
 
 # BotC Player Tracker Chrome Extension
@@ -57,6 +57,8 @@ The easiest way to install the BotC Player Tracker is by using the latest releas
 - **Storyteller Highlights**: Easily identify game storytellers
 - **Import/Export**: Save and load player data via CSV files.
 - **Online Favorites Display**: Lists favorite players who are currently active in any of the fetched game sessions, along with a count. (Recently fixed and improved)
+- **Improved Session Tracking**: Enhanced session tracking to use session names as unique identifiers and centralized history updates.
+- **General Bug Fixes**: Version 1.0.5 includes numerous fixes to improve stability, user experience, and data accuracy.
 
 ## Screenshots
 
@@ -184,3 +186,8 @@ This project uses GitHub Actions to automate the creation of release ZIP files.
 *   **Background `userId` Processing**: Enhanced `background.js` to update `lastSeenTimestamp`, `sessionHistory`, and `uniqueSessionCount` for known players identified via WebSocket messages, and to save these changes to storage.
 *   **No Message Handler for `fetchSessions`**: Resolved an error where the popup could not receive session data due to a missing message handler in `background.js`. The handler now correctly fetches data and uses `sendResponse` asynchronously.
 *   **Invalid OAuth2 Client ID in `getAuthToken`**: Modified `background.js` to prevent errors by removing a direct call to `chrome.identity.getAuthToken` when `oauth2` client details are not in `manifest.json`, relying instead on passively captured tokens.
+*   **Online Favorites List**: You can now easily see which of your favorite players are currently online and in what session, right from the 'Active Games' tab.
+*   **Session Tracking Reliability**: Fixed issues with `uniqueSessionCount` and `sessionHistory` to ensure they are accurately tracked and persist correctly across browser sessions.
+*   **UI & DOM Stability**: Resolved several bugs related to UI elements not being found or being inadvertently cleared, particularly around the session results and online favorites display.
+*   **Data Initialization**: Corrected errors in player data initialization, such as the `isFavorite` status and session history fields, preventing unexpected behavior when adding new players or processing existing ones.
+*   **Reduced Console Noise**: Removed many debug messages for a cleaner console.

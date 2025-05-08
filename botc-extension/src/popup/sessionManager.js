@@ -336,7 +336,6 @@ function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, 
     Promise.all(historyUpdatePromises)
         .then(() => {
             // Now render with the potentially updated player data
-            console.log('[Debug Flow] History promises resolved. Rendering sessions...');
             renderSessions(
                 sessions, 
                 updatedPlayerData, 
@@ -347,7 +346,6 @@ function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, 
             );
 
             // --- Update Online Favorites List ---
-            console.log('[Debug Flow] Preparing to update online favorites list...');
             // Construct the map of online players: { playerId: sessionName }
             const onlinePlayersMap = new Map();
             sessions.forEach(session => {
@@ -361,7 +359,6 @@ function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, 
             });
             
             // Call the update function
-            console.log('[Debug Flow] Called updateOnlineFavoritesList (after success).');
             if (updateOnlineFavoritesListFunc) {
                 updateOnlineFavoritesListFunc(updatedPlayerData, onlinePlayersMap);
             } else {
@@ -372,11 +369,9 @@ function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, 
         .catch(error => {
             console.error("Error processing player history updates:", error);
             // Fallback: Render with initial data if history processing fails
-            console.log('[Debug Flow] History promises rejected. Rendering fallback sessions...');
             renderSessions(sessions, initialPlayerData, resultDiv, options, addPlayerFunc, createUsernameHistoryModalFunc);
             
             // Maybe still try to update favorites with initial data?
-            console.log('[Debug Flow] Preparing to update online favorites list (in catch block)...');
             const onlinePlayersMap = new Map();
             sessions.forEach(session => {
                 if (session.usersAll && Array.isArray(session.usersAll)) {
@@ -387,7 +382,6 @@ function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, 
                     });
                 }
             });
-            console.log('[Debug Flow] Called updateOnlineFavoritesList (in catch block).');
             if (updateOnlineFavoritesListFunc) {
                 updateOnlineFavoritesListFunc(initialPlayerData, onlinePlayersMap); 
             } else {
@@ -428,7 +422,7 @@ function renderSessions(
     });
  
     if (filteredSessions.length === 0) {
-        console.log('[Render Debug] No sessions to display after filtering.');
+        console.log('No sessions to display after filtering.');
         resultDiv.innerHTML = '<p>No active sessions found matching the criteria.</p>';
         return;
     }
@@ -576,7 +570,7 @@ function fetchAndDisplaySessions(
     loadPlayerDataFunc, 
     addPlayerFunc, 
     createUsernameHistoryModalFunc,
-    updateOnlineFavoritesListFunc, // Added new parameter
+    updateOnlineFavoritesListFunc, 
     resultDiv,
     options = {},
     onCompleteCallback = null
@@ -584,14 +578,14 @@ function fetchAndDisplaySessions(
     chrome.runtime.sendMessage({ action: "fetchSessions" }, (response) => {
         if (response && response.error) {
             console.error("Error fetching sessions:", response.error);
-            resultDiv.innerHTML = `<p>Error fetching sessions: ${response.error}. Please check console and try again.</p>`;
-            if (onCompleteCallback) onCompleteCallback(null, response.error); 
+            resultDiv.innerHTML = `<p class='error-message'>Error fetching sessions: ${response.error}</p>`;
+            if (onCompleteCallback) onCompleteCallback(null, response.error); // Indicate error
             return;
         }
         if (!response || !response.sessions) {
             console.error("No sessions data received.");
-            resultDiv.innerHTML = `<p>No session data received. Backend might be unavailable.</p>`;
-            if (onCompleteCallback) onCompleteCallback(null, 'No session data');
+            resultDiv.innerHTML = "<p>No active games found, or the format was unexpected.</p>";
+            if (onCompleteCallback) onCompleteCallback([], {}); // No sessions, empty player data map
             return;
         }
 

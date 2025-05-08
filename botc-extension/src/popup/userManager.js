@@ -501,7 +501,7 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
  * @param {string} notes - Player notes
  * @param {Function} [updateUICallback] - Optional callback to execute after saving, receives updated player data
  */
-function addPlayer(id, name, score, notes, updateUICallback) {
+function addPlayer(id, name, score, notes, isFavorite, updateUICallback) {
     // Validate score input
     const parsedScore = parseInt(score, 10);
     const finalScore = !isNaN(parsedScore) && parsedScore >= -5 && parsedScore <= 5 ? parsedScore : null;
@@ -519,14 +519,25 @@ function addPlayer(id, name, score, notes, updateUICallback) {
         // Preserve or initialize username history
         let usernameHistory = (isUpdate && playerData[id].usernameHistory) ? [...playerData[id].usernameHistory] : [];
         // Preserve or initialize session history
-        let sessionHistory = (isUpdate && playerData[id].sessionHistory) ? { ...playerData[id].sessionHistory } : { lastSeenSessionId: null, uniqueSessionCount: 0 };
-        // Preserve or initialize favorite status
-        const isFavorite = (isUpdate && playerData[id].isFavorite) ? playerData[id].isFavorite : false;
+        let sessionHistoryArray = (isUpdate && Array.isArray(playerData[id].sessionHistory)) ? [...playerData[id].sessionHistory] : [];
+        let uniqueSessionCount = (isUpdate && typeof playerData[id].uniqueSessionCount === 'number') ? playerData[id].uniqueSessionCount : 0;
+        let lastSeenSessionId = (isUpdate && playerData[id].lastSeenSessionId) ? playerData[id].lastSeenSessionId : null;
+        let lastSeenTimestamp = (isUpdate && playerData[id].lastSeenTimestamp) ? playerData[id].lastSeenTimestamp : null;
+
+        // Determine the new favorite status
+        let newIsFavoriteValue;
+        if (isUpdate) {
+            // For updates, use the provided 'isFavorite' parameter if it's a boolean, otherwise keep the existing one.
+            newIsFavoriteValue = (typeof isFavorite === 'boolean') ? isFavorite : playerData[id].isFavorite;
+        } else {
+            // For new players, use the provided 'isFavorite' parameter if it's a boolean, otherwise default to false.
+            newIsFavoriteValue = (typeof isFavorite === 'boolean') ? isFavorite : false;
+        }
 
         // If updating, check if name changed and update history
         if (isUpdate && playerData[id].name !== name) {
             console.log(`Updating name for ${id}: "${playerData[id].name}" -> "${name}"`);
-            usernameHistory.unshift({ name: playerData[id].name, timestamp: Date.now() });
+            usernameHistory.unshift({ username: playerData[id].name, timestamp: Date.now() });
             // Limit history size if needed (e.g., keep last 10)
             if (usernameHistory.length > 10) {
                  usernameHistory = usernameHistory.slice(0, 10);
@@ -535,12 +546,16 @@ function addPlayer(id, name, score, notes, updateUICallback) {
 
         // Update or create player data
         playerData[id] = {
+            id: id,
             name: name,
             score: finalScore,
             notes: notes || (isUpdate ? playerData[id].notes : ''),
             usernameHistory: usernameHistory,
-            sessionHistory: sessionHistory,
-            isFavorite: isFavorite // Add/preserve favorite status
+            sessionHistory: sessionHistoryArray, 
+            uniqueSessionCount: uniqueSessionCount,
+            lastSeenSessionId: lastSeenSessionId,
+            lastSeenTimestamp: lastSeenTimestamp,
+            isFavorite: newIsFavoriteValue 
         };
 
         savePlayerData(playerData, () => {
@@ -607,15 +622,12 @@ function toggleUsernameHistory(playerId, container) {
  * @param {Function} callback - Callback function, receives (wasUpdated: boolean, updatedPlayerData: Object).
  */
 function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerData, callback) {
-    //console.log(`[Debug History Check - User: ${userId}] Entering updateUsernameHistoryIfNeeded. Session Username: ${sessionUsername}`);
     const player = currentPlayerData[userId];
     let updatedData = { ...currentPlayerData }; // Work on a copy
     let needsSave = false;
 
     // If player isn't known at all, we can't update history (should be added first)
     if (!player) {
-        //console.log(`[Debug History Check - User: ${userId}] Player not found in currentPlayerData. Skipping username history check.`);
-        // We didn't update, and the data remains the same as passed in
         callback(false, currentPlayerData); 
         return;
     }
@@ -623,7 +635,6 @@ function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerDat
     // Initialize history if it doesn't exist
     if (!player.usernameHistory) {
         player.usernameHistory = [];
-        //console.log(`[Debug History Check - User: ${userId}] Initialized usernameHistory array.`);
         needsSave = true; // Need to save if we initialize the array structure
     }
 
@@ -632,30 +643,25 @@ function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerDat
 
     // Check if the session username is different from the currently stored name
     if (sessionUsername && currentStoredName !== sessionUsername) {
-        //console.log(`[Debug History Check - User: ${userId}] Username mismatch detected. Stored: '${currentStoredName}', Session: '${sessionUsername}'.`);
         // Check if this session username is already the *latest* in history (avoids redundant entries)
         const latestHistoryEntry = history.length > 0 ? history[history.length - 1] : null;
         
         // Add the *previous* name to history only if it's not already the latest entry
         if (!latestHistoryEntry || latestHistoryEntry.username !== currentStoredName) {
-            //console.log(`[Debug History Check - User: ${userId}] Adding previous name '${currentStoredName}' to history.`);
             history.push({ username: currentStoredName, timestamp: Date.now() });
             // Trim history if it exceeds max length (e.g., 10 entries)
             if (history.length > 10) {
                  history.shift(); // Remove the oldest entry
-                 //console.log(`[Debug History Check - User: ${userId}] Trimmed username history.`);
             }
              needsSave = true;
         }
 
         // Update the player's current name to the new one from the session
         player.name = sessionUsername;
-        //console.log(`[Debug History Check - User: ${userId}] Updated player.name to '${sessionUsername}'.`);
         needsSave = true;
     } else {
         // If names match, ensure the current name is at least the first entry if history is empty
         if (history.length === 0 && currentStoredName) {
-            //console.log(`[Debug History Check - User: ${userId}] History empty, adding current name '${currentStoredName}' as first entry.`);
             history.push({ username: currentStoredName, timestamp: Date.now() });
             needsSave = true;
         }
@@ -663,17 +669,13 @@ function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerDat
 
     // If any changes occurred that require saving
     if (needsSave) {
-        //console.log(`[Debug History Check - User: ${userId}] Changes detected, preparing to save updated player data.`);
         updatedData[userId] = player; // Put the modified player back into the copied data
         // Save the entire updated player data object
         savePlayerData(updatedData, () => {
-            //console.log(`[Debug History Check - User: ${userId}] Successfully saved player data after username update.`);
-            callback(true, updatedData); // Indicate update occurred and pass the *saved* data
+            callback(true, updatedData); // Update occurred
         });
     } else {
-        // No changes needed saving
-        //console.log(`[Debug History Check - User: ${userId}] No username changes requiring save. Calling callback.`);
-        callback(false, currentPlayerData); // Indicate no update occurred, pass back original data reference
+        callback(false, currentPlayerData); // No update occurred
     }
 }
 
@@ -686,77 +688,72 @@ function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerDat
  * @param {Function} callback - Callback function, receives (wasUpdated: boolean, updatedPlayerData: Object).
  */
 function updateSessionHistoryIfNeeded(userId, currentSessionId, currentPlayerData, callback) {
-    console.log(`[DEBUG USHIF] START: userId='${userId}', currentSessionId='${currentSessionId}'`);
-    const player = currentPlayerData[userId];
-    let updatedData = { ...currentPlayerData }; // Work on a copy
-    let needsSave = false;
-
-    // If player isn't known, we can't track session history
-    if (!player) {
-        console.log(`[DEBUG USHIF] Player not found for userId='${userId}'. Skipping.`);
-        callback(false, currentPlayerData);
+    if (!userId || !currentSessionId) {
+        if (callback) callback(false, currentPlayerData); // No change
         return;
     }
 
-    console.log(`[DEBUG USHIF] Player '${userId}' found. Initial state: lastSeenSessionId='${player.lastSeenSessionId}', uniqueSessionCount=${player.uniqueSessionCount}`);
+    let player = currentPlayerData[userId];
+    if (!player) {
+        if (callback) callback(false, currentPlayerData); // No change, player not found
+        return;
+    }
+
+    let changed = false;
 
     // Initialize session tracking fields if they don't exist
+    if (!Array.isArray(player.sessionHistory)) {
+        player.sessionHistory = [];
+        changed = true; // Mark as changed if we initialize this
+    }
+    if (typeof player.uniqueSessionCount !== 'number') { // Also ensure uniqueSessionCount is a number
+        player.uniqueSessionCount = player.sessionHistory.length; // Or 0 if sessionHistory was also just init'd
+        changed = true; // Mark as changed
+    }
+    // Ensure lastSeenSessionId exists, though it will be updated shortly if different
     if (player.lastSeenSessionId === undefined) {
         player.lastSeenSessionId = null;
-        console.log(`[DEBUG USHIF] Initialized player.lastSeenSessionId to null for userId='${userId}'.`);
-        needsSave = true; // Need to save if we initialize
+        changed = true;
     }
-    if (player.uniqueSessionCount === undefined) {
-        player.uniqueSessionCount = 0;
-        console.log(`[DEBUG USHIF] Initialized player.uniqueSessionCount to 0 for userId='${userId}'.`);
-        needsSave = true; // Need to save if we initialize
+    // Ensure lastSeenTimestamp exists
+    if (player.lastSeenTimestamp === undefined) {
+        player.lastSeenTimestamp = null;
+        changed = true;
     }
 
-    // Check if this is a new session compared to the last recorded one
-    if (currentSessionId && player.lastSeenSessionId !== currentSessionId) {
-        console.log(`[DEBUG USHIF] New session detected for userId='${userId}'. Previous='${player.lastSeenSessionId}', Current='${currentSessionId}'.`);
+
+    // Add current session ID if it's not already in the history
+    if (!player.sessionHistory.includes(currentSessionId)) {
+        player.sessionHistory.push(currentSessionId);
+        changed = true;
+    }
+
+    // Update unique session count based on the length of the (now potentially updated) sessionHistory array
+    const newUniqueSessionCount = player.sessionHistory.length;
+    if (player.uniqueSessionCount !== newUniqueSessionCount) {
+        player.uniqueSessionCount = newUniqueSessionCount;
+        changed = true;
+    }
+
+    // Update lastSeenSessionId (could be the same as current if it's a repeat, or new)
+    if (player.lastSeenSessionId !== currentSessionId) {
         player.lastSeenSessionId = currentSessionId;
-        player.uniqueSessionCount += 1;
-        needsSave = true;
-        console.log(`[DEBUG USHIF] Updated userId='${userId}': lastSeenSessionId='${player.lastSeenSessionId}', uniqueSessionCount=${player.uniqueSessionCount}.`);
-    } else if (currentSessionId && player.lastSeenSessionId === currentSessionId) {
-        console.log(`[DEBUG USHIF] Same session ('${currentSessionId}') for userId='${userId}'. No change to count or lastSeenSessionId based on this check.`);
-         // If it's the same session or no current session ID, do nothing regarding count/last seen
-         // However, if the count is 0 and we have seen a session now, initialize count to 1
-         if(player.uniqueSessionCount === 0) { // No need to check currentSessionId again, it's implied if we are here and it's not null
-            console.log(`[DEBUG USHIF] First ever session detected for userId='${userId}' ('${currentSessionId}'). Setting count to 1.`);
-            player.uniqueSessionCount = 1;
-            // player.lastSeenSessionId is already currentSessionId, so no change needed here for that.
-            needsSave = true;
-            console.log(`[DEBUG USHIF] Updated userId='${userId}': uniqueSessionCount=${player.uniqueSessionCount} (lastSeenSessionId was already '${player.lastSeenSessionId}').`);
-         }
-    } else if (!currentSessionId) {
-        console.log(`[DEBUG USHIF] currentSessionId is null/undefined for userId='${userId}'. No session update possible.`);
-    }
-    
-    // This specific block for handling uniqueSessionCount === 0 when currentSessionId is present
-    // might be slightly redundant with the above, but let's keep its logging for now if it's hit separately.
-    // Original logic: else { if(currentSessionId && player.uniqueSessionCount === 0) { ... } }
-    // Simplified slightly above, but if the original structure was intended to catch other cases:
-    if (currentSessionId && player.uniqueSessionCount === 0 && player.lastSeenSessionId !== currentSessionId) {
-        // This case should ideally be caught by the main `if` block. Adding a log if it's somehow reached independently.
-        console.warn(`[DEBUG USHIF] Edge case: userId='${userId}', currentSessionId='${currentSessionId}', uniqueSessionCount=0, lastSeenSessionId='${player.lastSeenSessionId}'. This might indicate overlapping logic.`);
-        // The original code had: player.uniqueSessionCount = 1; player.lastSeenSessionId = currentSessionId;
+        changed = true;
     }
 
+    // Always update lastSeenTimestamp if processing this player from a session
+    const newTimestamp = Date.now();
+    if (player.lastSeenTimestamp !== newTimestamp) { // Could be redundant if always updating, but good for explicitness
+        player.lastSeenTimestamp = newTimestamp;
+        changed = true;
+    }
 
-    // If changes occurred that require saving
-    if (needsSave) {
-        console.log(`[DEBUG USHIF] Changes detected for userId='${userId}', preparing to save.`);
-        updatedData[userId] = player; // Put the modified player back
-        // Save the entire updated player data object
-        savePlayerData(updatedData, () => {
-            console.log(`[DEBUG USHIF] Successfully saved player data for userId='${userId}' after session update.`);
-            callback(true, updatedData); // Update occurred
+    if (changed) {
+        savePlayerData({ ...currentPlayerData, [userId]: player }, () => {
+            if (callback) callback(true, { ...currentPlayerData, [userId]: player });
         });
     } else {
-        console.log(`[DEBUG USHIF] No session changes requiring save for userId='${userId}'. Calling callback.`);
-        callback(false, currentPlayerData); // No update occurred
+        if (callback) callback(false, currentPlayerData);
     }
 }
 
@@ -936,8 +933,10 @@ function importPlayerDataCSV(csvContent, callback, refreshDisplayFunc) {
                 isFavorite: isFavorite,
                 // Initialize history and session tracking for the new player
                 usernameHistory: [{ username: name, timestamp: Date.now() }],
+                sessionHistory: [], // Initialize sessionHistory
+                uniqueSessionCount: 0, // Initialize uniqueSessionCount
                 lastSeenSessionId: null,
-                uniqueSessionCount: 0
+                lastSeenTimestamp: null
             };
             importedCount++;
         }

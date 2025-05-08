@@ -62,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {function(Set<string>)} callback - Receives a Set of online player IDs.
      */
     function fetchOnlinePlayerIds(callback) {
-        console.log("[Debug Flow] Fetching online player IDs...");
         chrome.runtime.sendMessage({ action: "fetchSessions" }, (response) => {
             const onlineIds = new Set();
             if (response && response.sessions && Array.isArray(response.sessions)) {
@@ -75,9 +74,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                 });
-                console.log(`[Debug Flow] Found ${onlineIds.size} unique online player IDs.`);
             } else {
-                console.warn("[Debug Flow] No sessions found or invalid format when fetching online IDs.", response);
+                console.warn("No sessions found or invalid format when fetching online IDs.", response);
             }
             callback(onlineIds);
         });
@@ -89,7 +87,6 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {Map<string, string>} onlinePlayersMap - Map of online player IDs to their session names.
      */
     function updateOnlineFavoritesList(playerData, onlinePlayersMap) {
-        console.log('[UI Update] updateOnlineFavoritesList called.', playerData, onlinePlayersMap);
         const favoritesListDiv = document.getElementById('onlineFavoritesList');
         const favoritesCountSpan = document.getElementById('onlineFavoritesCount');
 
@@ -138,14 +135,12 @@ document.addEventListener('DOMContentLoaded', function() {
             ul.appendChild(li);
         });
         favoritesListDiv.appendChild(ul);
-        console.log(`[UI Update] Displayed ${onlineFavorites.length} online favorite players.`);
     }
 
     /**
      * Refreshes the content of the User Management tab.
      */
     function refreshUserManagementTab() {
-        console.log("[Refresh UI] Refreshing User Management Tab");
         if (!knownPlayersDiv) {
             console.error('User list container not found for refresh.');
             return;
@@ -278,7 +273,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Assume new players are not favorites by default
                 window.addPlayer(id, name, score, notes, false, (success, message) => {
                     if (success) {
-                        console.log(`Player ${id} added/updated via manual button.`);
                         refreshUserManagementTab(); // Refresh the list
                     } else {
                         alert(`Failed to add/update player: ${message}`);
