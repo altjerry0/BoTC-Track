@@ -23,4 +23,12 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 
 ## Other Potential Enhancements
 
+- [x] ~~Fix `updateFavorites` function that is currently causing errors.~~ (Resolved by passing function as parameter and implementing UI update in `popup.js`)
+- [ ] **Investigate Player Not Found**: Debug logs indicate instances where players are not found in player data during session history updates. This may require further investigation into player data management and synchronization, especially with WebSocket updates.
+- [ ] **Refine UI for Current Game Players (Post-MVP)**: Once WebSocket interception is stable and core logic is robust, revisit displaying players from the *current* live game in a dedicated UI section in the popup (feature was previously on 'current-game-sockets' branch and removed for MVP focus).
+    - Consider how to differentiate these from players in fetched historical/recent sessions.
+- [ ] **Verify `isFavorite` Flag Persistence and UI**: Ensure the `isFavorite` flag for players is reliably saved and loaded, and that UI elements (e.g., a toggle/checkbox in player details) correctly reflect and update this status across all player displays (Manage Users tab, session lists, online favorites).
+
+## Future Enhancements / Ideas
+
 - (Add more ideas as they come up)

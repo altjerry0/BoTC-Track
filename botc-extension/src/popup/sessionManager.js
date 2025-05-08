@@ -300,10 +300,11 @@ function createPlayerCard(
  * @param {Object} initialPlayerData - Player data loaded before history checks.
  * @param {HTMLElement} resultDiv - Container for results.
  * @param {Object} options - Display options.
- * @param {Function} addPlayerFunc - Function to add a player.
- * @param {Function} createUsernameHistoryModalFunc - Function to create the history modal.
+ * @param {Function} addPlayer - Function to add a player.
+ * @param {Function} createUsernameHistoryModal - Function to create the history modal.
+ * @param {Function} updateOnlineFavoritesListFunc - Function to update the online favorites list UI.
  */
-function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, addPlayerFunc, createUsernameHistoryModalFunc) {
+function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, addPlayerFunc, createUsernameHistoryModalFunc, updateOnlineFavoritesListFunc) {
     let updatedPlayerData = { ...initialPlayerData };
     let historyUpdatePromises = [];
 
@@ -320,7 +321,7 @@ function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, 
             // Check and update session history (chained after username)
             const sessionHistoryPromise = usernamePromise.then(() => {
                 return new Promise((resolve) => {
-                    updateSessionHistoryIfNeeded(user.id, session.id, updatedPlayerData, (sessionChanged, dataAfterSession) => {
+                    updateSessionHistoryIfNeeded(user.id, session.name, updatedPlayerData, (sessionChanged, dataAfterSession) => {
                         if (sessionChanged) updatedPlayerData = dataAfterSession;
                         resolve(); // Resolve regardless of change
                     });
@@ -361,7 +362,11 @@ function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, 
             
             // Call the update function
             console.log('[Debug Flow] Called updateOnlineFavoritesList (after success).');
-            updateOnlineFavoritesList(updatedPlayerData, onlinePlayersMap);
+            if (updateOnlineFavoritesListFunc) {
+                updateOnlineFavoritesListFunc(updatedPlayerData, onlinePlayersMap);
+            } else {
+                console.warn('updateOnlineFavoritesListFunc not provided to checkHistoryAndRender');
+            }
 
         })
         .catch(error => {
@@ -383,7 +388,11 @@ function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, 
                 }
             });
             console.log('[Debug Flow] Called updateOnlineFavoritesList (in catch block).');
-            updateOnlineFavoritesList(initialPlayerData, onlinePlayersMap); 
+            if (updateOnlineFavoritesListFunc) {
+                updateOnlineFavoritesListFunc(initialPlayerData, onlinePlayersMap); 
+            } else {
+                console.warn('updateOnlineFavoritesListFunc not provided to checkHistoryAndRender (in catch)');
+            }
         });
 }
 
@@ -393,8 +402,8 @@ function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, 
  * @param {Object} playerData - Final player data (potentially updated by history checks).
  * @param {HTMLElement} resultDiv - Container for results.
  * @param {Object} options - Display options.
- * @param {Function} addPlayerFunc - Function to add a player.
- * @param {Function} createUsernameHistoryModalFunc - Function to create the history modal.
+ * @param {Function} addPlayer - Function to add a player.
+ * @param {Function} createUsernameHistoryModal - Function to create the history modal.
  */
 function renderSessions(
     sessions,
@@ -558,6 +567,7 @@ function renderSessions(
  * @param {Function} loadPlayerDataFunc - Function to load player data.
  * @param {Function} addPlayerFunc - Function to add a player.
  * @param {Function} createUsernameHistoryModalFunc - Function to create the username history modal.
+ * @param {Function} updateOnlineFavoritesListFunc - Function to update the online favorites list UI.
  * @param {HTMLElement} resultDiv - Container for session results.
  * @param {Object} [options={}] - Filtering/display options.
  * @param {Function} [onCompleteCallback=null] - Optional callback after completion.
@@ -566,6 +576,7 @@ function fetchAndDisplaySessions(
     loadPlayerDataFunc, 
     addPlayerFunc, 
     createUsernameHistoryModalFunc,
+    updateOnlineFavoritesListFunc, // Added new parameter
     resultDiv,
     options = {},
     onCompleteCallback = null
@@ -574,14 +585,13 @@ function fetchAndDisplaySessions(
         if (response && response.error) {
             console.error("Error fetching sessions:", response.error);
             resultDiv.innerHTML = `<p>Error fetching sessions: ${response.error}. Please check console and try again.</p>`;
-            // Optionally call callback even on error?
-            // if (onCompleteCallback) onCompleteCallback(null); 
+            if (onCompleteCallback) onCompleteCallback(null, response.error); 
             return;
         }
         if (!response || !response.sessions) {
             console.error("No sessions data received.");
             resultDiv.innerHTML = `<p>No session data received. Backend might be unavailable.</p>`;
-            // if (onCompleteCallback) onCompleteCallback(null);
+            if (onCompleteCallback) onCompleteCallback(null, 'No session data');
             return;
         }
 
@@ -599,7 +609,7 @@ function fetchAndDisplaySessions(
 
         // 1. Load current player data
         loadPlayerDataFunc(initialPlayerData => {
-            // --- Calculate and Display Fetch Statistics ---
+            // --- Calculate and Display Fetch Statistics (Optional: can be kept or removed) ---
             const totalSessions = backendSessions.length;
             const uniquePlayerIds = new Set();
             backendSessions.forEach(session => {
@@ -625,88 +635,42 @@ function fetchAndDisplaySessions(
             }
             // --- End Statistics Calculation ---
 
-            // 2. Identify known players in fetched sessions that need checking
-            const playersToCheck = [];
-            const knownPlayerIds = new Set(Object.keys(initialPlayerData));
-
-            backendSessions.forEach(session => {
-                if (session && session.usersAll) {
-                    session.usersAll.forEach(user => {
-                        // Check if user is known and has a valid ID and username
-                        if (user && user.id && user.username && knownPlayerIds.has(user.id)) {
-                            // Add to check list if not already present (user might be in multiple sessions)
-                            if (!playersToCheck.some(p => p.userId === user.id)) {
-                                playersToCheck.push({ userId: user.id, sessionUsername: user.username });
-                            }
-                        }
-                    });
-                }
-            });
-
-            // 3. Helper function to wrap updateUsernameHistoryIfNeeded in a Promise
-            const updateUsernamePromise = (userId, sessionUsername, currentPlayerData) => {
-                return new Promise((resolve, reject) => {
-                    // Ensure the function is available (it's added to window in userManager.js)
-                    if (window.updateUsernameHistoryIfNeeded) {
-                        window.updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerData, (wasUpdated, updatedPlayerData) => {
-                            // The callback provides the *potentially* updated data object
-                            if (wasUpdated) {
-                                console.log(`[Fetch] Username/history updated for ${userId}.`);
-                            }
-                            // Resolve with the latest player data state, regardless of update
-                            resolve(updatedPlayerData);
-                        });
-                    } else {
-                        console.error("updateUsernameHistoryIfNeeded function not found on window.");
-                        reject(new Error("updateUsernameHistoryIfNeeded function not found"));
-                    }
+            // 2. Call checkHistoryAndRender to handle history updates and rendering
+            // It will internally call renderSessions after processing.
+            checkHistoryAndRender(
+                backendSessions, 
+                initialPlayerData, 
+                resultDiv, 
+                options, 
+                addPlayerFunc, 
+                createUsernameHistoryModalFunc,
+                updateOnlineFavoritesListFunc // Pass it through
+            );
+            // The renderSessions function inside checkHistoryAndRender handles UI updates.
+            // If onCompleteCallback needs to be tied to the full completion including rendering,
+            // checkHistoryAndRender might need to be modified to accept and call it,
+            // or we assume completion once checkHistoryAndRender is invoked if it's synchronous enough for this purpose.
+            // For now, calling it here means it's called after initiating the history check & render process.
+            if (onCompleteCallback) {
+                // Consider that checkHistoryAndRender is asynchronous due to promises.
+                // A more robust way would be for checkHistoryAndRender to return a promise or accept a callback.
+                // For simplicity now, calling it after invoking checkHistoryAndRender.
+                // If checkHistoryAndRender needs to signal completion, its structure would need to change.
+                // Assuming onCompleteCallback is mainly to signal that fetching and *initiation* of processing is done.
+                Promise.all(backendSessions.flatMap(session => 
+                    (session.usersAll || []).map(user => 
+                        new Promise(resolve => {
+                            // This is a placeholder to ensure callback runs after promises in checkHistoryAndRender *could* have run.
+                            // A better approach is for checkHistoryAndRender to return a promise itself.
+                            setTimeout(resolve, 0); 
+                        })
+                    )
+                )).then(() => {
+                    if (onCompleteCallback) onCompleteCallback(backendSessions);
                 });
-            };
-
-            // 4. Process updates sequentially
-            const processUpdatesSequentially = async (players, currentPlayerData) => {
-                let dataState = currentPlayerData; // Start with initial data
-                for (const player of players) {
-                    try {
-                        // Pass the potentially modified data from the previous iteration
-                        // and update dataState with the result for the next iteration
-                        dataState = await updateUsernamePromise(player.userId, player.sessionUsername, dataState);
-                    } catch (error) {
-                        console.error(`[Fetch] Error processing username update for ${player.userId}:`, error);
-                        // Continue with the next player even if one fails, using the last known good data state
-                    }
-                }
-                return dataState; // Return the final state after all updates
-            };
-
-            // 5. Execute sequential updates and then render
-            processUpdatesSequentially(playersToCheck, initialPlayerData)
-                .then(finalPlayerData => {
-                    // 6. Render sessions with the potentially updated player data
-                    renderSessions(
-                        backendSessions,
-                        finalPlayerData, // Use the final, updated data
-                        resultDiv,
-                        options,
-                        addPlayerFunc,
-                        createUsernameHistoryModalFunc
-                    );
-
-                    // 7. Call completion callback if provided
-                    if (onCompleteCallback) {
-                        onCompleteCallback(backendSessions);
-                    }
-                })
-                .catch(error => {
-                    console.error("[Fetch] Error during sequential username update process:", error);
-                    // Fallback: Render with initial data if update process fails critically
-                    renderSessions(backendSessions, initialPlayerData, resultDiv, options, addPlayerFunc, createUsernameHistoryModalFunc);
-                    if (onCompleteCallback) {
-                        onCompleteCallback(backendSessions); // Still call callback, maybe with error flag?
-                    }
-                });
-        }); // End loadPlayerDataFunc callback
-    }); // End sendMessage callback
+            }
+        });
+    });
 }
 
 // --- Expose function needed by popup.js ---

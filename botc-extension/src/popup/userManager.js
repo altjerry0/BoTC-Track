@@ -686,59 +686,76 @@ function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerDat
  * @param {Function} callback - Callback function, receives (wasUpdated: boolean, updatedPlayerData: Object).
  */
 function updateSessionHistoryIfNeeded(userId, currentSessionId, currentPlayerData, callback) {
-    //console.log(`[Debug History Check - User: ${userId}] Entering updateSessionHistoryIfNeeded. Session ID: ${currentSessionId}`);
+    console.log(`[DEBUG USHIF] START: userId='${userId}', currentSessionId='${currentSessionId}'`);
     const player = currentPlayerData[userId];
     let updatedData = { ...currentPlayerData }; // Work on a copy
     let needsSave = false;
 
     // If player isn't known, we can't track session history
     if (!player) {
-        //console.log(`[Debug History Check - User: ${userId}] Player not found. Skipping session history check.`);
+        console.log(`[DEBUG USHIF] Player not found for userId='${userId}'. Skipping.`);
         callback(false, currentPlayerData);
         return;
     }
 
+    console.log(`[DEBUG USHIF] Player '${userId}' found. Initial state: lastSeenSessionId='${player.lastSeenSessionId}', uniqueSessionCount=${player.uniqueSessionCount}`);
+
     // Initialize session tracking fields if they don't exist
     if (player.lastSeenSessionId === undefined) {
         player.lastSeenSessionId = null;
-        //console.log(`[Debug History Check - User: ${userId}] Initialized lastSeenSessionId.`);
+        console.log(`[DEBUG USHIF] Initialized player.lastSeenSessionId to null for userId='${userId}'.`);
         needsSave = true; // Need to save if we initialize
     }
     if (player.uniqueSessionCount === undefined) {
         player.uniqueSessionCount = 0;
-        //console.log(`[Debug History Check - User: ${userId}] Initialized uniqueSessionCount.`);
+        console.log(`[DEBUG USHIF] Initialized player.uniqueSessionCount to 0 for userId='${userId}'.`);
         needsSave = true; // Need to save if we initialize
     }
 
     // Check if this is a new session compared to the last recorded one
     if (currentSessionId && player.lastSeenSessionId !== currentSessionId) {
-        //console.log(`[Debug History Check - User: ${userId}] New session detected. Previous: '${player.lastSeenSessionId}', Current: '${currentSessionId}'.`);
+        console.log(`[DEBUG USHIF] New session detected for userId='${userId}'. Previous='${player.lastSeenSessionId}', Current='${currentSessionId}'.`);
         player.lastSeenSessionId = currentSessionId;
         player.uniqueSessionCount += 1;
         needsSave = true;
-        //console.log(`[Debug History Check - User: ${userId}] Updated lastSeenSessionId to '${currentSessionId}' and incremented count to ${player.uniqueSessionCount}.`);
-    } else {
+        console.log(`[DEBUG USHIF] Updated userId='${userId}': lastSeenSessionId='${player.lastSeenSessionId}', uniqueSessionCount=${player.uniqueSessionCount}.`);
+    } else if (currentSessionId && player.lastSeenSessionId === currentSessionId) {
+        console.log(`[DEBUG USHIF] Same session ('${currentSessionId}') for userId='${userId}'. No change to count or lastSeenSessionId based on this check.`);
          // If it's the same session or no current session ID, do nothing regarding count/last seen
          // However, if the count is 0 and we have seen a session now, initialize count to 1
-         if(currentSessionId && player.uniqueSessionCount === 0) {
-            //console.log(`[Debug History Check - User: ${userId}] First session detected ('${currentSessionId}'). Setting count to 1.`);
+         if(player.uniqueSessionCount === 0) { // No need to check currentSessionId again, it's implied if we are here and it's not null
+            console.log(`[DEBUG USHIF] First ever session detected for userId='${userId}' ('${currentSessionId}'). Setting count to 1.`);
             player.uniqueSessionCount = 1;
-            player.lastSeenSessionId = currentSessionId; // Also set last seen ID here
+            // player.lastSeenSessionId is already currentSessionId, so no change needed here for that.
             needsSave = true;
+            console.log(`[DEBUG USHIF] Updated userId='${userId}': uniqueSessionCount=${player.uniqueSessionCount} (lastSeenSessionId was already '${player.lastSeenSessionId}').`);
          }
+    } else if (!currentSessionId) {
+        console.log(`[DEBUG USHIF] currentSessionId is null/undefined for userId='${userId}'. No session update possible.`);
     }
+    
+    // This specific block for handling uniqueSessionCount === 0 when currentSessionId is present
+    // might be slightly redundant with the above, but let's keep its logging for now if it's hit separately.
+    // Original logic: else { if(currentSessionId && player.uniqueSessionCount === 0) { ... } }
+    // Simplified slightly above, but if the original structure was intended to catch other cases:
+    if (currentSessionId && player.uniqueSessionCount === 0 && player.lastSeenSessionId !== currentSessionId) {
+        // This case should ideally be caught by the main `if` block. Adding a log if it's somehow reached independently.
+        console.warn(`[DEBUG USHIF] Edge case: userId='${userId}', currentSessionId='${currentSessionId}', uniqueSessionCount=0, lastSeenSessionId='${player.lastSeenSessionId}'. This might indicate overlapping logic.`);
+        // The original code had: player.uniqueSessionCount = 1; player.lastSeenSessionId = currentSessionId;
+    }
+
 
     // If changes occurred that require saving
     if (needsSave) {
-        //console.log(`[Debug History Check - User: ${userId}] Session changes detected, preparing to save.`);
+        console.log(`[DEBUG USHIF] Changes detected for userId='${userId}', preparing to save.`);
         updatedData[userId] = player; // Put the modified player back
         // Save the entire updated player data object
         savePlayerData(updatedData, () => {
-            //console.log(`[Debug History Check - User: ${userId}] Successfully saved player data after session update.`);
+            console.log(`[DEBUG USHIF] Successfully saved player data for userId='${userId}' after session update.`);
             callback(true, updatedData); // Update occurred
         });
     } else {
-        //console.log(`[Debug History Check - User: ${userId}] No session changes requiring save. Calling callback.`);
+        console.log(`[DEBUG USHIF] No session changes requiring save for userId='${userId}'. Calling callback.`);
         callback(false, currentPlayerData); // No update occurred
     }
 }

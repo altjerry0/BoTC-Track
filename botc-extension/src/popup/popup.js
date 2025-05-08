@@ -82,6 +82,64 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
+     * Updates the list of online favorite players in the UI.
+     * @param {Object} playerData - The complete player data object.
+     * @param {Map<string, string>} onlinePlayersMap - Map of online player IDs to their session names.
+     */
+    function updateOnlineFavoritesList(playerData, onlinePlayersMap) {
+        console.log('[UI Update] updateOnlineFavoritesList called.', playerData, onlinePlayersMap);
+        const favoritesListDiv = document.getElementById('onlineFavoritesList');
+        const favoritesCountSpan = document.getElementById('onlineFavoritesCount');
+
+        if (!favoritesListDiv || !favoritesCountSpan) {
+            console.warn('onlineFavoritesList DIV or onlineFavoritesCount SPAN not found in popup.html.');
+            return;
+        }
+
+        favoritesListDiv.innerHTML = ''; // Clear previous list
+        favoritesCountSpan.textContent = '0'; // Reset count
+
+        if (!playerData || Object.keys(playerData).length === 0) {
+            favoritesListDiv.textContent = 'No player data available.';
+            return;
+        }
+
+        const onlineFavorites = [];
+        for (const playerId in playerData) {
+            if (playerData[playerId].isFavorite && onlinePlayersMap.has(playerId)) {
+                onlineFavorites.push({
+                    ...playerData[playerId],
+                    id: playerId, // Ensure player ID is part of the object
+                    sessionName: onlinePlayersMap.get(playerId) // Corrected to sessionName for clarity from onlinePlayersMap
+                });
+            }
+        }
+
+        favoritesCountSpan.textContent = onlineFavorites.length.toString();
+
+        if (onlineFavorites.length === 0) {
+            favoritesListDiv.textContent = 'No favorite players are currently online in fetched sessions.';
+            return;
+        }
+
+        const ul = document.createElement('ul');
+        ul.classList.add('player-list'); // Add a class for potential styling
+        onlineFavorites.forEach(player => {
+            const li = document.createElement('li');
+            li.classList.add('player-item'); // Add a class for potential styling
+            li.innerHTML = `
+                <span class="player-name">${player.name}</span> 
+                <span class="player-rating">(Rating: ${player.score || 'N/A'})</span> - 
+                <span class="player-session">Online in: ${player.sessionName}</span>
+            `;
+            // Add more details or styling as needed, e.g., link to session or player notes
+            ul.appendChild(li);
+        });
+        favoritesListDiv.appendChild(ul);
+        console.log(`[UI Update] Displayed ${onlineFavorites.length} online favorite players.`);
+    }
+
+    /**
      * Refreshes the content of the User Management tab.
      */
     function refreshUserManagementTab() {
@@ -131,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadPlayerData, // Pass function
             addPlayer,      // Pass function
             createUsernameHistoryModal, // Pass function
+            updateOnlineFavoritesList, // Pass the new function
             sessionResultsDiv,
             { officialOnly: showOfficialOnly }, 
             (sessions) => {
@@ -291,6 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadPlayerData, // Pass function
         addPlayer,      // Pass function
         createUsernameHistoryModal, // Pass function
+        updateOnlineFavoritesList, // Pass the new function
         sessionResultsDiv,
         { officialOnly: showOfficialOnly }, 
         (sessions) => {
