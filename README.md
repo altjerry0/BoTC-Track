@@ -24,6 +24,20 @@ Regularly exporting your data is a good habit!
 - **Storyteller Highlights**: Easily identify game storytellers
 - **Import/Export**: Save and load player data via CSV files.
 
+
+## Screenshots
+
+Here's a glimpse of the extension in action:
+
+**Sessions Tab:**
+![Sessions Tab Screenshot](docs/botcrater-1.PNG)
+
+**Manage Users Tab:**
+![Manage Users Tab Screenshot](docs/botcrater-2.PNG)
+
+**Username History:**
+![Username History](docs/botcrater-3.PNG)
+
 ## Project Structure
 
 ```
