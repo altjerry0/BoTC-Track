@@ -1,4 +1,4 @@
-**Current Version (local):** `1.0.7` | **Chrome Web Store Version:** `1.0.1` Pending `1.0.4`
+**Current Version (local):** `1.0.8` | **Chrome Web Store Version:** `1.0.1` Pending `1.0.4`
 ***
 
 # BotC Player Tracker Chrome Extension
@@ -60,6 +60,26 @@ The easiest way to install the BotC Player Tracker is by using the latest releas
 - **Improved Session Tracking**: Enhanced session tracking to use session names as unique identifiers and centralized history updates.
 - **General Bug Fixes**: Version 1.0.6 includes numerous fixes to improve stability, user experience, and data accuracy.
 - **Last Seen Time**: For offline players in the "Manage Users" tab, displays how long ago they were last active (e.g., "5 mins ago", "2 days ago").
+- **Background Session Sync**: Periodically fetches session data in the background (every ~2 minutes when an auth token is present) to keep player 'last seen' status and session history up-to-date even when the popup is closed.
+
+### Key Features
+*   **Player Tracking**: Identifies and stores player IDs and usernames encountered in Blood on the Clocktower online games via `botc.app`.
+*   **Username History**: Keeps a record of past usernames for each player, accessible via a history icon next to their name.
+*   **Player Notes & Ratings**: Allows users to add private notes and a 1-5 star rating for each tracked player.
+*   **Manual Player Data Management**: Users can manually add, edit, or merge player profiles.
+*   **Data Export/Import**: Supports exporting all tracked player data to a JSON file and importing it back, facilitating backups and data migration.
+*   **Dark Mode Support**: Provides a dark theme for the popup interface, configurable via settings.
+*   **Automatic Background Session Monitoring**:
+    *   Periodically fetches active game sessions from `botc.app` (every 1 minute).
+    *   Tracks `lastSeenTimestamp` for all known players found in any active session.
+    *   Updates `lastSeenSessionId` and `sessionHistory` for known players based on the session name.
+    *   Processes all users in a session (via `usersAll`), not just seated players, ensuring comprehensive activity tracking.
+    *   Automatically detects and updates player username changes encountered during background syncs, maintaining an accurate username history.
+*   **Session Viewer Integration**: (If applicable, describe how it integrates with viewing current/past sessions if this feature exists beyond just updating player profiles).
+*   **Configurable Settings**: Allows users to toggle features like dark mode, display of username history icons, and potentially other preferences.
+
+### How It Works
+The extension works by fetching active game sessions from `botc.app` and tracking player activity. It uses a combination of player IDs and usernames to identify players across sessions and track their activity.
 
 ## Screenshots
 
@@ -187,8 +207,8 @@ session-tracking
 *   **Dark Mode Toggle**: Implemented a manual dark mode toggle in the popup header, replacing reliance on system settings. (Note: Styling improvements are ongoing).
 *   **Improved CSV Import/Export**: Enhanced CSV parsing logic to reliably handle complex data fields (like session and username history), resolving errors during import.
 *   **Dark Mode Styling**: Addressed issues with dark mode theming, ensuring correct background colors and improved text contrast for better readability.
+*   **Background Session Data Sync**: Added a feature to periodically fetch session data in the background to keep player activity (last seen, session history) current. Requires 'alarms' permission.
 *   **Enhanced Player Search**: The search functionality in the 'Manage Users' tab has been improved to include Player IDs in the search criteria.
-
 *   **Resolved `updateOnlineFavoritesList` Error**: Fixed a `ReferenceError` related to updating the display of online favorite players. The feature now correctly shows a list and count of favorited players active in fetched sessions within the 'Sessions' tab.
 *   **Session Tracking Logic**: Refined session tracking to use session names as unique identifiers and centralized history updates in `checkHistoryAndRender`.
 *   **Background `userId` Processing**: Enhanced `background.js` to update `lastSeenTimestamp`, `sessionHistory`, and `uniqueSessionCount` for known players identified via WebSocket messages, and to save these changes to storage.

@@ -5,6 +5,31 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-08.
 # BotC Player Tracker Extension - Changelog
 ---
 
+## [v1.0.8] - 2025-05-08
+
+### Added
+- **Background Session Data Sync**: The extension now periodically fetches session data from `botc.app` in the background (approximately every 2 minutes) when a valid authorization token is present. This updates the `lastSeenTimestamp`, `lastSeenSessionId`, and `sessionHistory` for known players, ensuring player activity is kept more current even when the popup is not open. This utilizes the `chrome.alarms` API and requires the "alarms" permission.
+- Background session fetching now processes `session.usersAll` to capture activity for all users in a session, not just seated players.
+- Background session fetching now detects and updates player username changes, storing the previous username in history.
+
+### Changed
+- The 'Online Favorites' list now starts collapsed by default to provide a cleaner initial view and save screen space.
+- Removed extensive debug `console.log` statements from `popup.js`, `sessionManager.js`, and `userManager.js` for a cleaner browser console output during regular use.
+- Refined loading messages (e.g., "Fetching sessions...") and indicator visibility in `popup.js` for better user experience during data fetching and filter application.
+- The `renderSessions` function in `sessionManager.js` is now exposed on the `window` object, allowing it to be called directly by `popup.js` for operations like re-rendering sessions after a filter change.
+- Background session fetch alarm interval set to 1 minute.
+- Refined and reduced verbosity of console logging for the background fetching process to focus on key events and errors.
+- Improved styling for the username history modal to ensure readability in light mode (non-dark mode).
+
+### Fixed
+- Resolved a `ReferenceError` for `updateOnlineFavoritesList` in `sessionManager.js` by ensuring the function was correctly defined in `popup.js` and passed as a parameter through `fetchAndDisplaySessions` and `checkHistoryAndRender`.
+- Corrected a DOM manipulation issue where the 'Online Favorites' section (`onlineFavoritesSection`) was being cleared when new session results were loaded. This was fixed by moving the section out of the `sessionResultsDiv` in `popup.html` and refining `popup.js` to target a specific `sessionListDiv` for rendering session cards.
+- Addressed a bug where `onlineFavoritesList` DIV or `onlineFavoritesCount` SPAN could not be found if `sessionResultsDiv` was cleared before these elements were accessed; HTML restructuring and targeted JS updates resolved this.
+- Fixed a `ReferenceError: Cannot access 'isFavorite' before initialization` in the `addPlayer` function within `userManager.js`. The logic for determining and applying the `isFavorite` status for new and existing players has been corrected.
+- Ensured that `sessionHistory` (as an array) and `uniqueSessionCount` are correctly initialized for newly added players and for existing player data that might have been missing these fields. This prevents the session count from resetting incorrectly.
+- Ensured username changes are detected and processed by the background sync.
+- Corrected an issue where the username history modal could be transparent and unreadable in light mode.
+
 ## [v1.0.7] - 2025-05-08
 
 ### Added

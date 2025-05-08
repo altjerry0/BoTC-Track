@@ -65,3 +65,65 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 
 ---
 *Mark items with [x] when completed. Add new tasks as they arise.*
+
+### `[v1.0.8 - Completed]`
+#### Core Functionality & UX
+- **[COMPLETED] Background Session Data Sync**: Implement periodic fetching of session data in the background using `chrome.alarms` to keep `lastSeenTimestamp` and `sessionHistory` for known players up-to-date even when the popup is closed.
+    - Status: Implemented in `background.js`. Fetches approx. every 2 minutes if auth token is present. Updates known players' activity.
+- **Investigate/Refine Alarm Logic**: Based on user feedback and testing, refine alarm behavior if necessary (e.g., conditions for fetching, logging verbosity for 'no relevant updates').
+
+#### Player Management
+- **[COMPLETED] Player ID Search**: Allow searching by Player ID in the 'Manage Users' tab.
+    - Status: Implemented in `userManager.js` and `popup.js` for v1.0.7, carried into v1.0.8.
+
+#### Styling & UI
+- **[COMPLETED] Dark Mode Refinements**: Continue to ensure consistent and clear dark mode styling.
+    - Status: Ongoing improvements, significant fixes in v1.0.7, carried into v1.0.8.
+
+#### Documentation
+- **[COMPLETED] Update README and CHANGELOG**: Reflect recent changes and new features for v1.0.8.
+
+---
+### `[v1.0.8 - Completed]`
+#### Core Functionality & UX
+- [x] Implement background session data synchronization using `chrome.alarms`.
+    - [x] Set alarm interval to 1 minute.
+    - [x] Process `session.usersAll` to capture activity for all users (not just seated players).
+    - [x] Detect and update player username changes during background sync.
+- [x] Refine and reduce verbosity of console logging for the background fetching process.
+- [x] Fix styling for the username history modal to ensure readability in light mode.
+- ~~Investigate/refine alarm logic, ensure it's robust (e.g., on browser start).~~ (Covered by onInstalled and persistent alarm nature)
+
+---
+### `[Future Considerations / Backlog]`
+
+#### Advanced Player Analysis & Features
+- **Advanced Player Search/Filtering**: 
+    - Implement more complex filtering (e.g., by custom score ranges, multiple tags, last seen date ranges).
+- **Player Comparison**: Allow selecting two players and seeing a side-by-side comparison of their stats, notes, and history.
+- **Role-Based Tracking**: Option to tag players with roles they've played or are known for.
+- **Session-Specific Notes**: Allow adding notes to a player that are specific to a particular game session ID.
+- **Graph/Chart Visualizations**: Display player rating trends or other stats visually.
+
+#### UX & UI Enhancements
+- **More Granular Settings**: 
+    - Configurable refresh interval for background sync.
+    - Option to disable background sync.
+- **Notification System**: 
+    - Notify if a favorited player comes online or joins a new game (requires more robust background processing and permissions).
+- **Bulk Operations**: Allow bulk editing/tagging of players in the 'Manage Users' tab.
+- **Improved 'No Data' States**: More informative messages when no sessions are found, or no players match search criteria.
+
+#### Technical & Performance
+- **Code Refactoring**: Continuously review and refactor code for clarity, performance, and maintainability (e.g., `userManager.js`, `sessionManager.js`).
+- **Error Handling**: More robust error handling and user feedback for API errors or unexpected issues.
+- **Performance Optimization**: For large numbers of players or extensive session histories.
+- **Testing**: Implement more formal testing, potentially unit tests for critical logic.
+
+---
+
+### `[Recently Completed - v1.0.7]`
+- **Player ID Search**: Enabled searching by Player ID in the 'Manage Users' tab.
+- **Dark Mode Styling Fixes**: Corrected CSS variable scoping and general dark mode appearance.
+- **Removed Inline Styles**: Cleaned up inline styles in `popup.html` for consistency.
+- **Documentation Updates**: Updated `CHANGELOG.md`, `README.md`, and `TODO.md` for v1.0.7 features.

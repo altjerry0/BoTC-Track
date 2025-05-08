@@ -682,356 +682,66 @@ button:hover {
 
 /* --- Username History Modal --- */
 .username-history-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    background-color: #ffffff; /* White background for light mode */
+    color: #333333; /* Dark text for light mode */
+    border: 1px solid #cccccc;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    position: fixed; /* Or absolute, depending on context */
+    z-index: 1001; /* Ensure it's above other elements */
 }
 
-.username-history-content {
-    background-color: var(--background-color); /* Use theme background */
-    color: var(--text-color); /* Use theme text color */
-    padding: 20px 25px;
-    border-radius: 8px;
-    max-width: 500px; /* Limit width */
-    width: 90%; 
-    max-height: 80vh; /* Limit height relative to viewport */
-    overflow-y: auto; /* Scroll if content exceeds height */
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    position: relative; /* Needed for absolute positioning of close button */
-    border: 1px solid var(--border-color);
+body.dark-mode .username-history-modal {
+    background-color: #333333; /* Dark background for dark mode */
+    color: #f0f0f0; /* Light text for dark mode */
+    border-color: #555555;
 }
 
-.username-history-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--secondary-text-color);
-    cursor: pointer;
-    line-height: 1;
-    padding: 0 5px;
+.username-history-modal ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
 }
 
-.username-history-close:hover {
-    color: var(--primary-color); /* Highlight on hover */
+.username-history-modal li {
+    padding: 5px 0;
+    border-bottom: 1px solid #eeeeee; /* Light separator for light mode */
 }
 
-.username-history-title {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.4em;
-    color: var(--heading-color);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
+body.dark-mode .username-history-modal li {
+    border-bottom: 1px solid #444444; /* Darker separator for dark mode */
 }
 
-.username-history-current {
-    margin-bottom: 16px;
-    font-size: 1.1em;
-}
-
-.username-history-current strong {
-    color: var(--secondary-text-color);
-}
-
-.username-history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px; /* Spacing between items */
-}
-
-.username-history-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 5px;
-    border-bottom: 1px solid var(--border-color-light);
-}
-
-.username-history-item:last-child {
+.username-history-modal li:last-child {
     border-bottom: none;
 }
 
-.username-history-name {
-    flex-grow: 1;
-    margin-right: 15px;
-}
-
-.username-history-time {
-    color: var(--secondary-text-color);
-    font-size: 0.9em;
-    white-space: nowrap; /* Prevent time from wrapping */
-}
-
-.username-history-change .old-name {
-    color: #cc5555; /* Or use a CSS variable */
-    text-decoration: line-through;
-}
-
-.username-history-change .arrow {
-    margin: 0 5px;
-}
-
-.username-history-change .new-name {
-    color: #55aa55; /* Or use a CSS variable */
-    font-weight: bold;
-}
-
-.username-history-list p { /* Style for 'no history' message */
-    font-style: italic;
-    color: var(--secondary-text-color);
-}
-
-body.dark-mode .session-container,
-body.dark-mode .user-management {
-    background-color: var(--card-bg); /* Use the dark card background */
-    border-color: var(--card-border); /* Ensure border matches */
-}
-
-body.dark-mode .session-header {
-    background-color: var(--card-bg); /* Override light mode bg */
-    border-bottom: 1px solid var(--border-color); /* Add separator if needed */
-}
-
-body.dark-mode .session-content {
-    background-color: #2e2e2e; /* Even darker for the expanded player list */
-    border-top: 1px solid #555; /* Add a separator line */
-}
-
-body.dark-mode .player-card p {
-    color: #ffffff; /* Use pure white for max contrast */
-}
-
-body.dark-mode .session-header .storyteller-info,
-body.dark-mode .username-history-date,
-body.dark-mode .search-result-aliases,
-body.dark-mode .player-list-section-title {
-    color: var(--card-subtle-text-color);
-}
-
-body.dark-mode .session-title,
-body.dark-mode .player-card .player-name, /* Player name itself */
-body.dark-mode .user-management h2,
-body.dark-mode .search-result-name,
-body.dark-mode .username-history-name,
-body.dark-mode .modal-content { /* Ensure modal text is consistently light */
-    color: var(--card-text-color); /* Ensure main text is light */
-}
-
-body.dark-mode .player-card {
-    background-color: var(--card-bg);
-    border-color: var(--card-border);
-    /* Ensure text within player card defaults to light */
-    color: var(--card-text-color);
-}
-
-body.dark-mode .player-card.online {
-    border-left-color: var(--online-card-border);
-    border-left-width: 5px;
-    border-color: var(--card-border); /* Reset other borders */
-}
-
-body.dark-mode .rating-badge,
-body.dark-mode .rating-1, body.dark-mode .rating-2, body.dark-mode .rating-3, body.dark-mode .rating-4, body.dark-mode .rating-5, body.dark-mode .rating-unknown,
-body.dark-mode .search-result-rating /* Also style search result ratings */ {
-    color: var(--rating-badge-text-color); /* Force white text */
-    padding: 2px 6px; /* Ensure consistent padding */
-    border-radius: 4px; /* Ensure consistent rounding */
-    font-size: 12px;
-    display: inline-block; /* Ensure proper layout */
-    border: 1px solid transparent; /* Start with transparent border */
-    border-left-width: 6px; /* Make left border thicker for rating */
-}
-
-body.dark-mode .rating-5 { background-color: #495057; border-color: #5f6368; }
-body.dark-mode .rating-4 { background-color: #495057; border-color: #5f6368; }
-body.dark-mode .rating-3 { background-color: #495057; border-color: #5f6368; }
-body.dark-mode .rating-2 { background-color: #495057; border-color: #5f6368; }
-body.dark-mode .rating-1 { background-color: #495057; border-color: #5f6368; }
-body.dark-mode .rating-unknown { background-color: #495057; border-color: #5f6368; } /* Dark grey for unknown */
-body.dark-mode .search-result-rating { background-color: #5f6368; border: none; } /* No border for search results */
-
-body.dark-mode .edition-official {
-    background-color: var(--player-indicator-neutral-bg);
-    color: var(--player-indicator-neutral-text); /* Already defined, seems ok */
-    border-color: color-mix(in srgb, var(--player-indicator-neutral-bg) 80%, black); /* Darker border */
-}
-
-body.dark-mode .edition-custom {
-    background-color: var(--player-indicator-neutral-bg);
-    color: var(--player-indicator-neutral-text); /* Already defined, seems ok */
-    border-color: color-mix(in srgb, var(--player-indicator-neutral-bg) 80%, black); /* Darker border */
-}
-
-body.dark-mode .history-button {
-    background-color: var(--secondary-button-bg);
-    color: var(--text-color); /* Ensure button text contrasts */
-    border-color: var(--input-border);
-}
-
-body.dark-mode .history-button:hover {
-    background-color: var(--secondary-button-hover-bg);
-}
-
-body.dark-mode .username-history {
-    background-color: var(--bg-color); /* Match main background */
-    border: 1px solid var(--border-color);
-}
-
-body.dark-mode .username-history-item {
-    border-bottom-color: var(--border-color);
-}
-
-body.dark-mode .search-results {
-    background: var(--input-bg);
-    border-color: var(--border-color);
-}
-
-body.dark-mode .search-result-item {
-    border-bottom-color: var(--border-color);
-    color: var(--text-color); /* Ensure text is light */
-}
-
-body.dark-mode .search-result-item:hover {
-    background-color: var(--tab-hover-bg);
-}
-
-body.dark-mode .player-card.player-playing {
-    border-left-color: #66BB6A; /* Brighter green for dark mode */
-}
-
-body.dark-mode .player-card.rating-unknown { border-left-color: #6c757d; } /* Darker Grey */
-body.dark-mode .player-card.rating-1 { border-left-color: #e06c75; } /* Lighter Red */
-body.dark-mode .player-card.rating-2 { border-left-color: #d19a66; } /* Lighter Orange */
-body.dark-mode .player-card.rating-3 { border-left-color: #e5c07b; } /* Lighter Yellow/Gold */
-body.dark-mode .player-card.rating-4 { border-left-color: #98c379; } /* Lighter Green */
-body.dark-mode .player-card.rating-5 { border-left-color: #56b6c2; } /* Lighter Teal */
-
-/* --- Utility Classes --- */
-.hidden {
-    display: none !important;
-}
-
-/* --- Username History Modal --- */
-.username-history-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.username-history-content {
-    background-color: var(--background-color); /* Use theme background */
-    color: var(--text-color); /* Use theme text color */
-    padding: 20px 25px;
-    border-radius: 8px;
-    max-width: 500px; /* Limit width */
-    width: 90%; 
-    max-height: 80vh; /* Limit height relative to viewport */
-    overflow-y: auto; /* Scroll if content exceeds height */
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    position: relative; /* Needed for absolute positioning of close button */
-    border: 1px solid var(--border-color);
-}
-
-.username-history-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--secondary-text-color);
+.close-modal-btn {
+    background-color: #f44336; /* Red */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    border-radius: 4px;
     cursor: pointer;
-    line-height: 1;
-    padding: 0 5px;
+    float: right;
+    margin-top: -10px; /* Adjust as needed */
+    margin-right: -5px; /* Adjust as needed */
 }
 
-.username-history-close:hover {
-    color: var(--primary-color); /* Highlight on hover */
+body.dark-mode .close-modal-btn {
+    background-color: #d32f2f; /* Darker red for dark mode */
 }
 
-.username-history-title {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.4em;
-    color: var(--heading-color);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
+.close-modal-btn:hover {
+    opacity: 0.8;
 }
 
-.username-history-current {
-    margin-bottom: 16px;
-    font-size: 1.1em;
-}
-
-.username-history-current strong {
-    color: var(--secondary-text-color);
-}
-
-.username-history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px; /* Spacing between items */
-}
-
-.username-history-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 5px;
-    border-bottom: 1px solid var(--border-color-light);
-}
-
-.username-history-item:last-child {
-    border-bottom: none;
-}
-
-.username-history-name {
-    flex-grow: 1;
-    margin-right: 15px;
-}
-
-.username-history-time {
-    color: var(--secondary-text-color);
-    font-size: 0.9em;
-    white-space: nowrap; /* Prevent time from wrapping */
-}
-
-.username-history-change .old-name {
-    color: #cc5555; /* Or use a CSS variable */
-    text-decoration: line-through;
-}
-
-.username-history-change .arrow {
-    margin: 0 5px;
-}
-
-.username-history-change .new-name {
-    color: #55aa55; /* Or use a CSS variable */
-    font-weight: bold;
-}
-
-.username-history-list p { /* Style for 'no history' message */
-    font-style: italic;
-    color: var(--secondary-text-color);
-}
-
-/* Ensure dark mode variables are applied if needed */
-body.dark-mode .username-history-content {
+body.dark-mode .username-history-modal {
     background-color: #282c34; /* Example dark background */
     color: #abb2bf;
     border: 1px solid #3f444e;
