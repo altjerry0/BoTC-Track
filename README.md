@@ -1,3 +1,6 @@
+**Current Version (local):** `1.0.5` | **Chrome Web Store Version:** `1.0.1`
+***
+
 # BotC Player Tracker Chrome Extension
 
 This Chrome extension tracks and rates players in Blood on the Clocktower (BotC) games, helping you recognize familiar players across sessions and track username changes.
