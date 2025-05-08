@@ -40,7 +40,7 @@
 }
 
 /* Dark Mode Variables */
-body.dark-mode :root {
+body.dark-mode {
     --bg-color: #202124; /* Dark gray */
     --text-color: #e8eaed; /* Light gray */
     --subtle-text-color: #9aa0a6; /* Lighter gray for dark mode */
@@ -90,13 +90,8 @@ body {
     min-height: 400px;
 }
 
-body.dark-mode #content {
-    background-color: var(--bg-color); /* Ensure content div also gets dark bg explicitly if needed */
-}
-
 #content {
     max-width: 100%;
-    /* Added to ensure it also uses the theme background if body doesn't cover all */
     background-color: var(--bg-color); 
 }
 

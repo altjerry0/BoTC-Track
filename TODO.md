@@ -41,11 +41,11 @@ This file tracks planned features and improvements for the BotC Player Tracker e
     -   Implement Firestore synchronization for `playerData` in `userManager.js` (`loadPlayerData`, `savePlayerData`).
     -   Define sync strategy (e.g., Firestore as source of truth, merge strategies for conflicts if any).
 - [ ] **Advanced Player Search/Filtering in 'Manage Users' Tab**
-    -   Filter by rating range.
-    -   Filter by favorite status.
-    -   Sort by name, rating, last seen, unique sessions.
+    - [x] ~~Filter known players list by various criteria.~~ (Basic search covers name, notes, score. Player ID search added in v1.0.7)
+    - [ ] Sort by name, rating, last seen, unique sessions.
+    - [x] ~~Enhance player search to include Player ID.~~ (Completed in v1.0.7)
 - [ ] **UI/UX Refinements**
-    -   Improve styling of player cards and session lists.
+    - [x] ~~Improve styling of player cards and session lists.~~ (Major dark mode issues resolved in v1.0.7: background, text contrast. Minor tweaks may still be needed.)
     -   Consider more distinct visual cues for official vs. experimental games.
     -   Provide clearer feedback on import/export success/failure.
 - [ ] **Review `declarativeNetRequest` Rule**: The current `rules.json` has a broad `allowAllRequests` rule. Investigate if this can be narrowed for better security/privacy, though it might be necessary for `botc.app` interactions if specific subdomains or paths change frequently.

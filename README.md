@@ -183,10 +183,11 @@ session-tracking
 
 ### Recent Fixes & Improvements
 
-#### v1.0.7
 *   **Display "Last Seen Time"**: Shows how long ago offline players were last active in the "Manage Users" tab.
 *   **Dark Mode Toggle**: Implemented a manual dark mode toggle in the popup header, replacing reliance on system settings. (Note: Styling improvements are ongoing).
 *   **Improved CSV Import/Export**: Enhanced CSV parsing logic to reliably handle complex data fields (like session and username history), resolving errors during import.
+*   **Dark Mode Styling**: Addressed issues with dark mode theming, ensuring correct background colors and improved text contrast for better readability.
+*   **Enhanced Player Search**: The search functionality in the 'Manage Users' tab has been improved to include Player IDs in the search criteria.
 
 *   **Resolved `updateOnlineFavoritesList` Error**: Fixed a `ReferenceError` related to updating the display of online favorite players. The feature now correctly shows a list and count of favorited players active in fetched sessions within the 'Sessions' tab.
 *   **Session Tracking Logic**: Refined session tracking to use session names as unique identifiers and centralized history updates in `checkHistoryAndRender`.

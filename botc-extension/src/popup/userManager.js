@@ -312,46 +312,52 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
 
     // Determine online players
     const onlinePlayerIds = new Set();
-    if (sessionData) {
+    if (sessionData && Array.isArray(sessionData)) { // Check if sessionData is an array of sessions
         sessionData.forEach(session => {
-            if (session && Array.isArray(session.usersAll)) {
-                session.usersAll.forEach(user => {
-                    if (user && user.id) {
-                        onlinePlayerIds.add(String(user.id)); // Ensure string ID
-                    }
+            if (session && session.players && Array.isArray(session.players)) {
+                session.players.forEach(player => {
+                    if (player && player.id) onlinePlayerIds.add(player.id.toString());
                 });
             }
         });
+    } else if (sessionData instanceof Set) { // Check if sessionData is already a Set of IDs (from refreshUserManagementTab)
+        sessionData.forEach(id => onlinePlayerIds.add(id.toString()));
     }
 
-    const sortedPlayerIds = Object.keys(playerData).sort((a, b) => {
-        const playerA = playerData[a];
-        const playerB = playerData[b];
-        const isOnlineA = onlinePlayerIds.has(a);
-        const isOnlineB = onlinePlayerIds.has(b);
+    const lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : '';
+
+    const filteredPlayersArray = Object.entries(playerData)
+        .filter(([id, player]) => {
+            if (lowerSearchTerm === '') {
+                return true; // Show all if no search term
+            }
+            // Check for matches in player name, notes, score, or ID
+            const nameMatch = player.name && player.name.toLowerCase().includes(lowerSearchTerm);
+            const notesMatch = player.notes && player.notes.toLowerCase().includes(lowerSearchTerm);
+            const scoreMatch = player.score !== undefined && player.score.toString().toLowerCase().includes(lowerSearchTerm);
+            const idMatch = id.toLowerCase().includes(lowerSearchTerm); // Search by Player ID
+
+            return nameMatch || notesMatch || scoreMatch || idMatch;
+        })
+        .map(([id, player]) => ({ ...player, id, isOnline: onlinePlayerIds.has(id) })); // Add id and online status
+
+    // Sort players: online first, then by name
+    const sortedPlayerIds = filteredPlayersArray.sort((a, b) => {
+        const isOnlineA = a.isOnline;
+        const isOnlineB = b.isOnline;
 
         // Sort logic: Online players first, then alphabetically by name
         if (isOnlineA && !isOnlineB) return -1; // Online A comes before offline B
         if (!isOnlineA && isOnlineB) return 1;  // Offline A comes after online B
         
         // If both are online or both are offline, sort by name
-        return (playerA.name || '').localeCompare(playerB.name || '');
+        return (a.name || '').localeCompare(b.name || '');
     });
 
-    sortedPlayerIds.forEach(id => {
-        const player = playerData[id];
-        const nameLower = (player.name || '').toLowerCase();
-        const notesLower = (player.notes || '').toLowerCase();
-        const isOnline = onlinePlayerIds.has(id);
-
-        // Filter logic
-        if (searchTerm && !nameLower.includes(searchTerm) && !notesLower.includes(searchTerm) && id !== searchTerm) {
-            return; // Skip if search term doesn't match name, notes, or ID
-        }
-
+    sortedPlayerIds.forEach(player => {
         const card = document.createElement('div');
         card.className = `player-card known-player ${getRatingClass(player.score || 3)}`; // Add known-player class
-        if (isOnline) {
+        if (player.isOnline) {
             card.classList.add('online');
         }
         if (player.isFavorite) {
@@ -367,17 +373,17 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
         infoContainer.appendChild(nameElement);
 
         const idElement = document.createElement('small');
-        idElement.textContent = ` (ID: ${id})`;
+        idElement.textContent = ` (ID: ${player.id})`;
         idElement.style.color = 'var(--subtle-text-color)';
         infoContainer.appendChild(idElement);
 
-        if (isOnline) {
+        if (player.isOnline) {
             let sessionName = null;
             if (sessionData) {
                 for (const session of sessionData) {
-                    if (session && session.name && Array.isArray(session.usersAll)) {
-                        const userInSession = session.usersAll.some(user => {
-                            const isMatch = user && String(user.id) === id;
+                    if (session && session.name && Array.isArray(session.players)) {
+                        const userInSession = session.players.some(user => {
+                            const isMatch = user && String(user.id) === player.id;
                             return isMatch;
                         });
                         if (userInSession) {
@@ -445,7 +451,7 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
         editButton.onclick = (e) => {
             e.stopPropagation();
             // Prompt for updated details, pre-filling with existing data
-            const newName = prompt(`Enter new name for ${player.name} (ID: ${id}):`, player.name);
+            const newName = prompt(`Enter new name for ${player.name} (ID: ${player.id}):`, player.name);
             if (newName === null) return; // User cancelled name prompt
 
             const newScoreStr = prompt(`Enter new score (1-5) for ${newName || player.name}:`, player.score !== undefined ? player.score : '3');
@@ -462,15 +468,15 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
 
             // Call the core addPlayer function (handles both add and update)
             if (typeof window.addPlayer === 'function') {
-                window.addPlayer(id, newName, newScore, newNotes, player.isFavorite, (success, message) => {
+                window.addPlayer(player.id, newName, newScore, newNotes, player.isFavorite, (success, message) => {
                     if (success) {
-                        console.log(`Player ${id} updated via prompt.`);
+                        console.log(`Player ${player.id} updated via prompt.`);
                         if (typeof refreshCallback === 'function') {
                             refreshCallback(); // Refresh the list
                         }
                     } else {
                         alert(`Failed to update player: ${message}`);
-                        console.error(`Failed to update player ${id}: ${message}`);
+                        console.error(`Failed to update player ${player.id}: ${message}`);
                     }
                 });
             } else {
@@ -487,9 +493,9 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
         deleteButton.className = 'player-action-button delete-button'; // Add specific class if needed for styling
         deleteButton.onclick = (e) => {
             e.stopPropagation(); // Prevent card click
-            if (confirm(`Are you sure you want to delete player ${player.name} (${id})? This cannot be undone.`)) {
+            if (confirm(`Are you sure you want to delete player ${player.name} (${player.id})? This cannot be undone.`)) {
                 // Use the globally exposed deletePlayer function
-                window.deletePlayer(id, (success, deletedPlayerId, message) => {
+                window.deletePlayer(player.id, (success, deletedPlayerId, message) => {
                     if (success) {
                         console.log(`Player ${deletedPlayerId} deleted via button.`);
                         if (card && card.parentNode) {
@@ -502,7 +508,7 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
                         }
                     } else {
                         alert(`Failed to delete player: ${message}`);
-                        console.error(`Failed to delete player ${id}: ${message}`);
+                        console.error(`Failed to delete player ${player.id}: ${message}`);
                     }
                 });
             }
@@ -529,7 +535,7 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
         
         favoriteButton.onclick = (e) => {
             e.stopPropagation(); // Prevent triggering card click/other events
-            toggleFavoriteStatus(id, favoriteButton); // Use the toggle function
+            toggleFavoriteStatus(player.id, favoriteButton); // Use the toggle function
         };
         buttonContainer.appendChild(favoriteButton);
 
