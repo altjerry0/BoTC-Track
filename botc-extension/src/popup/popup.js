@@ -16,7 +16,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabContents = document.querySelectorAll('.tab-content');
 
     // Content Area References
-    const sessionResultsDiv = document.getElementById('sessionResults');
+    const sessionResultsDiv = document.getElementById('sessionResults'); // This is now just a container for loadingIndicator and sessionList
+    const sessionListDiv = document.getElementById('sessionList'); // Specific div for session cards
+    const loadingIndicator = document.getElementById('loadingIndicator');
     const knownPlayersDiv = document.getElementById('knownPlayers');
 
     // State
@@ -183,11 +185,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     fetchButton.addEventListener('click', () => {
-        sessionResultsDiv.innerHTML = '<p>Fetching sessions...</p>'; // Show loading message
-        // Pass the current filter state and required functions to the fetch function
+        if (sessionListDiv) {
+            sessionListDiv.innerHTML = '<p class="loading-message">Fetching sessions...</p>'; // Show loading message in the list area
+        }
+        if (loadingIndicator) loadingIndicator.style.display = 'block'; // Or use this for a more distinct loader
+        
+        // Ensure sessionResultsDiv itself is not cleared if it has other persistent elements (though it shouldn't now)
+
         fetchAndDisplaySessions(
-            loadPlayerData, // Pass function
-            addPlayer,      // Pass function
+            loadPlayerData, 
+            addPlayer,      
             createUsernameHistoryModal, // Pass function
             updateOnlineFavoritesList, // Pass the new function
             sessionResultsDiv,
@@ -200,9 +207,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     officialOnlyCheckbox.addEventListener('change', () => {
         showOfficialOnly = officialOnlyCheckbox.checked;
+        if (sessionListDiv) {
+            sessionListDiv.innerHTML = '<p class="loading-message">Applying filter...</p>'; // Indicate activity
+        }
         // Re-render the stored sessions with the new filter state
         loadPlayerData(playerData => {
-            renderSessions(lastFetchedSessions, playerData, sessionResultsDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal); // Pass addPlayer/createHistory again if needed by render logic
+            // renderSessions now targets sessionListDiv (implicitly via sessionResultsDiv if not changed in sessionManager)
+            // Ensure renderSessions in sessionManager.js correctly targets where sessions should go.
+            // For now, assuming renderSessions clears and appends to its passed 'resultDiv' argument.
+            // If renderSessions exclusively uses sessionListDiv, then pass that directly.
+            renderSessions(lastFetchedSessions, playerData, sessionResultsDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal);
         });
     });
 
