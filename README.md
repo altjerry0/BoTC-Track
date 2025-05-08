@@ -1,4 +1,4 @@
-**Current Version (local):** `1.0.6` | **Chrome Web Store Version:** `1.0.6`
+**Current Version (local):** `1.0.6` | **Chrome Web Store Version:** `1.0.1` Pending `1.0.4`
 ***
 
 # BotC Player Tracker Chrome Extension
