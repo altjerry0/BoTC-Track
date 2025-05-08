@@ -675,3 +675,4 @@ function fetchAndDisplaySessions(
 
 // --- Expose function needed by popup.js ---
 window.fetchAndDisplaySessions = fetchAndDisplaySessions;
+window.renderSessions = renderSessions; // Expose renderSessions
