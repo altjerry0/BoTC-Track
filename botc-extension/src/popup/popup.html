@@ -57,16 +57,19 @@
                         <span id="fetchStats" class="fetch-stats"></span> <!-- Added stats display area -->
                     </div>
                 </div>
+
+                <!-- Online Favorites Section - Moved Here -->
+                <details id="onlineFavoritesSection" class="online-favorites-section results-container" open>
+                    <summary>Online Favorites (<span id="onlineFavoritesCount">0</span>)</summary>
+                    <div id="onlineFavoritesList" class="online-favorites-list">
+                        <p>No favorite players currently online.</p> 
+                    </div>
+                </details>
+
+                <!-- Session Results Area -->
                 <div id="sessionResults" class="results-container">
-                    <details id="onlineFavoritesSection" class="online-favorites-section">
-                        <summary>Online Favorites (<span id="onlineFavoritesCount">0</span>)</summary>
-                        <div id="onlineFavoritesList" class="online-favorites-list">
-                            <!-- Favorite players will be listed here -->
-                            <p>No favorite players currently online.</p> 
-                        </div>
-                    </details>
                     <div id="loadingIndicator" style="display: none;">Loading sessions...</div>
-                    <div id="sessionList"></div>
+                    <div id="sessionList"></div> <!-- Actual session cards will be appended here by renderSessions -->
                 </div>
             </div>
 
