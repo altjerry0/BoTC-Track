@@ -174,4 +174,4 @@ This project uses GitHub Actions to automate the creation of release ZIP files.
     git tag vX.Y.Z
     git push origin vX.Y.Z
     ```
-4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store.
+4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store or Local Installation.
