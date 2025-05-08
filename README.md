@@ -13,6 +13,36 @@ Your player ratings, notes, and history are stored locally by this extension. If
 
 Regularly exporting your data is a good habit!
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Usage Guidelines](#usage-guidelines)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Future Improvements](#future-improvements)
+- [Known Issues](#current-status--known-issues)
+- [Contributing](#contributing)
+- [Project Structure](#project-structure)
+- [Developer Setup / Loading from Source](#developer-setup--loading-from-source)
+- [Release Workflow](#release-workflow)
+
+## Installation
+
+The easiest way to install the BotC Player Tracker is by using the latest release ZIP file.
+
+1.  **Download the latest release:**
+    *   Go to the [Releases page](https://github.com/altjerry0/BoTC-Track/releases)
+    *   Download the `botc-tracker-vX.Y.Z.zip` file from the latest release.
+2.  **Unzip the file:** Extract the contents of the downloaded ZIP file to a folder on your computer. You should see a folder named `botc-extension` (or similar, containing `manifest.json`).
+3.  **Load into Chrome:**
+    *   Open Chrome and navigate to `chrome://extensions/`.
+    *   Enable **Developer mode** by toggling the switch in the top right corner.
+    *   Click on **Load unpacked**.
+    *   Select the folder you unzipped in step 2 (the one containing `manifest.json`).
+4.  The extension should now be loaded and ready to use! Pin it to your toolbar for easy access.
+
+(For developers looking to load from source, see the [Developer Setup / Loading from Source](#developer-setup--loading-from-source) section below.)
+
 ## Features
 
 - **Session Tracking**: View active BotC game sessions and their details
@@ -23,7 +53,6 @@ Regularly exporting your data is a good habit!
 - **Game Info**: View game edition information (official/custom scripts)
 - **Storyteller Highlights**: Easily identify game storytellers
 - **Import/Export**: Save and load player data via CSV files.
-
 
 ## Screenshots
 
@@ -71,32 +100,6 @@ The codebase is organized into modular components:
 - **Session Management**: Processes session data and displays active games
 - **UI Components**: Creates dynamic interface elements for sessions and players
 
-## Setup Instructions
-
-1. **Clone the repository** or download the project files.
-2. **Open Chrome** and navigate to `chrome://extensions/`.
-3. Enable **Developer mode** by toggling the switch in the top right corner.
-4. Click on **Load unpacked** and select the `botc-extension` directory (inside `botcraterdev`).
-5. The extension should now be loaded and ready for use.
-
-## Release Workflow
-
-This project uses GitHub Actions to automate the creation of release ZIP files.
-
-1.  **Update Version**: Before creating a release, update the `"version"` in `botc-extension/manifest.json`.
-2.  **Commit Changes**: Commit the updated `manifest.json` and any other code changes for the release.
-    ```bash
-    git add botc-extension/manifest.json
-    git commit -m "Prepare release vX.Y.Z"
-    git push
-    ```
-3.  **Tag the Release**: Create and push a Git tag matching the version (e.g., `vX.Y.Z`). This will trigger the GitHub Action.
-    ```bash
-    git tag vX.Y.Z
-    git push origin vX.Y.Z
-    ```
-4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store.
-
 ## Usage Guidelines
 
 1. **View Active Sessions**:
@@ -131,13 +134,41 @@ This project uses GitHub Actions to automate the creation of release ZIP files.
 - **UX Improvements**: Loading states and user feedback
 - **Testing**: Unit and integration tests
 
-## Contributing
-
-Feel free to submit issues or pull requests for improvements or bug fixes.
-
 ## Current Status & Known Issues
 
 Several features are currently under development or require fixes:
 
 *   **Unique Session Tracking:** The logic to track the number of unique game sessions a player has participated in is incomplete and does not function correctly.
 *   **Favorite User Filtering:** The feature to filter the user list to show only favorited players needs to be implemented or fixed.
+
+## Contributing
+
+Feel free to submit issues or pull requests for improvements or bug fixes.
+
+## Developer Setup / Loading from Source
+
+These instructions are for developers or users who want to load the extension directly from the source code instead of using a release ZIP.
+
+1. **Clone the repository** or download the project files.
+2. **Open Chrome** and navigate to `chrome://extensions/`.
+3. Enable **Developer mode** by toggling the switch in the top right corner.
+4. Click on **Load unpacked** and select the `botc-extension` directory (located inside the `botcraterdev` project root).
+5. The extension should now be loaded and ready for use.
+
+## Release Workflow
+
+This project uses GitHub Actions to automate the creation of release ZIP files.
+
+1.  **Update Version**: Before creating a release, update the `"version"` in `botc-extension/manifest.json`.
+2.  **Commit Changes**: Commit the updated `manifest.json` and any other code changes for the release.
+    ```bash
+    git add botc-extension/manifest.json
+    git commit -m "Prepare release vX.Y.Z"
+    git push
+    ```
+3.  **Tag the Release**: Create and push a Git tag matching the version (e.g., `vX.Y.Z`). This will trigger the GitHub Action.
+    ```bash
+    git tag vX.Y.Z
+    git push origin vX.Y.Z
+    ```
+4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store.
