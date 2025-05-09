@@ -137,3 +137,12 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 - **Dark Mode Styling Fixes**: Corrected CSS variable scoping and general dark mode appearance.
 - **Removed Inline Styles**: Cleaned up inline styles in `popup.html` for consistency.
 - **Documentation Updates**: Updated `CHANGELOG.md`, `README.md`, and `TODO.md` for v1.0.7 features.
+
+---
+### `[New TODO Items]`
+- [ ] Replace `prompt()` pop-ups in player management (add/edit) with a user-friendly modal dialog.
+- [ ] Enhance user list sorting in 'Manage Users':
+  - Prioritize online favorite players.
+  - Then, sort by player rating (5 down to 1).
+  - Finally, sort offline players by 'last seen' (most recent first), with players lacking 'last seen' data at the bottom.
+- [ ] Ensure uniform row height in the session list by handling long game names (e.g., truncation with tooltip or ellipsis).
