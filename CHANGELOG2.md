@@ -5,6 +5,13 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 # BotC Player Tracker Extension - Changelog
 ---
 
+## [v1.1.2] - 2025-05-09
+
+### Fixed
+- Resolved `chrome.runtime.lastError: The message port closed before a response was received` by improving asynchronous handling and `sendResponse` calls in the background script's message listener for session fetching.
+- Fixed `TypeError: updateOnlineFavoritesListFunc not found` by correctly exposing the function from `popup.js` to `sessionManager.js` via the `window` object.
+- Addressed `TypeError: Cannot read properties of null (reading 'style')` (and related `getElementById` returning `null` issues) by resolving conflicts related to multiple script executions or DOM access timing within `popup.js`, ensuring reliable UI element initialization.
+
 ## [v1.1.1] - 2025-05-09
 
 ### Added

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BotC Tracker",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Track and rate players in Blood on the Clocktower games, with username history tracking and player analysis.",
   "permissions": [
     "webRequest",
