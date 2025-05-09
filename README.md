@@ -31,20 +31,30 @@ Regularly exporting your data is a good habit!
 
 ## Installation
 
-The easiest way to install the BotC Player Tracker is by using the latest release ZIP file.
+**1. Install from the Chrome Web Store (Recommended)**
+
+*   The easiest way to install is directly from the Chrome Web Store:
+    *   **[BotC Player Tracker on Chrome Web Store](https://chromewebstore.google.com/detail/botc-tracker/ecmkmfkmljmneefknldphpdjlmgpdhkc?authuser=0&hl=en)**
+*   Click "Add to Chrome" and the extension will be installed automatically.
+*   Pin it to your toolbar for easy access.
+*   *Note: The version on the Chrome Web Store might occasionally be behind the latest version on GitHub due to Google's review process.* 
+
+**2. Install from GitHub Release (Manual Load)**
+
+This method allows you to install a specific version from GitHub, which might be newer than the one on the Chrome Web Store.
 
 1.  **Download the latest release:**
-    *   Go to the [Releases page](https://github.com/altjerry0/BoTC-Track/releases)
-    *   Download the `botc-tracker-vX.Y.Z.zip` file from the latest release.
+    *   Go to the [Releases page](https://github.com/altjerry0/BoTC-Track/releases).
+    *   Download the `botc-tracker-vX.Y.Z.zip` file from the desired release.
 2.  **Unzip the file:** Extract the contents of the downloaded ZIP file to a folder on your computer. You should see a folder named `botc-extension` (or similar, containing `manifest.json` and an `src` folder).
 3.  **Load into Chrome:**
     *   Open Chrome and navigate to `chrome://extensions/`.
     *   Enable **Developer mode** by toggling the switch in the top right corner.
     *   Click on **Load unpacked**.
     *   Select the `botc-extension` folder you unzipped in step 2 (the one containing `manifest.json`).
-4.  The extension should now be loaded and ready to use! Pin it to your toolbar for easy access.
+4.  The extension should now be loaded. Pin it to your toolbar for easy access.
 
-(For developers looking to load from source, see the [Developer Setup / Loading from Source](#developer-setup--loading-from-source) section below.)
+(For developers looking to load directly from source code, see the [Developer Setup / Loading from Source](#developer-setup--loading-from-source) section below.)
 
 ## Features
 
