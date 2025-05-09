@@ -59,6 +59,7 @@ This method allows you to install a specific version from GitHub, which might be
 ## Features
 
 *   **Session Tracking & Player Identification**: Fetches active `botc.app` game sessions and identifies players. Known players are highlighted within session details.
+*   **Player Score Indicators**: Displays visual indicators (+ for scores 4-5, ● for score 3, - for scores 1-2) in each session header on the "Sessions" tab. These show an aggregate count of known players in that session categorized by their recorded scores, providing a quick summary of the perceived player quality in a game (e.g., "+2 ●1 -1").
 *   **Player Data Management**:
     *   **Rating & Notes**: Assign a 1-5 score and add private text notes to each player.
     *   **Favorite Players**: Mark players as favorites for quick identification.

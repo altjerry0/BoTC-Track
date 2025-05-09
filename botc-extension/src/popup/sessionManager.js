@@ -28,6 +28,16 @@ function getEditionDisplay(edition) {
     return edition.name || 'Custom Script';
 }
 
+// NEW HELPER FUNCTION
+function getScoreCategory(score) {
+    const numericScore = parseInt(score, 10);
+    if (isNaN(numericScore)) return 'unknown';
+    if (numericScore >= 4) return 'good';
+    if (numericScore === 3) return 'neutral';
+    if (numericScore <= 2 && numericScore >= 1) return 'bad';
+    return 'unknown';
+}
+
 /**
  * Create edition tag element
  * @param {Object} edition - Edition data
@@ -190,58 +200,80 @@ function createPlayerCard(
 
     addButton.addEventListener('click', () => {
         // Get current score/notes if known, otherwise use defaults
-        const currentScore = isKnownPlayer ? playerData[user.id]?.score : '3';
-        const currentNotes = isKnownPlayer ? playerData[user.id]?.notes : '';
+        const knownPlayer = playerData[user.id];
+        const currentScore = knownPlayer ? (knownPlayer.score === null || knownPlayer.score === undefined ? '' : knownPlayer.score.toString()) : '3'; // Default to 3 if new
+        const currentNotes = knownPlayer ? (knownPlayer.notes || '') : '';
 
-        const score = prompt('Enter rating (1-5):', currentScore);
-        if (score !== null) {
-            const notes = prompt('Enter notes:', currentNotes);
-            if (notes !== null) {
-                // Define the UI update callback
-                const updateUICallback = (updatedPlayerDataForUser) => {
-                    console.log('Updating UI for player:', user.id, updatedPlayerDataForUser);
-                    
-                    // Update known status and main card class
-                    isKnownPlayer = true; // Player is now known
-                    playerCard.className = `player-card ${window.getRatingClass(updatedPlayerDataForUser.score)}`;
+        const modalTitle = `Update Player: ${user.name || `ID: ${user.id}`}`;
+        const modalBodyHtml = `
+            <p>Update details for <strong>${user.name || `ID: ${user.id}`}</strong>. This will add them to your known players list if they aren't already, or update their existing record.</p>
+            <div>
+                <label for="modalSessionPlayerScore">Score (1-5, optional):</label>
+                <input type="number" id="modalSessionPlayerScore" value="${currentScore}" min="1" max="5">
+            </div>
+            <div>
+                <label for="modalSessionPlayerNotes">Notes (optional):</label>
+                <textarea id="modalSessionPlayerNotes" rows="3">${currentNotes}</textarea>
+            </div>
+        `;
 
-                    // Find or create the details div
-                    let detailsDiv = playerInfo.querySelector('.player-details');
-                    if (!detailsDiv) {
-                        detailsDiv = document.createElement('div');
-                        detailsDiv.className = 'player-details'; // Add a class for easier selection
-                        detailsDiv.style.fontSize = '12px';
-                        detailsDiv.style.marginTop = '4px';
-                        playerInfo.appendChild(detailsDiv); // Append it if it didn't exist
+        ModalManager.showModal(modalTitle, modalBodyHtml, [
+            {
+                text: 'Cancel',
+                className: 'modal-button-secondary'
+            },
+            {
+                text: 'Save Details',
+                className: 'modal-button-primary',
+                callback: async () => {
+                    const scoreStr = document.getElementById('modalSessionPlayerScore').value.trim();
+                    const notes = document.getElementById('modalSessionPlayerNotes').value.trim();
+
+                    let score = null;
+                    if (scoreStr) {
+                        const parsedScore = parseInt(scoreStr, 10);
+                        if (isNaN(parsedScore) || parsedScore < 1 || parsedScore > 5) {
+                            ModalManager.showAlert('Invalid Input', 'Invalid score. Must be a number between 1 and 5. Score will not be saved unless corrected.');
+                            return; // Keep modal open for correction
+                        } else {
+                            score = parsedScore;
+                        }
                     }
-                    detailsDiv.textContent = `Rating: ${updatedPlayerDataForUser.score || 'Unknown'} ${updatedPlayerDataForUser.notes ? `• ${updatedPlayerDataForUser.notes}` : ''}`;
 
-                    // Update button text
-                    addButton.textContent = 'Update Player';
+                    // Define the UI update callback for after player data is saved
+                    const uiUpdateCallback = (updatedPlayer) => {
+                        if (updatedPlayer) {
+                            // Re-render this specific player card or the whole list if simpler
+                            // For now, let's assume a full list refresh might be handled by a broader mechanism
+                            // or that renderSessions might be called again.
+                            // We could also update the card directly if we have its reference.
+                            console.log(`Player ${updatedPlayer.id} updated from session card interaction.`);
+                            ModalManager.showAlert('Success', `Player ${user.name || user.id} details saved.`);
+                            // Potentially refresh the session list or just this card
+                            if (typeof window.fetchAndDisplaySessions === 'function') {
+                                // This might be too broad, ideally just re-render the known players list if it's visible
+                                // and update this specific card's display.
+                                // For now, just log and show success.
+                            }
+                            renderKnownPlayers(); // Re-render the user management tab if it's the active one
+                        }
+                    };
 
-                    // Check if history span needs to be added (if first time saving for this user)
-                    const historySpanExists = nameContainer.querySelector('.history-span');
-                    if (!historySpanExists && updatedPlayerDataForUser.usernameHistory && updatedPlayerDataForUser.usernameHistory.length > 0) {
-                        const historyCount = updatedPlayerDataForUser.usernameHistory.length;
-                        const historySpan = document.createElement('span');
-                        historySpan.className = 'history-span'; // Add class for easier selection
-                        historySpan.style.fontSize = '12px';
-                        historySpan.style.color = '#666';
-                        historySpan.style.cursor = 'pointer';
-                        historySpan.textContent = `(${historyCount} names)`;
-                        historySpan.title = 'Click to view username history';
-                        historySpan.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            createUsernameHistoryModalFunc(updatedPlayerDataForUser.usernameHistory, updatedPlayerDataForUser.name);
-                        });
-                        nameContainer.appendChild(historySpan);
+                    try {
+                        // addPlayerFunc is userManager.addOrUpdatePlayer
+                        // It needs: id, name, score, notes, isFavorite (preserve if known), usernameHistory (preserve if known)
+                        const isFavorite = knownPlayer ? knownPlayer.isFavorite : false;
+                        const usernameHistory = knownPlayer ? knownPlayer.usernameHistory : [];
+                        await addPlayerFunc(user.id, user.name, score, notes, isFavorite, usernameHistory, uiUpdateCallback);
+                        ModalManager.closeModal(); // Close after successful save
+                    } catch (error) {
+                        console.error('Failed to save player details from session card:', error);
+                        ModalManager.showAlert('Error', `Failed to save player details: ${error.message}`);
                     }
-                };
-
-                // Call addPlayer with the UI update callback
-                addPlayerFunc(user.id, user.username, score, notes, updateUICallback);
+                },
+                closesModal: false // Handle close explicitly
             }
-        }
+        ]);
     });
 
     playerCard.appendChild(playerInfo);
@@ -393,12 +425,11 @@ function renderSessions(
             const sessionTitle = document.createElement('div');
             sessionTitle.className = 'session-title';
             
-            const titleTextContainer = document.createElement('div');
-            titleTextContainer.style.display = 'flex'; // Use flex to align items horizontally
-            titleTextContainer.style.alignItems = 'center';
-            titleTextContainer.style.gap = '8px'; // Add some space between elements
+            const titleTextContainer = document.createElement('div'); // Main container for title line elements
+            titleTextContainer.className = 'session-title-line'; // Assign a class for potential flex styling if session-title itself isn't flex
 
-            const titleText = document.createElement('div');
+            const mainTitleInfo = document.createElement('div');
+            mainTitleInfo.className = 'session-main-info';
             
             // Construct the new player count string
             const playersWithAssignedId = session.players ? session.players.filter(p => p && p.id).length : 0;
@@ -407,22 +438,72 @@ function renderSessions(
 
             const playerCountString = `Players: ${playersWithAssignedId}/${totalPlayerSlots} (${totalParticipants} total)`;
 
+            const titleText = document.createElement('div');
             titleText.innerHTML = `<strong>${session.name}</strong> <span style="color: #666">• Phase ${session.phase}${session.phase === 0 ? '<span class="phase-zero-indicator">In Between Games</span>' : ''} • ${playerCountString}</span>`;
-            titleTextContainer.appendChild(titleText);
+            mainTitleInfo.appendChild(titleText);
 
-            sessionTitle.appendChild(titleTextContainer); // Add the container with title+indicators
+            // *** NEW: Player Score Indicators ***
+            let scoreIndicatorsContainer; // Declare here to be in scope
+            if (playerData && session.usersAll) {
+                let good_scores = 0;
+                let neutral_scores = 0;
+                let bad_scores = 0;
 
-            // Add edition tag
+                session.usersAll.forEach(userInSession => {
+                    if (userInSession && userInSession.id && playerData[userInSession.id]) {
+                        const knownPlayer = playerData[userInSession.id];
+                        const category = getScoreCategory(knownPlayer.score);
+                        if (category === 'good') good_scores++;
+                        else if (category === 'neutral') neutral_scores++;
+                        else if (category === 'bad') bad_scores++;
+                    }
+                });
+
+                let indicatorsHtml = ''; // Changed const to let
+                if (good_scores > 0) {
+                    indicatorsHtml += `<span class="score-good" title="Good (Score 4-5)">+${good_scores}</span> `;
+                }
+                if (neutral_scores > 0) {
+                    indicatorsHtml += `<span class="score-neutral" title="Neutral (Score 3)">●${neutral_scores}</span> `;
+                }
+                if (bad_scores > 0) {
+                    indicatorsHtml += `<span class="score-bad" title="Bad (Score 1-2)">-${bad_scores}</span>`;
+                }
+                
+                if (indicatorsHtml.trim() !== '') {
+                    // Create container only if there's content
+                    scoreIndicatorsContainer = document.createElement('span');
+                    scoreIndicatorsContainer.className = 'session-player-score-indicators';
+                    scoreIndicatorsContainer.innerHTML = indicatorsHtml.trim();
+                }
+            }
+            // *** END NEW: Player Score Indicators ***
+
+            titleTextContainer.appendChild(mainTitleInfo);
+
+            // Add edition tag to titleTextContainer, after mainTitleInfo
             const editionTag = createEditionTag(session.edition);
-            sessionTitle.appendChild(editionTag);
+            titleTextContainer.appendChild(editionTag);
+
+            sessionTitle.appendChild(titleTextContainer); // Add the container with title + edition
+
+            // Create a new container for right-side controls (indicators + toggle button)
+            const rightHeaderControls = document.createElement('div');
+            rightHeaderControls.className = 'session-header-right-controls';
+
+            // Add score indicators to the new right-side container IF they exist
+            if (scoreIndicatorsContainer) {
+                rightHeaderControls.appendChild(scoreIndicatorsContainer);
+            }
 
             const toggleButton = document.createElement('button');
             toggleButton.classList.add('session-toggle-button'); // Add class
             toggleButton.innerHTML = '&#9660;'; // Down arrow for 'Show Players'
             toggleButton.title = 'Show players in this session';
+            rightHeaderControls.appendChild(toggleButton); // Add toggle button to the new container
 
             sessionHeader.appendChild(sessionTitle);
-            sessionHeader.appendChild(toggleButton);
+            sessionHeader.appendChild(rightHeaderControls); // Add the new right-side controls container to the header
 
             const sessionContent = document.createElement('div');
             sessionContent.className = 'session-content';
