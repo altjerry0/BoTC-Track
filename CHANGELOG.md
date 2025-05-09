@@ -5,6 +5,14 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 # BotC Player Tracker Extension - Changelog
 ---
 
+## [Unreleased] - YYYY-MM-DD
+
+### Fixed
+- **WebSocket Interception**: 
+    - Corrected syntax errors in `content_script.js` logging statements that prevented the script from executing.
+    - Refined the WebSocket proxy mechanism in `content_script.js` to use `Object.defineProperty` with a getter for `window.WebSocket`, ensuring more reliable interception of `botc.app` game and chat messages.
+    - Ensured `"all_frames": true` is set for the content script in `manifest.json` to allow execution in all relevant frames.
+
 ## [v1.1.2] - 2025-05-09
 
 ### Fixed
@@ -204,6 +212,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
     - Normalized the appearance and size of action buttons (Favorite, Edit, History, Refresh Username, Delete) in the 'Known Players' list for better visual consistency.
     - Ensured the "Add Player Manually" button aligns with the updated button styling.
     - Adjusted styling for various buttons to use consistent padding, icon sizing, and hover effects across the extension.
+    - Improved icon centering within dedicated icon-only action buttons (e.g., Edit, Delete).
 - **Modal Theming**: Updated modal CSS to correctly use theme variables, ensuring proper display in both light and dark modes.
 - **Active Session Highlighting**: Sessions where the logged-in user is participating (present in `usersAll`) are now prioritized:
     - These sessions are sorted to appear at the top of the session list.
@@ -227,3 +236,15 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 - Corrected various initial setup issues and minor bugs.
 
 ---
+
+## [v1.3.0] - 2025-05-09
+
+### Added
+- Implemented WebSocket message interception for `botc.app` to capture live game and chat data.
+  - Injects a content script (`src/content/content_script.js`) into `botc.app` pages.
+  - The content script proxies native WebSockets to listen to `wss://botc.app/backend/socket/` and `wss://chat-*.botc.app/socket.io/`.
+  - Messages are parsed and relayed to the background script (`src/background/background.js`).
+  - Background script now attempts to extract and log user IDs from these messages.
+  - This provides a foundation for real-time tracking of active game participants, even for private games not listed on public session trackers.
+
+### Changed

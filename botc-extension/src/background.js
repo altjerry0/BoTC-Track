@@ -244,3 +244,91 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Removed 'storeAuthToken' handler as it's unused
     return false; // Default for synchronous messages or if no handler matches
 });
+
+let activeGameUserIds = new Set();
+
+function extractUserIdsFromPayload(data, foundIds) {
+    if (!data) return;
+
+    if (Array.isArray(data)) {
+        data.forEach(item => extractUserIdsFromPayload(item, foundIds));
+    } else if (typeof data === 'object' && data !== null) {
+        // Check for common ID keys
+        const commonIdKeys = ['id', 'userId', 'userID', 'playerId', 'playerID', 'senderId', 'accountId'];
+        for (const key of commonIdKeys) {
+            if (data.hasOwnProperty(key) && (typeof data[key] === 'string' || typeof data[key] === 'number')) {
+                if (String(data[key]).length > 2 && String(data[key]).length < 50) { // Basic sanity check for ID format
+                    foundIds.add(String(data[key]));
+                }
+            }
+        }
+        // Recursively check other properties that might be objects or arrays
+        for (const key in data) {
+            if (data.hasOwnProperty(key) && !commonIdKeys.includes(key)) { // Avoid re-processing already checked keys
+                extractUserIdsFromPayload(data[key], foundIds);
+            }
+        }
+    } else if (typeof data === 'string' || typeof data === 'number') {
+        // If the payload itself is a simple string/number, it might be an ID in some contexts
+        // This is less reliable and should be used cautiously or with more context
+        // For now, we are focusing on structured data. We can add heuristics later if needed.
+    }
+}
+
+function processWebSocketPayloadForUserIds(payload, messageType) { 
+    const newlyFoundIds = new Set();
+
+    // Special handling for Socket.IO chat messages which arrive as ["event_name", data_object]
+    if ((messageType === 'CHAT_DATA' || messageType === 'CHAT_DATA_RAW') && 
+        Array.isArray(payload) && 
+        payload.length === 2 && 
+        typeof payload[0] === 'string' && 
+        typeof payload[1] === 'object' && payload[1] !== null) {
+        extractUserIdsFromPayload(payload[1], newlyFoundIds); // Process the actual data object
+    } else {
+        extractUserIdsFromPayload(payload, newlyFoundIds);
+    }
+
+    if (newlyFoundIds.size > 0) {
+        console.log("Extracting User IDs - Before this payload:", new Set(activeGameUserIds)); // Log current state before adding
+        newlyFoundIds.forEach(id => activeGameUserIds.add(id));
+        console.log("Extracting User IDs - After adding new from this payload:", activeGameUserIds);
+        console.log("Extracting User IDs - IDs found in THIS payload:", newlyFoundIds);
+    }
+    return newlyFoundIds; // Return only the IDs found in *this* payload
+}
+
+// Listen for messages from the content script or other parts of the extension
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // console.log("Background script received message:", message, "from sender:", sender); // Already have a good log for this.
+
+  if (message.source === 'content_script') {
+    console.log(`Received message from content_script: Type: ${message.type}, URL: ${message.url}`);
+    console.log("Full payload from content_script:", JSON.stringify(message.payload, null, 2)); // TEMPORARILY UNCOMMENT FOR DEBUGGING
+
+    switch (message.type) {
+      case 'GAME_DATA':
+      case 'GAME_DATA_RAW': // Assuming raw data might also be structured or become structured
+        console.log("Processing User IDs for", message.type);
+        const gameUserIds = processWebSocketPayloadForUserIds(message.payload, message.type);
+        // console.log("Extracted User IDs from", message.type + ":", gameUserIds); // Covered by logging within processWebSocketPayloadForUserIds
+        sendResponse({ status: "GAME_DATA received", processed_ids: Array.from(gameUserIds) });
+        break;
+      case 'CHAT_DATA':
+      case 'CHAT_DATA_RAW':
+        console.log("Processing User IDs for", message.type);
+        const chatUserIds = processWebSocketPayloadForUserIds(message.payload, message.type);
+        // console.log("Extracted User IDs from", message.type + ":", chatUserIds); // Covered by logging within processWebSocketPayloadForUserIds
+        sendResponse({ status: "CHAT_DATA received", processed_ids: Array.from(chatUserIds) });
+        break;
+      default:
+        console.warn("Received unknown message type from content_script:", message.type);
+    }
+
+    sendResponse({ status: "success", message: "Data received by background script" });
+    return true; 
+  }
+  return true; 
+});
+
+console.log("Background script loaded and listener is active. User ID extraction enabled.");

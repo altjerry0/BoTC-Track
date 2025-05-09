@@ -112,7 +112,9 @@ BoTC-Track (repository root)
 │       └── release.yml      # GitHub Actions workflow for release packaging
 ├── botc-extension/          # Contains the actual Chrome extension files
 │   ├── src/
-│   │   ├── background.js        # Background service worker (session fetching, alarms)
+│   │   ├── background.js        # Background service worker (session fetching, alarms, WebSocket message processing)
+│   │   ├── content/
+│   │   │   └── content_script.js # Injects into botc.app pages to intercept WebSocket messages
 │   │   ├── icons/               # Extension icons (icon16.png, icon32.png, etc.)
 │   │   └── popup/               # UI and logic for the popup
 │   │       ├── popup.html       # HTML structure
@@ -128,6 +130,25 @@ BoTC-Track (repository root)
 ├── README.md                # Main project README (this file)
 └── TODO.md
 ```
+
+## Key Functionality Details
+
+### WebSocket Message Interception
+
+To capture real-time game and chat data from `botc.app`, the extension employs a WebSocket interception mechanism:
+
+1.  **Content Script (`src/content/content_script.js`)**: 
+    *   This script is injected into all frames of `*.botc.app/*` pages at `document_start`.
+    *   It carefully replaces the browser's native `window.WebSocket` object with a proxy.
+    *   This proxy monitors all WebSocket connection attempts originating from the page.
+2.  **Targeted Interception**: 
+    *   The proxy specifically looks for connections to `wss://botc.app/backend/socket/` (for game state data) and `wss://chat-*.botc.app/socket.io/` (for chat messages).
+3.  **Message Handling**: 
+    *   For targeted WebSockets, the proxy listens for incoming messages.
+    *   It attempts to parse these messages (handling JSON and Socket.IO specific formats) and then forwards them to the background script (`src/background.js`) for further processing, such as extracting user IDs.
+    *   Messages are tagged (e.g., `GAME_DATA`, `CHAT_DATA`) to indicate their origin and type.
+
+This system allows the extension to gather data that is not available through standard HTTP APIs, providing insights into active game sessions and player interactions.
 
 ## Developer Setup / Loading from Source
 
