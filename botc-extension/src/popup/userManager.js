@@ -164,6 +164,103 @@ function createUsernameHistoryModal(history, currentName) {
 }
 
 /**
+ * Compares two players for sorting according to specific criteria:
+ * 1. Online Favorite players first (sorted by rating desc, then name asc).
+ * 2. Online Non-Favorite players next (sorted by rating desc, then name asc).
+ * 3. Offline players last (sorted by lastSeenTimestamp desc (recent first, no data last), then rating desc, then name asc).
+ * @param {Array} a - First player entry: [idString, playerObjectA]
+ * @param {Array} b - Second player entry: [idString, playerObjectB]
+ * @param {Set<string>} onlinePlayerIds - Set of IDs for players currently online.
+ * @returns {number} -1 if a < b, 1 if a > b, 0 if a === b.
+ */
+function comparePlayersForSorting(a, b, onlinePlayerIds) {
+    const idA = a[0];
+    const playerAData = a[1];
+    const idB = b[0];
+    const playerBData = b[1];
+
+    const isOnlineA = onlinePlayerIds.has(idA.toString());
+    const isOnlineB = onlinePlayerIds.has(idB.toString());
+
+    const isFavoriteA = playerAData.isFavorite || false;
+    const isFavoriteB = playerBData.isFavorite || false;
+
+    // Priority 1: Online AND Favorite
+    const aIsOnlineFav = isOnlineA && isFavoriteA;
+    const bIsOnlineFav = isOnlineB && isFavoriteB;
+
+    if (aIsOnlineFav !== bIsOnlineFav) {
+        return aIsOnlineFav ? -1 : 1; // OnlineFav (true) comes before not OnlineFav (false)
+    }
+    if (aIsOnlineFav && bIsOnlineFav) { // Both are Online + Favorite
+        // Sub-sort by rating (desc)
+        const scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
+        const scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
+        if (scoreA !== scoreB) {
+            return scoreB - scoreA; // Higher score first
+        }
+        // Then by name (asc)
+        return (playerAData.name || '').localeCompare(playerBData.name || '');
+    }
+
+    // Priority 2: Online (but not favorite, or only one is favorite - handled above)
+    if (isOnlineA !== isOnlineB) {
+        return isOnlineA ? -1 : 1; // Online (true) comes before offline (false)
+    }
+
+    if (isOnlineA) { // Both are Online (but not both Online+Favorite)
+        // Sort by rating (desc)
+        const scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
+        const scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
+        if (scoreA !== scoreB) {
+            return scoreB - scoreA;
+        }
+        // Then by name (asc)
+        return (playerAData.name || '').localeCompare(playerBData.name || '');
+    }
+
+    // Priority 3: Both are Offline
+    // Sort by lastSeenTimestamp (desc - recent first)
+    // Treat null/undefined/0 as very old to push them to the bottom of offline players
+    const lastSeenA = playerAData.lastSeenTimestamp || 0;
+    const lastSeenB = playerBData.lastSeenTimestamp || 0;
+    if (lastSeenA !== lastSeenB) {
+        return lastSeenB - lastSeenA; // More recent (higher timestamp) first
+    }
+
+    // If lastSeen is same (or both unknown), sort by rating (desc)
+    const scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
+    const scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
+    if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+    }
+
+    // Finally, by name (asc)
+    return (playerAData.name || '').localeCompare(playerBData.name || '');
+}
+
+/**
+ * Helper function to extract a Set of online player IDs from session data.
+ * @param {Array|Set|null} sessionData - Active session data or a Set of online IDs.
+ * @returns {Set<string>} A Set of player IDs that are currently online.
+ */
+function getOnlinePlayerIds(sessionData) {
+    const onlinePlayerIds = new Set();
+    if (sessionData && Array.isArray(sessionData)) { // If sessionData is an array of session objects
+        sessionData.forEach(session => {
+            if (session && session.usersAll && Array.isArray(session.usersAll)) {
+                session.usersAll.forEach(user => {
+                    if (user && user.id) onlinePlayerIds.add(user.id.toString());
+                });
+            }
+        });
+    } else if (sessionData instanceof Set) { // If sessionData is already a Set of IDs
+        sessionData.forEach(id => onlinePlayerIds.add(id.toString()));
+    }
+    return onlinePlayerIds;
+}
+
+/**
  * Displays known players in the specified container, filtered by search term and indicating online status.
  * @param {HTMLElement} container - The container element to display players in.
  * @param {string} [searchTerm=''] - Optional search term to filter players.
@@ -173,56 +270,47 @@ function createUsernameHistoryModal(history, currentName) {
  * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
  */
 function displayKnownPlayers(container, searchTerm = '', playerData, sessionData = null, createUsernameHistoryModalFunc, refreshCallback) {
+    const lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : ''; // Define lowerSearchTerm here
     container.innerHTML = ''; // Clear previous results
 
     // Determine online players
-    const onlinePlayerIds = new Set();
-    if (sessionData && Array.isArray(sessionData)) { // Check if sessionData is an array of sessions
-        sessionData.forEach(session => {
-            if (session && session.usersAll && Array.isArray(session.usersAll)) {
-                session.usersAll.forEach(user => { // Changed from 'player' to 'user' for clarity
-                    if (user && user.id) onlinePlayerIds.add(user.id.toString());
-                });
-            }
-        });
-    } else if (sessionData instanceof Set) { // Check if sessionData is already a Set of IDs (from refreshUserManagementTab)
-        sessionData.forEach(id => onlinePlayerIds.add(id.toString()));
-    }
+    const onlinePlayerIds = getOnlinePlayerIds(sessionData); // Ensure this call is correct
 
-    const lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : '';
-
+    // Filter and then sort the player data
     const filteredPlayersArray = Object.entries(playerData)
         .filter(([id, player]) => {
-            if (lowerSearchTerm === '') {
-                return true; // Show all if no search term
-            }
-            // Check for matches in player name, notes, score, or ID
             const nameMatch = player.name && player.name.toLowerCase().includes(lowerSearchTerm);
             const notesMatch = player.notes && player.notes.toLowerCase().includes(lowerSearchTerm);
             const scoreMatch = player.score !== undefined && player.score.toString().toLowerCase().includes(lowerSearchTerm);
-            const idMatch = id.toLowerCase().includes(lowerSearchTerm); // Search by Player ID
-
+            const idMatch = id.toLowerCase().includes(lowerSearchTerm);
             return nameMatch || notesMatch || scoreMatch || idMatch;
-        })
-        .map(([id, player]) => ({ ...player, id, isOnline: onlinePlayerIds.has(id) })); // Add id and online status
+        });
 
-    // Sort players: online first, then by name
-    const sortedPlayerIds = filteredPlayersArray.sort((a, b) => {
-        const isOnlineA = a.isOnline;
-        const isOnlineB = b.isOnline;
+    // Sort the filtered array using the new comparison function
+    const sortedPlayersArray = filteredPlayersArray.sort((a, b) => comparePlayersForSorting(a, b, onlinePlayerIds));
 
-        // Sort logic: Online players first, then alphabetically by name
-        if (isOnlineA && !isOnlineB) return -1; // Online A comes before offline B
-        if (!isOnlineA && isOnlineB) return 1;  // Offline A comes after online B
-        
-        // If both are online or both are offline, sort by name
-        return (a.name || '').localeCompare(b.name || '');
-    });
+    if (sortedPlayersArray.length === 0 && searchTerm) {
+        container.innerHTML = '<p>No players match your search.</p>';
+        return;
+    }
+    if (sortedPlayersArray.length === 0) {
+        container.innerHTML = '<p>No players known. Add some!</p>';
+        return;
+    }
 
-    sortedPlayerIds.forEach(player => {
+    // For each player, create a card
+    sortedPlayersArray.forEach(([id, player]) => { // Corrected: Destructure id and player here
         const card = document.createElement('div');
-        card.className = `player-card known-player ${getRatingClass(player.score || 3)}`; // Add known-player class
-        if (player.isOnline) {
+        card.className = 'player-card known-player';
+        card.dataset.playerId = id;
+
+        // Add rating class for styling
+        card.classList.add(getRatingClass(player.score));
+
+        const isOnline = onlinePlayerIds.has(id.toString()); // Correctly use destructured id
+        let hasMetaInfo = false; // Declare hasMetaInfo here for broader scope within the loop iteration
+
+        if (isOnline) {
             card.classList.add('online');
         }
         if (player.isFavorite) {
@@ -233,198 +321,212 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
         const infoContainer = document.createElement('div');
         infoContainer.className = 'player-info-container';
 
-        const nameElement = document.createElement('strong');
-        nameElement.textContent = player.name || 'Unknown Name';
-        infoContainer.appendChild(nameElement);
+        if (isOnline) {
+            const nameElement = document.createElement('strong');
+            nameElement.textContent = player.name || `Player ${id}`;
+            infoContainer.appendChild(nameElement);
 
-        const idElement = document.createElement('small');
-        idElement.textContent = ` (ID: ${player.id})`;
-        idElement.style.color = 'var(--subtle-text-color)';
-        infoContainer.appendChild(idElement);
+            const idElement = document.createElement('small');
+            idElement.textContent = ` (ID: ${id})`;
+            idElement.style.color = 'var(--subtle-text-color)';
+            infoContainer.appendChild(idElement);
 
-        if (player.isOnline) {
             let sessionName = null;
             if (sessionData && Array.isArray(sessionData)) { 
                 for (const session of sessionData) {
                     if (session && session.name && Array.isArray(session.usersAll)) {
                         const userInSession = session.usersAll.some(user => {
-                            const isMatch = user && String(user.id) === player.id;
+                            const isMatch = user && String(user.id) === id.toString();
                             return isMatch;
                         });
                         if (userInSession) {
                             sessionName = session.name;
-                            break; // Found the session for this player
+                            break; 
                         }
                     }
                 }
             }
 
-            // Create and add the online badge
             const onlineBadge = document.createElement('span');
             onlineBadge.classList.add('online-badge');
             onlineBadge.title = 'Online';
             infoContainer.appendChild(onlineBadge);
 
-            // Create and add the session name indicator if found
             if (sessionName) {
-                const sessionNameSpan = document.createElement('span');
-                sessionNameSpan.classList.add('session-name-indicator');
+                const sessionNameSpan = document.createElement('small');
+                sessionNameSpan.style.color = 'var(--accent-color)';
+                sessionNameSpan.style.marginLeft = '5px';
                 sessionNameSpan.textContent = ` (in: ${sessionName})`;
                 infoContainer.appendChild(sessionNameSpan);
             }
-        } else if (player.lastSeenTimestamp) { // Player is offline, show last seen time
-            const lastSeenText = formatTimeSince(player.lastSeenTimestamp);
-            const lastSeenElement = document.createElement('small');
-            lastSeenElement.textContent = ` (Last seen: ${lastSeenText})`;
-            lastSeenElement.style.color = 'var(--subtle-text-color)';
-            lastSeenElement.style.fontStyle = 'italic';
-            infoContainer.appendChild(lastSeenElement);
+        } else {
+            // Offline player name and ID (similar to online, but no badge or current session name)
+            const nameElement = document.createElement('strong');
+            nameElement.textContent = player.name || `Player ${id}`;
+            infoContainer.appendChild(nameElement);
+    
+            const idElement = document.createElement('small');
+            idElement.textContent = ` (ID: ${id})`;
+            idElement.style.color = 'var(--subtle-text-color)';
+            infoContainer.appendChild(idElement);
         }
 
-        infoContainer.appendChild(document.createElement('br')); // Line break
+        // Create a container for meta info (Sessions, Last Seen) - applies to ALL players
+        const metaInfoContainer = document.createElement('div');
+        metaInfoContainer.className = 'player-meta-info';
 
+        let addedSessionInfo = false;
+        // Add session count information (for ALL players if available)
+        if (player.lastSeenSessionId) { 
+            const sessionInfoText = document.createElement('span');
+            sessionInfoText.textContent = `Sessions: ${player.uniqueSessionCount || 1}`;
+            sessionInfoText.style.color = 'var(--subtle-text-color)';
+            metaInfoContainer.appendChild(sessionInfoText);
+            hasMetaInfo = true;
+            addedSessionInfo = true;
+        }
+
+        // Handle offline player last seen time (ONLY for offline players)
+        if (!isOnline && player.lastSeenTimestamp) { 
+            if (addedSessionInfo) { // Add a separator if session info was already added
+                const separator = document.createElement('span');
+                separator.textContent = ' | ';
+                separator.style.color = 'var(--subtle-text-color)';
+                separator.style.marginLeft = '5px'; 
+                separator.style.marginRight = '5px';
+                metaInfoContainer.appendChild(separator);
+            }
+            const lastSeenTextContent = formatTimeSince(player.lastSeenTimestamp);
+            const lastSeenElement = document.createElement('span');
+            lastSeenElement.textContent = `Last seen: ${lastSeenTextContent}`;
+            lastSeenElement.className = 'last-seen-text'; 
+            lastSeenElement.style.color = 'var(--subtle-text-color)';
+            metaInfoContainer.appendChild(lastSeenElement);
+            hasMetaInfo = true;
+        }
+
+        if (hasMetaInfo) {
+            infoContainer.appendChild(metaInfoContainer);
+        }
+        
         const scoreElement = document.createElement('span');
         scoreElement.textContent = `Score: ${player.score !== undefined ? player.score : 'N/A'}/5`;
+        scoreElement.style.display = 'block'; // Make score take its own line after meta info
+        scoreElement.style.marginTop = hasMetaInfo ? '5px' : '0'; // Now hasMetaInfo should be defined
         infoContainer.appendChild(scoreElement);
 
         if (player.notes) {
             const notesElement = document.createElement('p');
             notesElement.textContent = `Notes: ${player.notes}`;
             notesElement.className = 'player-notes';
+            // Check if notes already contain session count to avoid duplication if logic is complex
+            // For now, assuming session count is primarily handled by the new metaInfoContainer
             infoContainer.appendChild(notesElement);
         }
 
-        if (player.lastSeenSessionId) {
-            const sessionInfo = document.createElement('small');
-            sessionInfo.textContent = ` | Sessions: ${player.uniqueSessionCount || 1}`; // Show count
-            sessionInfo.style.marginLeft = '10px';
-            infoContainer.appendChild(sessionInfo);
-        }
+        card.appendChild(infoContainer);
 
-        card.appendChild(infoContainer); // Add info part to card
-
-        // --- Button Container ---
+        // --- Player Actions (Buttons) ---
         const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'player-card-buttons';
-
-        // Edit Button
-        const editButton = document.createElement('button');
-        editButton.textContent = '📝'; // Use icon for compactness
-        editButton.className = 'edit-player-button player-card-button'; // Consistent class
-        editButton.title = 'Edit Player Details';
-        // Enable the button and add the click handler
-        editButton.onclick = (e) => {
-            e.stopPropagation();
-            // Prompt for updated details, pre-filling with existing data
-            const newName = prompt(`Enter new name for ${player.name} (ID: ${player.id}):`, player.name);
-            if (newName === null) return; // User cancelled name prompt
-
-            const newScoreStr = prompt(`Enter new score (1-5) for ${newName || player.name}:`, player.score !== undefined ? player.score : '3');
-            if (newScoreStr === null) return; // User cancelled score prompt
-
-            let newScore = parseInt(newScoreStr, 10);
-            if (isNaN(newScore) || newScore < 1 || newScore > 5) {
-                alert("Invalid score. Please enter a number between 1 and 5. Keeping original score.");
-                newScore = player.score; // Keep original score if input is invalid
-            }
-
-            const newNotes = prompt(`Enter new notes for ${newName || player.name}:`, player.notes || '');
-            if (newNotes === null) return; // User cancelled notes prompt
-
-            // Call the core addPlayer function (handles both add and update)
-            if (typeof window.addPlayer === 'function') {
-                window.addPlayer(player.id, newName, newScore, newNotes, player.isFavorite, (success, message) => {
-                    if (success) {
-                        console.log(`Player ${player.id} updated via prompt.`);
-                        if (typeof refreshCallback === 'function') {
-                            refreshCallback(); // Refresh the list
-                        }
-                    } else {
-                        alert(`Failed to update player: ${message}`);
-                        console.error(`Failed to update player ${player.id}: ${message}`);
-                    }
-                });
-            } else {
-                console.error('window.addPlayer function not found!');
-                alert('Update feature is unavailable.');
-            }
-        };
-        buttonContainer.appendChild(editButton);
-
-        // Delete Button
-        const deleteButton = document.createElement('button');
-        deleteButton.innerHTML = '🗑️'; // Trash can emoji for delete
-        deleteButton.title = 'Delete Player';
-        deleteButton.className = 'player-action-button delete-button'; // Add specific class if needed for styling
-        deleteButton.onclick = (e) => {
-            e.stopPropagation(); // Prevent card click
-            if (confirm(`Are you sure you want to delete player ${player.name} (${player.id})? This cannot be undone.`)) {
-                // Use the globally exposed deletePlayer function
-                window.deletePlayer(player.id, (success, deletedPlayerId, message) => {
-                    if (success) {
-                        console.log(`Player ${deletedPlayerId} deleted via button.`);
-                        if (card && card.parentNode) {
-                            card.remove(); // Use the 'card' variable from the outer scope
-                            console.log(`Removed card for player ${deletedPlayerId} from UI.`);
-                        } else {
-                            console.warn(`Card element reference or parentNode was missing for player ${deletedPlayerId}. Could not remove directly.`);
-                            // Optionally fall back to full refresh if direct removal fails
-                            // if (typeof refreshCallback === 'function') refreshCallback(); 
-                        }
-                    } else {
-                        alert(`Failed to delete player: ${message}`);
-                        console.error(`Failed to delete player ${player.id}: ${message}`);
-                    }
-                });
-            }
-        };
-        buttonContainer.appendChild(deleteButton);
-
-        // Username History Button (only if history exists)
-        if (player.usernameHistory && player.usernameHistory.length > 0) {
-            const historyButton = document.createElement('button');
-            historyButton.textContent = 'History';
-            historyButton.onclick = (e) => {
-                e.stopPropagation(); // Prevent triggering card click/other events
-                createUsernameHistoryModalFunc(player.usernameHistory, player.name);
-            };
-            buttonContainer.appendChild(historyButton);
-        }
+        buttonContainer.className = 'player-actions'; // Updated class for consistency
 
         // Favorite Button
         const favoriteButton = document.createElement('button');
-        favoriteButton.className = 'favorite-button player-card-button';
-        // --- Set initial state based on player.isFavorite ---
-        favoriteButton.textContent = player.isFavorite ? '★' : '☆'; // Set star based on saved status
-        favoriteButton.title = player.isFavorite ? 'Remove from favorites' : 'Add to favorites'; // Set title
-        
-        favoriteButton.onclick = (e) => {
-            e.stopPropagation(); // Prevent triggering card click/other events
-            toggleFavoriteStatus(player.id, favoriteButton); // Use the toggle function
-        };
+        favoriteButton.classList.add('player-action-button', 'favorite-button'); // Ensure player-action-button is present
+        favoriteButton.innerHTML = player.isFavorite ? '★' : '☆'; // Updated Star icons
+        favoriteButton.title = player.isFavorite ? 'Unfavorite Player' : 'Favorite Player';
+        favoriteButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleFavoriteStatus(id, favoriteButton, player); // Pass player object
+            // No need to call refreshCallback here if toggleFavoriteStatus handles UI update
+        });
         buttonContainer.appendChild(favoriteButton);
 
-        // Refresh Name Button
-        const refreshNameButton = document.createElement('button');
-        refreshNameButton.innerHTML = '🔄'; // Refresh icon
-        refreshNameButton.title = 'Refresh Player Name';
-        refreshNameButton.classList.add('refresh-name-btn'); // For styling or specific selection
-        refreshNameButton.addEventListener('click', (e) => {
+        // Edit Button
+        const editButton = document.createElement('button');
+        editButton.classList.add('player-action-button');
+        editButton.innerHTML = `<img src="../icons/editbutton.svg" alt="Edit" class="button-icon">`;
+        editButton.title = 'Edit Player';
+        editButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            handleRefreshUserName(player.id, refreshNameButton, refreshCallback);
-        });
-        buttonContainer.appendChild(refreshNameButton);
+            // Simplified prompt logic, adjust as per original detail if needed
+            const newName = prompt(`Enter new name for ${player.name}:`, player.name);
+            if (newName === null) return;
 
-        card.appendChild(buttonContainer); // Add button container to card
+            const newScoreStr = prompt(`Enter new score (1-5) for ${newName}:`, player.score === null ? '' : player.score.toString());
+            if (newScoreStr === null) return;
+            let newScore = player.score; // Default to old score
+            if (newScoreStr.trim() !== '') {
+                const parsedScore = parseInt(newScoreStr, 10);
+                if (!isNaN(parsedScore) && parsedScore >= 1 && parsedScore <= 5) {
+                    newScore = parsedScore;
+                } else if (newScoreStr.trim() === '') { // Allow clearing the score
+                    newScore = null;
+                } else {
+                    alert("Invalid score. Must be 1-5 or empty. Score not changed.");
+                }
+            }
+
+            const newNotes = prompt(`Enter new notes for ${newName}:`, player.notes === null ? '' : player.notes);
+            if (newNotes === null) return;
+
+            // Use existing addPlayer function for updates, preserving favorite status by passing player.isFavorite
+            addPlayer(id, newName, newScore, newNotes, player.isFavorite, () => {
+                console.log("Player updated, attempting to refresh list.");
+                if (typeof refreshCallback === 'function') {
+                    refreshCallback();
+                }
+            });
+        });
+        buttonContainer.appendChild(editButton);
+
+        // History Button (if history exists)
+        if (player.usernameHistory && player.usernameHistory.length > 0) {
+            const historyButton = document.createElement('button');
+            historyButton.classList.add('player-action-button'); // Removed 'history-button' class
+            historyButton.innerHTML = `🕒`; // Updated Clock icon
+            historyButton.title = `View Username History (${player.usernameHistory.length} entries)`;
+            historyButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                createUsernameHistoryModalFunc(player.usernameHistory, player.name);
+            });
+            buttonContainer.appendChild(historyButton);
+        }
+
+        // Refresh Username Button (only if player has an ID, which they should)
+        const refreshUsernameButton = document.createElement('button');
+        refreshUsernameButton.classList.add('player-action-button'); // Removed 'refresh-username-button' class
+        refreshUsernameButton.innerHTML = '🔄'; // Updated Refresh icon
+        refreshUsernameButton.title = 'Refresh Username from Server';
+        refreshUsernameButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleRefreshUserName(id, refreshUsernameButton, refreshCallback);
+        });
+        buttonContainer.appendChild(refreshUsernameButton);
+
+        // Delete Button
+        const deleteButton = document.createElement('button');
+        deleteButton.classList.add('player-action-button');
+        deleteButton.innerHTML = `<img src="../icons/deletebutton.svg" alt="Delete" class="button-icon">`;
+        deleteButton.title = 'Delete Player';
+        deleteButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm(`Are you sure you want to delete ${player.name}? This cannot be undone.`)) {
+                deletePlayer(id, () => {
+                    console.log("Player deleted, attempting to refresh list.");
+                    if (typeof refreshCallback === 'function') {
+                        refreshCallback();
+                    }
+                });
+            }
+        });
+        buttonContainer.appendChild(deleteButton);
+
+        card.appendChild(infoContainer);
+        card.appendChild(buttonContainer);
 
         container.appendChild(card);
     });
-
-    if (container.children.length === 0 && !searchTerm) {
-        container.textContent = 'No players saved yet. Players you interact with in sessions will appear here.';
-    } else if (container.children.length === 0 && searchTerm) {
-        container.textContent = 'No players found matching your search.';
-    }
 }
 
 /**
@@ -476,6 +578,7 @@ function addPlayer(id, name, score, notes, isFavorite, updateUICallback) {
             if (usernameHistory.length > 10) {
                  usernameHistory = usernameHistory.slice(0, 10);
             }
+             newIsFavoriteValue = true;
         }
 
         // Update or create player data
@@ -691,20 +794,33 @@ function replaceAllPlayerDataAndSave(newData, callback) {
  * Toggles the favorite status of a player and updates storage and UI.
  * @param {string} playerId - The ID of the player.
  * @param {HTMLElement} buttonElement - The button element to update.
+ * @param {Object} [playerObject] - Optional: The player object, to update its isFavorite status directly for immediate UI feedback.
  */
-function toggleFavoriteStatus(playerId, buttonElement) {
+function toggleFavoriteStatus(playerId, buttonElement, playerObject) {
     loadPlayerData(playerData => {
-        if (playerData[playerId]) {
-            playerData[playerId].isFavorite = !playerData[playerId].isFavorite; // Toggle status
-
+        const player = playerData[playerId];
+        if (player) {
+            player.isFavorite = !player.isFavorite;
+            if (playerObject) { // If player object is passed, update it directly
+                playerObject.isFavorite = player.isFavorite;
+            }
             savePlayerData(playerData, () => {
-                console.log(`Player ${playerId} favorite status set to ${playerData[playerId].isFavorite}`);
-                // Update button appearance immediately
-                buttonElement.textContent = playerData[playerId].isFavorite ? '★' : '☆';
-                buttonElement.title = playerData[playerId].isFavorite ? 'Remove from favorites' : 'Add to favorites';
+                console.log(`Favorite status for ${playerId} toggled to ${player.isFavorite}.`);
+                // Update button UI immediately
+                buttonElement.innerHTML = player.isFavorite ? '★' : '☆'; // Correctly render HTML entity
+                buttonElement.title = player.isFavorite ? 'Unfavorite Player' : 'Favorite Player';
+                // Optionally, re-render or update the specific card's class if needed elsewhere
+                const cardElement = buttonElement.closest('.player-card');
+                if (cardElement) {
+                    if (player.isFavorite) {
+                        cardElement.classList.add('favorite-player');
+                    } else {
+                        cardElement.classList.remove('favorite-player');
+                    }
+                }
             });
         } else {
-            console.error(`Player ${playerId} not found for favorite toggle.`);
+            console.error('Player not found for toggling favorite status:', playerId);
         }
     });
 }
@@ -752,7 +868,7 @@ window.replaceAllPlayerDataAndSave = replaceAllPlayerDataAndSave;
  */
 async function handleRefreshUserName(playerId, buttonElement, refreshListCallback) {
     buttonElement.disabled = true;
-    buttonElement.innerHTML = '⏳'; // Loading/hourglass emoji
+    buttonElement.innerHTML = '&#x21bb;'; // Loading/hourglass emoji
 
     try {
         const authToken = await new Promise((resolve, reject) => {
@@ -807,7 +923,7 @@ async function handleRefreshUserName(playerId, buttonElement, refreshListCallbac
         // alert('Failed to refresh username. See console for details.'); // Already alerted specific errors
     } finally {
         buttonElement.disabled = false;
-        buttonElement.innerHTML = '🔄'; // Reset to refresh icon
+        buttonElement.innerHTML = '&#x21bb;'; // Reset to refresh icon
     }
 }
 
