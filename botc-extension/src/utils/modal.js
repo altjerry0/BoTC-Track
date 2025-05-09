@@ -23,6 +23,7 @@
                 showAlert: () => console.error("Modal elements not found or not initialized."),
                 showPrompt: () => console.error("Modal elements not found or not initialized."),
                 showConfirm: () => console.error("Modal elements not found or not initialized."),
+                showNotification: () => console.error("Modal elements not found or not initialized."),
                 closeModal: () => console.error("Modal elements not found or not initialized.")
             };
             return false;
@@ -180,12 +181,44 @@
         showModal(title, contentHtml, buttons);
     }
 
+    /**
+     * Shows a notification-style modal that auto-closes.
+     * @param {string} title - The title of the notification.
+     * @param {string} message - The message to display.
+     * @param {number} duration - Time in milliseconds before the modal automatically closes.
+     */
+    function showNotification(title, message, duration) {
+        if (!initializeModalElements()) return;
+
+        modalTitleElement.textContent = title;
+        modalBodyElement.innerHTML = `<p>${message.replace(/\n/g, '<br>')}</p>`;
+        modalActionsElement.innerHTML = ''; // Ensure no buttons from previous modals
+
+        modalElement.style.display = 'flex';
+        // Optionally, focus the close button or the modal itself if no other focusable elements
+        modalCloseButton.focus(); 
+
+        if (duration && duration > 0) {
+            console.log(`[ModalManager] Setting timeout to close notification in ${duration}ms`);
+            setTimeout(() => {
+                console.log('[ModalManager] Timeout fired, attempting to close notification modal.');
+                // Check if the current modal is still the notification one before closing
+                // This is a bit tricky without more state, but for now, we'll assume it is.
+                // A more robust solution might involve an ID for the notification.
+                if (modalElement.style.display === 'flex' && modalActionsElement.innerHTML === '') { // Basic check
+                    closeModal();
+                }
+            }, duration);
+        }
+    }
+
     // Expose ModalManager to global scope
     window.ModalManager = {
         showModal,
         showAlert,
         showPrompt,
         showConfirm,
+        showNotification,
         closeModal
     };
 

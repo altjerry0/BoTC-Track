@@ -5,15 +5,21 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 # BotC Player Tracker Extension - Changelog
 ---
 
-## [Unreleased]
+## [v1.1.1] - 2025-05-09
 
 ### Added
 - Enhanced user list sorting in 'Manage Users' tab:
   - Online favorite players are now prioritized at the top.
   - Subsequent sorting is by player rating (descending).
   - Offline players are sorted by 'last seen' time (most recent first), then by rating.
+- **Dynamic Export Filename**: CSV export filenames now include a `YYYYMMDD` datestamp and the count of users being exported (e.g., `botc_player_data_20250509_12users.csv`).
+- **Player Score Indicators**: Added visual indicators (+, ●, -) to session headers in the 'Active Games' tab, showing an aggregate count of good (score 4-5), neutral (score 3), and bad (score 1-2) rated players within each session. Indicators are displayed in the order: good, neutral, bad.
 
 ### Changed
+- **UI Overhaul: Modal Implementation**:
+    - Replaced all native browser `prompt()` and `alert()` popups with a unified, custom modal system (`ModalManager`).
+    - Affects player creation, editing, deletion confirmation, score/notes input from session cards, and various notifications (e.g., data export/import status, data clearing).
+    - Provides a consistent dark-theme UI and improved user experience for all interactive dialogs.
 - **UI Enhancement (User Management Controls):**
     - Updated 'Add Player Manually', 'Export Players (CSV)', and 'Import Players (CSV)' buttons to include text labels ('Add', 'Export', 'Import') next to their icons for improved clarity. (Reverted icon-only design for these specific buttons).
     - These buttons now use standard button styling, with icons spaced appropriately from text.
@@ -23,13 +29,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
     - Improved icon centering within dedicated icon-only action buttons (e.g., Edit, Delete).
 
 ### Fixed
-
-## [v1.1.1] - [Unreleased]
-
-### Added
-- **Dynamic Export Filename**: CSV export filenames now include a `YYYYMMDD` datestamp and the count of users being exported (e.g., `botc_player_data_20250509_12users.csv`).
-
-### Changed
+- **ModalManager**: Resolved an issue where the `showAlert` method was not defined in the `ModalManager` object, causing errors when called from other files. Added the missing method.
 
 ### Refactored
 - **Codebase Cleanup**: Removed unused JavaScript functions and CSS classes across multiple files (`background.js`, `popup.js`, `userManager.js`, `sessionManager.js`, `popup.css`) to improve code maintainability and reduce bundle size. This includes:
@@ -40,7 +40,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
   - Removed CSS styles associated with the removed player analysis indicators.
 - **CSV Module Separation**: Separated CSV import/export logic from `userManager.js` into a new dedicated `src/popup/csvManager.js` module for better modularity and code clarity.
 
-## [v1.1.0] - [Unreleased]
+## [v1.1.0] - [2025-05-09]
 
 ### Added
 - **Refresh Player Name**: Added a button ('🔄') to each player card in the 'Manage Users' tab to fetch and update the player's username directly from `botc.app`. This helps keep local player names synchronized with their current official usernames. If a name change is detected, the old name is added to the player's username history.
@@ -197,16 +197,6 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
     - Normalized the appearance and size of action buttons (Favorite, Edit, History, Refresh Username, Delete) in the 'Known Players' list for better visual consistency.
     - Ensured the "Add Player Manually" button aligns with the updated button styling.
     - Adjusted styling for various buttons to use consistent padding, icon sizing, and hover effects across the extension.
-
-## [Unreleased]
-### Changed
-- **UI Enhancement (User Management Controls):**
-    - Updated 'Add Player Manually', 'Export Players (CSV)', and 'Import Players (CSV)' buttons to include text labels ('Add', 'Export', 'Import') next to their icons for improved clarity. (Reverted icon-only design for these specific buttons).
-    - These buttons now use standard button styling, with icons spaced appropriately from text.
-    - The 'Clear All Player Data' button is now positioned to the far right of the control bar.
-    - Reduced margins between other buttons in the user management control bar for a more compact layout.
-    - Standardized button styles across the extension, removing custom styles in favor of a base button appearance and specific icon-button styles.
-    - Improved icon centering within dedicated icon-only action buttons (e.g., Edit, Delete).
 
 ## [v1.0.0] - 2024-03-10
 

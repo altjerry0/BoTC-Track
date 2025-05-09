@@ -8,7 +8,7 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 - [ ] **Refine UI for Current Game Players (Post-MVP)**: Once WebSocket interception is stable and core logic is robust, revisit displaying players from the *current* live game in a dedicated UI section in the popup (feature was previously on 'current-game-sockets' branch and removed for MVP focus).
     - Consider how to differentiate these from players in fetched historical/recent sessions.
 - [ ] **Refine Dark Mode Styling**: Improve the visual appearance and consistency of dark mode across all extension components.
-- [ ] **Replace `prompt()`** pop-ups in player management (add/edit) with a user-friendly modal dialog.
+- [x] **Replace `prompt()`** pop-ups in player management (add/edit) with a user-friendly modal dialog.
 
 ## Other Potential Enhancements
 
@@ -24,6 +24,7 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 - [ ] **UI/UX Refinements**
   -   Consider more distinct visual cues for official vs. experimental games.
   -   Provide clearer feedback on import/export success/failure.
+  - [ ] **Update Screenshots**: Update screenshots in `README.md` to reflect recent UI changes (modal system, button styles).
 - [ ] **Firebase Integration - Phase 2 (Data Sync)**
     -   Basic authentication UI and setup is in place.
     -   Implement Firestore synchronization for `playerData` in `userManager.js` (`loadPlayerData`, `savePlayerData`).

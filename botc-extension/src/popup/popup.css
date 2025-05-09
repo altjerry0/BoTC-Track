@@ -178,6 +178,13 @@ button .button-icon {
     align-items: center;
 }
 
+.session-header-right-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Adjust gap as needed between indicators and toggle button */
+    margin-left: auto; /* Pushes this container to the right if session-title doesn't fill space */
+}
+
 .session-title {
     display: flex;
     align-items: center;
@@ -623,6 +630,11 @@ body.dark-mode .player-card.rating-1 {
     /* padding: 8px 12px; Removed, inherits from default button */
 }
 
+#import-status-message {
+    font-style: italic;
+    color: #aaa; 
+}
+
 #clear-all-player-data-button {
     margin-left: auto; /* Pushes this button to the far right of the flex container */
     margin-right: 0; /* Reset right margin if not needed, or adjust as necessary */
@@ -987,7 +999,7 @@ body.dark-mode .username-history-item {
     /* padding: 8px 12px; Removed, inherits from default button */
 }
 
-.import-status-message {
+#import-status-message {
     font-style: italic;
     color: #aaa; 
 }
@@ -1197,3 +1209,76 @@ body.modal-open {
 }
 
 /* Utility class for visually hidden but accessible elements */
+
+/* Styles for session title line structure and score indicators */
+.session-title-line {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between main info and edition tag */
+    flex-grow: 1; /* Allow this line to take available space */
+    min-width: 0; /* Prevent overflow issues */
+}
+
+.session-main-info {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between title text and score indicators */
+    flex-grow: 1; /* Allow main info to take available space */
+    min-width: 0; /* Prevent overflow issues */
+}
+
+/* The div holding the session name/phase/player count text, child of .session-main-info */
+.session-main-info > div:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* min-width: 0; /* Implicitly handled by parent's min-width and flex properties */
+}
+
+.session-player-score-indicators {
+    display: inline-flex; /* Aligns children (score spans) in a row */
+    gap: 5px; /* Space between individual score indicators */
+    align-items: center;
+    flex-shrink: 0; /* Prevent indicators from shrinking if space is tight */
+}
+
+.session-player-score-indicators > span { /* Targets .score-good, .score-neutral, .score-bad */
+    display: inline-block;
+    padding: 1px 5px; /* Reduced padding */
+    border-radius: 8px; /* Slightly smaller radius */
+    font-size: 10px; /* Reduced font size */
+    font-weight: 600;
+    line-height: 1.2; /* Adjusted line height */
+    white-space: nowrap; /* Prevent text wrapping within an indicator */
+}
+
+.score-good {
+    background-color: var(--player-indicator-good-bg);
+    color: var(--player-indicator-good-text);
+    border: 1px solid var(--player-indicator-good-text);
+}
+
+.score-neutral {
+    background-color: var(--player-indicator-neutral-bg);
+    color: var(--player-indicator-neutral-text);
+    border: 1px solid var(--player-indicator-neutral-text);
+}
+
+.score-bad {
+    background-color: var(--player-indicator-bad-bg);
+    color: var(--player-indicator-bad-text);
+    border: 1px solid var(--player-indicator-bad-text);
+}
+
+/* Ensure dark mode borders also use the correct text color variable if not inherited */
+body.dark-mode .score-good {
+    border-color: var(--player-indicator-good-text);
+}
+
+body.dark-mode .score-neutral {
+    border-color: var(--player-indicator-neutral-text);
+}
+
+body.dark-mode .score-bad {
+    border-color: var(--player-indicator-bad-text);
+}

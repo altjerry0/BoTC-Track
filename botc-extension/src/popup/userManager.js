@@ -484,14 +484,12 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
         deleteButton.title = 'Delete Player';
         deleteButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (confirm(`Are you sure you want to delete ${player.name}? This cannot be undone.`)) {
-                deletePlayer(id, () => {
-                    console.log("Player deleted, attempting to refresh list.");
-                    if (typeof refreshCallback === 'function') {
-                        refreshCallback();
-                    }
-                });
-            }
+            deletePlayer(id, () => { // Pass the refreshCallback to the version of deletePlayer that accepts it.
+                console.log("Player deleted, attempting to refresh list after modal confirmation.");
+                if (typeof refreshCallback === 'function') {
+                    refreshCallback();
+                }
+            });
         });
         buttonContainer.appendChild(deleteButton);
 
@@ -804,34 +802,34 @@ function toggleFavoriteStatus(playerId, buttonElement, playerObject) {
  * @param {Function} callback - Function to call after deletion attempt (receives success: boolean, deletedPlayerId: string|null, message: string).
  */
 function deletePlayer(playerId, callback) {
-    loadPlayerData(playerData => {
-        if (!playerData[playerId]) {
-            console.warn(`[Delete Player] Player with ID ${playerId} not found.`);
-            if (callback) callback(false, null, "Player not found.");
-            return;
+    ModalManager.showConfirm(
+        'Delete Player',
+        `Are you sure you want to delete player ${playerId}? This cannot be undone.`,
+        async () => { // onConfirm
+            loadPlayerData(playerData => {
+                if (!playerData[playerId]) {
+                    console.warn(`[Delete Player] Player with ID ${playerId} not found.`);
+                    ModalManager.showNotification('Error', "Player not found.", 500);
+                    if (callback) callback(false, null, "Player not found.");
+                    return;
+                }
+
+                const deletedPlayerName = playerData[playerId].name || playerId;
+                delete playerData[playerId]; // Delete the player data
+
+                savePlayerData(playerData, () => {
+                    console.log(`[Delete Player] Player ${deletedPlayerName} deleted successfully.`);
+                    ModalManager.showNotification('Success', `Player ${deletedPlayerName} deleted.`, 500);
+                    if (callback) callback(true, playerId, "Player deleted."); 
+                });
+            });
+        },
+        () => { // onCancel
+            ModalManager.showNotification('Cancelled', 'Delete operation cancelled.', 500);
+            if (callback) callback(false, null, "Delete operation cancelled.");
         }
-
-        // Delete the player data
-        delete playerData[playerId];
-
-        // Save the updated data
-        savePlayerData(playerData, () => {
-            console.log(`[Delete Player] Player ${playerId} deleted successfully.`);
-            if (callback) callback(true, playerId, "Player deleted."); // Pass playerId back
-        });
-    });
+    );
 }
-
-window.loadPlayerData = loadPlayerData;
-window.addPlayer = addPlayer;
-window.displayKnownPlayers = displayKnownPlayers;
-window.createUsernameHistoryModal = createUsernameHistoryModal;
-window.savePlayerData = savePlayerData; 
-window.toggleFavoriteStatus = toggleFavoriteStatus;
-window.deletePlayer = deletePlayer;
-window.getRatingClass = getRatingClass;
-window.handleRefreshUserName = handleRefreshUserName; 
-window.replaceAllPlayerDataAndSave = replaceAllPlayerDataAndSave; 
 
 /**
  * Handles the process of refreshing a player's username from the API.
@@ -1011,28 +1009,13 @@ async function editPlayerDetails(playerId) {
     });
 }
 
-/**
- * Function to delete a player
- * @param {string} playerId - The ID of the player to delete
- */
-function deletePlayer(playerId) {
-    ModalManager.showConfirm('Delete Player', `Are you sure you want to delete player ${playerId}? This cannot be undone.`, async () => {
-        loadPlayerData(playerData => {
-            if (!playerData[playerId]) {
-                console.warn(`[Delete Player] Player with ID ${playerId} not found.`);
-                ModalManager.showAlert('Error', "Player not found.");
-                return;
-            }
-
-            // Delete the player data
-            delete playerData[playerId];
-
-            // Save the updated data
-            savePlayerData(playerData, () => {
-                console.log(`[Delete Player] Player ${playerId} deleted successfully.`);
-                ModalManager.showAlert('Success', `Player ${playerId} deleted.`);
-                renderKnownPlayers(); // Refresh the list
-            });
-        });
-    });
-}
+window.loadPlayerData = loadPlayerData;
+window.addPlayer = addPlayer;
+window.displayKnownPlayers = displayKnownPlayers;
+window.createUsernameHistoryModal = createUsernameHistoryModal;
+window.savePlayerData = savePlayerData; 
+window.toggleFavoriteStatus = toggleFavoriteStatus;
+window.deletePlayer = deletePlayer;
+window.getRatingClass = getRatingClass;
+window.handleRefreshUserName = handleRefreshUserName; 
+window.replaceAllPlayerDataAndSave = replaceAllPlayerDataAndSave; 

@@ -28,6 +28,16 @@ function getEditionDisplay(edition) {
     return edition.name || 'Custom Script';
 }
 
+// NEW HELPER FUNCTION
+function getScoreCategory(score) {
+    const numericScore = parseInt(score, 10);
+    if (isNaN(numericScore)) return 'unknown';
+    if (numericScore >= 4) return 'good';
+    if (numericScore === 3) return 'neutral';
+    if (numericScore <= 2 && numericScore >= 1) return 'bad';
+    return 'unknown';
+}
+
 /**
  * Create edition tag element
  * @param {Object} edition - Edition data
@@ -415,12 +425,11 @@ function renderSessions(
             const sessionTitle = document.createElement('div');
             sessionTitle.className = 'session-title';
             
-            const titleTextContainer = document.createElement('div');
-            titleTextContainer.style.display = 'flex'; // Use flex to align items horizontally
-            titleTextContainer.style.alignItems = 'center';
-            titleTextContainer.style.gap = '8px'; // Add some space between elements
+            const titleTextContainer = document.createElement('div'); // Main container for title line elements
+            titleTextContainer.className = 'session-title-line'; // Assign a class for potential flex styling if session-title itself isn't flex
 
-            const titleText = document.createElement('div');
+            const mainTitleInfo = document.createElement('div');
+            mainTitleInfo.className = 'session-main-info';
             
             // Construct the new player count string
             const playersWithAssignedId = session.players ? session.players.filter(p => p && p.id).length : 0;
@@ -429,22 +438,72 @@ function renderSessions(
 
             const playerCountString = `Players: ${playersWithAssignedId}/${totalPlayerSlots} (${totalParticipants} total)`;
 
+            const titleText = document.createElement('div');
             titleText.innerHTML = `<strong>${session.name}</strong> <span style="color: #666">• Phase ${session.phase}${session.phase === 0 ? '<span class="phase-zero-indicator">In Between Games</span>' : ''} • ${playerCountString}</span>`;
-            titleTextContainer.appendChild(titleText);
+            mainTitleInfo.appendChild(titleText);
 
-            sessionTitle.appendChild(titleTextContainer); // Add the container with title+indicators
+            // *** NEW: Player Score Indicators ***
+            let scoreIndicatorsContainer; // Declare here to be in scope
+            if (playerData && session.usersAll) {
+                let good_scores = 0;
+                let neutral_scores = 0;
+                let bad_scores = 0;
 
-            // Add edition tag
+                session.usersAll.forEach(userInSession => {
+                    if (userInSession && userInSession.id && playerData[userInSession.id]) {
+                        const knownPlayer = playerData[userInSession.id];
+                        const category = getScoreCategory(knownPlayer.score);
+                        if (category === 'good') good_scores++;
+                        else if (category === 'neutral') neutral_scores++;
+                        else if (category === 'bad') bad_scores++;
+                    }
+                });
+
+                let indicatorsHtml = ''; // Changed const to let
+                if (good_scores > 0) {
+                    indicatorsHtml += `<span class="score-good" title="Good (Score 4-5)">+${good_scores}</span> `;
+                }
+                if (neutral_scores > 0) {
+                    indicatorsHtml += `<span class="score-neutral" title="Neutral (Score 3)">●${neutral_scores}</span> `;
+                }
+                if (bad_scores > 0) {
+                    indicatorsHtml += `<span class="score-bad" title="Bad (Score 1-2)">-${bad_scores}</span>`;
+                }
+                
+                if (indicatorsHtml.trim() !== '') {
+                    // Create container only if there's content
+                    scoreIndicatorsContainer = document.createElement('span');
+                    scoreIndicatorsContainer.className = 'session-player-score-indicators';
+                    scoreIndicatorsContainer.innerHTML = indicatorsHtml.trim();
+                }
+            }
+            // *** END NEW: Player Score Indicators ***
+
+            titleTextContainer.appendChild(mainTitleInfo);
+
+            // Add edition tag to titleTextContainer, after mainTitleInfo
             const editionTag = createEditionTag(session.edition);
-            sessionTitle.appendChild(editionTag);
+            titleTextContainer.appendChild(editionTag);
+
+            sessionTitle.appendChild(titleTextContainer); // Add the container with title + edition
+
+            // Create a new container for right-side controls (indicators + toggle button)
+            const rightHeaderControls = document.createElement('div');
+            rightHeaderControls.className = 'session-header-right-controls';
+
+            // Add score indicators to the new right-side container IF they exist
+            if (scoreIndicatorsContainer) {
+                rightHeaderControls.appendChild(scoreIndicatorsContainer);
+            }
 
             const toggleButton = document.createElement('button');
             toggleButton.classList.add('session-toggle-button'); // Add class
             toggleButton.innerHTML = '&#9660;'; // Down arrow for 'Show Players'
             toggleButton.title = 'Show players in this session';
+            rightHeaderControls.appendChild(toggleButton); // Add toggle button to the new container
 
             sessionHeader.appendChild(sessionTitle);
-            sessionHeader.appendChild(toggleButton);
+            sessionHeader.appendChild(rightHeaderControls); // Add the new right-side controls container to the header
 
             const sessionContent = document.createElement('div');
             sessionContent.className = 'session-content';
