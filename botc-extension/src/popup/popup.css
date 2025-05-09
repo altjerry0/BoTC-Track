@@ -1293,3 +1293,33 @@ body.dark-mode .score-neutral {
 body.dark-mode .score-bad {
     border-color: var(--player-indicator-bad-text);
 }
+
+/* Apply glow to the entire active session container */
+.session-container.active-user-session {
+    /* Glow effect */
+    box-shadow: 0 0 12px 3px var(--link-color); 
+    /* Ensure the container has a border-radius if it doesn't inherit one that looks good with a glow */
+    border-radius: var(--border-radius); /* Or match .session-header's if different and preferred */
+    position: relative; /* Good for stacking context if needed */
+    z-index: 1; /* Bring to front to ensure glow isn't clipped by subsequent non-active sessions */
+    /* Add a little margin if containers are too close and glow gets cut off by next element */
+    /* margin-bottom: 5px; */ /* Example: uncomment and adjust if needed */
+}
+
+/* Dark mode specific adjustment for glow on the container */
+body.dark-mode .session-container.active-user-session {
+    box-shadow: 0 0 12px 4px #00aeff; /* A bright blue glow for dark mode */
+}
+
+/* Styles for the online status indicator for favorite players */
+.online-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--online-indicator-color);
+    margin-left: 5px;
+    vertical-align: middle;
+    box-shadow: 0 0 2px var(--online-indicator-color);
+    border: 1px solid var(--text-color); 
+}

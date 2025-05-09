@@ -190,36 +190,47 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "requestSession" || request.action === "fetchSessions") { 
-        // Use token from local storage if available, fallback to global var (less reliable for service worker)
         chrome.storage.local.get('authToken', (result) => {
             const currentAuthToken = result.authToken || authToken; // Prefer stored token
             if (!currentAuthToken) {
-                console.warn("Auth token missing for session fetch (popup).ทั้งในตัวแปรและ storage");
+                console.warn("[BG Popup Fetch] Auth token missing for session fetch.");
                 sendResponse({ error: "Authorization token not available" });
-                return; // Exit early
+                return; // Exit from chrome.storage.local.get callback
             }
 
             fetch("https://botc.app/backend/sessions", {
                 method: "GET",
-                headers: {
-                    "Authorization": currentAuthToken
-                }
+                headers: { "Authorization": currentAuthToken }
             })
-            .then(response => response.json().then(data => ({ status: response.status, ok: response.ok, data })))
-            .then(({ status, ok, data }) => {
-                if (ok) {
-                    sendResponse({ sessions: data });
+            .then(response => {
+                if (!response.ok) {
+                    // Attempt to parse error as JSON, otherwise use statusText
+                    return response.json().catch(() => null) // if error response isn't valid JSON
+                        .then(errorBody => {
+                            const errorMessage = errorBody ? (errorBody.message || JSON.stringify(errorBody)) : response.statusText;
+                            const detailedError = `API Error ${response.status}: ${errorMessage}`;
+                            console.error(`[BG Popup Fetch] ${detailedError}`);
+                            throw new Error(detailedError); // This will be caught by the .catch() below
+                        });
+                }
+                return response.json(); // If response.ok, parse and return JSON
+            })
+            .then(sessionsData => {
+                // Check if the API, despite a 200 OK, returned an error structure
+                if (sessionsData && typeof sessionsData.error !== 'undefined') {
+                    console.error("[BG Popup Fetch] API returned 200 OK but with an error payload:", sessionsData.error);
+                    sendResponse({ error: sessionsData.error });
                 } else {
-                    console.error("API returned an error (popup fetch):", data);
-                    sendResponse({ error: `API Error ${status}: ${JSON.stringify(data)}` });
+                    sendResponse({ sessions: sessionsData });
                 }
             })
             .catch(error => {
-                console.error("Error fetching session data (popup fetch):", error);
-                sendResponse({ error: error.message });
+                // Catches errors from fetch() network issues or the !response.ok block's throw
+                console.error("[BG Popup Fetch] Error fetching sessions for popup:", error.message);
+                sendResponse({ error: error.message || "Failed to fetch sessions due to an unknown server error." });
             });
         });
-        return true; // Indicates async response
+        return true; // Crucial: Indicates that sendResponse will be called asynchronously
     } else if (request.action === "getPlayerData") {
         chrome.storage.local.get('playerData', (data) => {
             if (chrome.runtime.lastError) {

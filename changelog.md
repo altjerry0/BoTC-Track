@@ -40,7 +40,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
   - Removed CSS styles associated with the removed player analysis indicators.
 - **CSV Module Separation**: Separated CSV import/export logic from `userManager.js` into a new dedicated `src/popup/csvManager.js` module for better modularity and code clarity.
 
-## [v1.1.0] - [2025-05-09]
+## [v1.1.0] - 2025-05-09
 
 ### Added
 - **Refresh Player Name**: Added a button ('🔄') to each player card in the 'Manage Users' tab to fetch and update the player's username directly from `botc.app`. This helps keep local player names synchronized with their current official usernames. If a name change is detected, the old name is added to the player's username history.
@@ -198,6 +198,10 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
     - Ensured the "Add Player Manually" button aligns with the updated button styling.
     - Adjusted styling for various buttons to use consistent padding, icon sizing, and hover effects across the extension.
 - **Modal Theming**: Updated modal CSS to correctly use theme variables, ensuring proper display in both light and dark modes.
+- **Active Session Highlighting**: Sessions where the logged-in user is participating (present in `usersAll`) are now prioritized:
+    - These sessions are sorted to appear at the top of the session list.
+    - The session card header receives a "glow" effect for visual distinction.
+    - This involved updating JWT parsing in `popup.js` (already present), modifying `sessionManager.js` for sorting and class application based on `usersAll`, and updating `popup.css` for the glow effect.
 
 ## [v1.0.0] - 2024-03-10
 

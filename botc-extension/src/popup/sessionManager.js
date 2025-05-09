@@ -291,90 +291,125 @@ function createPlayerCard(
  * @param {Function} createUsernameHistoryModal - Function to create the history modal.
  * @param {Function} updateOnlineFavoritesListFunc - Function to update the online favorites list UI.
  */
-function checkHistoryAndRender(sessions, initialPlayerData, resultDiv, options, addPlayerFunc, createUsernameHistoryModalFunc, updateOnlineFavoritesListFunc) {
-    let updatedPlayerData = { ...initialPlayerData };
-    let historyUpdatePromises = [];
+function checkHistoryAndRender(
+    sessions,
+    initialPlayerData,
+    resultDiv,
+    options,
+    addPlayerFunc,
+    createUsernameHistoryModalFunc,
+    updateOnlineFavoritesListFunc
+) {
+    // Deep clone initialPlayerData for modifications to avoid side effects on the original object
+    const processedPlayerData = JSON.parse(JSON.stringify(initialPlayerData)); 
+    let playerDataWasActuallyUpdatedDuringHistoryCheck = false;
 
+    // Process sessions for potential player data updates (e.g., username history, session history)
     sessions.forEach(session => {
-        session.usersAll.forEach(user => {
-            // Check and update username history
-            const usernamePromise = new Promise((resolve) => {
-                updateUsernameHistoryIfNeeded(user.id, user.username, updatedPlayerData, (usernameChanged, dataAfterUsername) => {
-                    if (usernameChanged) updatedPlayerData = dataAfterUsername;
-                    resolve(); // Resolve regardless of change
-                });
-            });
+        if (session.usersAll && Array.isArray(session.usersAll)) {
+            session.usersAll.forEach(userInSession => {
+                const userId = userInSession.id ? userInSession.id.toString() : null;
+                const userNameFromApi = userInSession.username ? userInSession.username.trim() : null;
 
-            // Check and update session history (chained after username)
-            const sessionHistoryPromise = usernamePromise.then(() => {
-                return new Promise((resolve) => {
-                    updateSessionHistoryIfNeeded(user.id, session.name, updatedPlayerData, (sessionChanged, dataAfterSession) => {
-                        if (sessionChanged) updatedPlayerData = dataAfterSession;
-                        resolve(); // Resolve regardless of change
-                    });
-                });
-            });
+                if (userId && processedPlayerData[userId]) {
+                    const player = processedPlayerData[userId];
+                    let playerUpdatedThisPass = false;
 
-            historyUpdatePromises.push(sessionHistoryPromise);
-        });
+                    // Username History Update
+                    if (userNameFromApi && player.name !== userNameFromApi) {
+                        const oldUsername = player.name;
+                        player.name = userNameFromApi;
+                        if (!player.usernameHistory) player.usernameHistory = [];
+                        const lastHistoryEntry = player.usernameHistory.length > 0 ? player.usernameHistory[0].username : null;
+                        if (oldUsername && (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase())) {
+                            player.usernameHistory.unshift({ username: oldUsername, timestamp: Date.now() });
+                        }
+                        playerUpdatedThisPass = true;
+                    }
+
+                    // Session History Update
+                    const currentSessionIdentifier = session.name ? session.name.toString() : (session.id ? session.id.toString() : null);
+                    if (currentSessionIdentifier) {
+                        if (!player.sessionHistory) player.sessionHistory = [];
+                        if (!player.sessionHistory.includes(currentSessionIdentifier)) {
+                            player.sessionHistory.push(currentSessionIdentifier);
+                            player.uniqueSessionCount = (player.uniqueSessionCount || 0) + 1;
+                            playerUpdatedThisPass = true;
+                        }
+                    }
+                    
+                    if (playerUpdatedThisPass) {
+                        playerDataWasActuallyUpdatedDuringHistoryCheck = true;
+                    }
+                }
+            });
+        }
     });
 
-    // Wait for all history updates to potentially complete
-    Promise.all(historyUpdatePromises)
-        .then(() => {
-            // Now render with the potentially updated player data
-            renderSessions(
-                sessions, 
-                updatedPlayerData, 
-                resultDiv, 
-                options, 
-                addPlayerFunc, 
-                createUsernameHistoryModalFunc
-            );
-
-            // --- Update Online Favorites List ---
-            // Construct the map of online players: { playerId: sessionName }
-            const onlinePlayersMap = new Map();
-            sessions.forEach(session => {
-                if (session.usersAll && Array.isArray(session.usersAll)) {
-                    session.usersAll.forEach(user => {
-                        if (user.id) { 
-                            onlinePlayersMap.set(user.id, session.name || 'Unknown Session');
-                        }
-                    });
-                }
-            });
-            
-            // Call the update function
-            if (updateOnlineFavoritesListFunc) {
-                updateOnlineFavoritesListFunc(updatedPlayerData, onlinePlayersMap);
+    // Save player data if it was updated during the history check
+    if (playerDataWasActuallyUpdatedDuringHistoryCheck) {
+        chrome.storage.local.set({ playerData: processedPlayerData }, () => {
+            if (chrome.runtime.lastError) {
+                console.error('[FG SessionRender] Error saving player data after history check:', chrome.runtime.lastError.message);
+                // Optionally: Display a user-friendly error message here using a safe method
+                // e.g., ModalManager.showNotification("Error saving updated player data.", true, 3000);
             } else {
-                console.warn('updateOnlineFavoritesListFunc not provided to checkHistoryAndRender');
-            }
-
-        })
-        .catch(error => {
-            console.error("Error processing player history updates:", error);
-            // Fallback: Render with initial data if history processing fails
-            renderSessions(sessions, initialPlayerData, resultDiv, options, addPlayerFunc, createUsernameHistoryModalFunc);
-            
-            // Maybe still try to update favorites with initial data?
-            const onlinePlayersMap = new Map();
-            sessions.forEach(session => {
-                if (session.usersAll && Array.isArray(session.usersAll)) {
-                    session.usersAll.forEach(user => {
-                        if (user.id) { 
-                            onlinePlayersMap.set(user.id, session.name || 'Unknown Session');
-                        }
-                    });
-                }
-            });
-            if (updateOnlineFavoritesListFunc) {
-                updateOnlineFavoritesListFunc(initialPlayerData, onlinePlayersMap); 
-            } else {
-                console.warn('updateOnlineFavoritesListFunc not provided to checkHistoryAndRender (in catch)');
+                console.log('[FG SessionRender] Player data updated with historical info and saved.');
             }
         });
+    }
+
+    // Sort sessions: ones with the current user first, then by date (original order)
+    if (window.currentUserID && sessions && Array.isArray(sessions)) {
+        sessions.sort((a, b) => {
+            const userInA = a.usersAll && a.usersAll.some(u => u.id && u.id.toString() === window.currentUserID.toString());
+            const userInB = b.usersAll && b.usersAll.some(u => u.id && u.id.toString() === window.currentUserID.toString());
+
+            if (userInA && !userInB) return -1; // A comes first
+            if (!userInA && userInB) return 1;  // B comes first
+            // If both are active or both are not, maintain original relative order (often chronological from API)
+            return 0; 
+        });
+    }
+
+    // Call renderSessions with potentially updated player data and sorted sessions
+    renderSessions(
+        sessions, 
+        playerDataWasActuallyUpdatedDuringHistoryCheck ? processedPlayerData : initialPlayerData, 
+        resultDiv, 
+        options, 
+        addPlayerFunc, 
+        createUsernameHistoryModalFunc
+    );
+
+    // Update the online favorites list if the function is provided
+    if (updateOnlineFavoritesListFunc) {
+        // Construct the map of online players: { playerId: sessionName or true }
+        const onlinePlayersMap = new Map();
+        sessions.forEach(session => {
+            if (session.usersAll && Array.isArray(session.usersAll)) {
+                session.usersAll.forEach(user => {
+                    if (user.id) { 
+                        // Storing session name can be useful, or just true if presence is enough
+                        onlinePlayersMap.set(user.id.toString(), session.name || true);
+                    }
+                });
+            }
+        });
+
+        // Convert Map to plain object for safer cross-context passing
+        const onlinePlayersObject = Object.fromEntries(onlinePlayersMap);
+
+        // Now call the function from popup.js context if it exists
+        if (typeof window.updateOnlineFavoritesListFunc === 'function') {
+            console.log('[SessionManager] onlinePlayersObject before passing:', onlinePlayersObject);
+            window.updateOnlineFavoritesListFunc(processedPlayerData, onlinePlayersObject);
+        } else {
+            console.warn("updateOnlineFavoritesListFunc not found on window object. Is popup.js loaded and function exposed?");
+        }
+    } else {
+        // console.warn('updateOnlineFavoritesListFunc not provided to checkHistoryAndRender');
+    }
 }
 
 /**
@@ -404,12 +439,12 @@ function renderSessions(
  
     // Filter sessions based on options
     const filteredSessions = (sessions || []).filter(session => {
-        if (options.officialOnly && !session.edition.isOfficial) return false;
+        if (options.officialOnly && session.edition && !session.edition.isOfficial) return false; // Check session.edition exists
         return true;
     });
  
     if (filteredSessions.length === 0) {
-        console.log('No sessions to display after filtering.');
+        // console.log('No sessions to display after filtering.'); // Can be noisy, enable for debug
         resultDiv.innerHTML = '<p>No active sessions found matching the criteria.</p>';
         return;
     }
@@ -418,6 +453,15 @@ function renderSessions(
         try {
             const sessionContainer = document.createElement('div');
             sessionContainer.className = 'session-container';
+            sessionContainer.dataset.sessionId = session.id; // Store session ID for potential future use
+
+            // Check if the current user is present in this session's usersAll array
+            if (window.currentUserID && session.usersAll && Array.isArray(session.usersAll)) {
+                const isCurrentUserInSession = session.usersAll.some(u => u.id && u.id.toString() === window.currentUserID.toString());
+                if (isCurrentUserInSession) {
+                    sessionContainer.classList.add('active-user-session');
+                }
+            }
 
             const sessionHeader = document.createElement('div');
             sessionHeader.className = 'session-header';

@@ -15,8 +15,15 @@ let allPlayerData = {};
  */
 function loadPlayerData(callback) {
     chrome.storage.local.get('playerData', (data) => {
+        if (chrome.runtime.lastError) {
+            console.error("Error loading playerData from storage:", chrome.runtime.lastError.message);
+            // Provide a default/empty object to the callback to prevent further errors down the chain
+            allPlayerData = {}; 
+            if (typeof callback === 'function') callback({});
+            return;
+        }
         allPlayerData = data.playerData || {};
-        callback(allPlayerData);
+        if (typeof callback === 'function') callback(allPlayerData);
     });
 }
 
@@ -769,30 +776,37 @@ function replaceAllPlayerDataAndSave(newData, callback) {
  */
 function toggleFavoriteStatus(playerId, buttonElement, playerObject) {
     loadPlayerData(playerData => {
-        const player = playerData[playerId];
-        if (player) {
-            player.isFavorite = !player.isFavorite;
-            if (playerObject) { // If player object is passed, update it directly
-                playerObject.isFavorite = player.isFavorite;
-            }
-            savePlayerData(playerData, () => {
-                console.log(`Favorite status for ${playerId} toggled to ${player.isFavorite}.`);
-                // Update button UI immediately
-                buttonElement.innerHTML = player.isFavorite ? '★' : '☆'; // Correctly render HTML entity
-                buttonElement.title = player.isFavorite ? 'Unfavorite Player' : 'Favorite Player';
-                // Optionally, re-render or update the specific card's class if needed elsewhere
-                const cardElement = buttonElement.closest('.player-card');
-                if (cardElement) {
-                    if (player.isFavorite) {
-                        cardElement.classList.add('favorite-player');
-                    } else {
-                        cardElement.classList.remove('favorite-player');
-                    }
-                }
-            });
-        } else {
-            console.error('Player not found for toggling favorite status:', playerId);
+        if (!playerData[playerId]) {
+            console.warn(`Player ${playerId} not found for toggling favorite.`);
+            ModalManager.showNotification(`Player ${playerId} not found.`, true, 3000);
+            return;
         }
+
+        playerData[playerId].isFavorite = !playerData[playerId].isFavorite;
+        if (playerObject) { // Update the passed object for immediate UI consistency if provided
+            playerObject.isFavorite = playerData[playerId].isFavorite;
+        }
+
+        savePlayerData(playerData, () => {
+            if (chrome.runtime.lastError) {
+                console.error(`Error saving favorite status for player ${playerId}:`, chrome.runtime.lastError.message);
+                ModalManager.showNotification("Error saving favorite status.", true, 3000);
+                // Optionally, revert UI change if save failed, though this can be complex
+                return;
+            }
+            console.log(`Player ${playerId} favorite status saved: ${playerData[playerId].isFavorite}`);
+            // Update button text/appearance
+            if (buttonElement) {
+                buttonElement.textContent = playerData[playerId].isFavorite ? '★ Unfavorite' : '☆ Favorite';
+                buttonElement.classList.toggle('favorite-active', playerData[playerId].isFavorite);
+            }
+            // Trigger a refresh of the list or relevant UI part
+            // This needs to be handled by the caller or a passed-in refresh function
+            // For now, assume popup.js handles refresh via its own mechanisms after this callback if needed
+            // If a global refresh function is available, call it here:
+            // e.g., if (typeof refreshUserManagementTab === 'function') refreshUserManagementTab();
+            // Or, more robustly, the function that calls toggleFavoriteStatus should handle refresh.
+        });
     });
 }
 

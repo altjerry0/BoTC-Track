@@ -1,7 +1,7 @@
 // This is the main script for the popup interface.
 // It orchestrates calls to functions defined in userManager.js and sessionManager.js
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Button and Controls References
     const fetchButton = document.getElementById('fetchButton');
     const officialOnlyCheckbox = document.getElementById('officialOnlyCheckbox');
@@ -12,23 +12,50 @@ document.addEventListener('DOMContentLoaded', function() {
     const importStatusDiv = document.getElementById('import-status');
     const addPlayerButton = document.getElementById('add-player-button'); // Added for completeness
     const clearAllPlayerDataButton = document.getElementById('clear-all-player-data-button'); // New button
-
-    // Dark Mode Toggle (moved from modal)
     const darkModeToggle = document.getElementById('darkModeToggle');
+    const sessionListDiv = document.getElementById('sessionList');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const knownPlayersDiv = document.getElementById('knownPlayers');
+    const onlineFavoritesListDiv = document.getElementById('onlineFavoritesList');
+    const onlineFavoritesCountSpan = document.getElementById('onlineFavoritesCount');
+    const openInTabButton = document.getElementById('open-in-tab-btn');
+    const fetchStatsSpan = document.getElementById('fetchStats');
 
     // Tab References
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
 
     // Content Area References
-    const sessionListDiv = document.getElementById('sessionList'); // Specific div for session cards
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    const knownPlayersDiv = document.getElementById('knownPlayers');
 
     // State
     let latestSessionData = null; // Variable to store the latest session data
     let showOfficialOnly = false; // Store the filter state
     let searchTimeout = null;
+    let currentUserID = null; // Variable to store the logged-in user's ID
+
+    // Function to parse JWT and extract user ID
+    function parseJwt(token) {
+        if (!token) {
+            console.warn("Attempted to parse a null or empty token.");
+            return null;
+        }
+        try {
+            const base64Url = token.split('.')[1];
+            if (!base64Url) {
+                console.error("Invalid JWT: Missing payload.");
+                return null;
+            }
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            const decodedToken = JSON.parse(jsonPayload);
+            return decodedToken.id || null; // Ensure 'id' claim exists
+        } catch (error) {
+            console.error('Failed to parse JWT:', error);
+            return null;
+        }
+    }
 
     // --- Dark Mode Functionality ---
     function setDarkMode(isDark) {
@@ -130,9 +157,10 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * Updates the list of online favorite players in the UI.
      * @param {Object} playerData - The complete player data object.
-     * @param {Map<string, string>} onlinePlayersMap - Map of online player IDs to their session names.
+     * @param {Object} onlinePlayersMap - Object of online player IDs to their session names.
      */
     function updateOnlineFavoritesList(playerData, onlinePlayersMap) {
+        console.log('[Popup] onlinePlayersMap received (should be object):', onlinePlayersMap, 'Is Map?', onlinePlayersMap instanceof Map); // Log will show false
         const favoritesListDiv = document.getElementById('onlineFavoritesList');
         const favoritesCountSpan = document.getElementById('onlineFavoritesCount');
 
@@ -151,11 +179,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const onlineFavorites = [];
         for (const playerId in playerData) {
-            if (playerData[playerId].isFavorite && onlinePlayersMap.has(playerId)) {
+            // Use hasOwnProperty for plain objects instead of .has() for Maps
+            if (playerData[playerId].isFavorite && onlinePlayersMap.hasOwnProperty(playerId)) { 
                 onlineFavorites.push({
                     ...playerData[playerId],
                     id: playerId, // Ensure player ID is part of the object
-                    sessionName: onlinePlayersMap.get(playerId) // Corrected to sessionName for clarity from onlinePlayersMap
+                    // Use direct property access for plain objects instead of .get() for Maps
+                    sessionName: onlinePlayersMap[playerId] 
                 });
             }
         }
@@ -182,6 +212,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         favoritesListDiv.appendChild(ul);
     }
+
+    // Expose the function to be callable from sessionManager.js
+    window.updateOnlineFavoritesListFunc = updateOnlineFavoritesList;
 
     /**
      * Refreshes the content of the User Management tab.
@@ -478,6 +511,26 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.warn('Clear All Player Data button not found.');
     }
+
+    // Get and store current user ID from authToken
+    chrome.storage.local.get(['authToken'], (result) => {
+        if (result.authToken) {
+            currentUserID = parseJwt(result.authToken);
+            window.currentUserID = currentUserID; // Expose to global scope
+            if (currentUserID) {
+                console.log('Current User ID:', currentUserID);
+                // If session data is already loaded, re-render to apply highlighting
+                // This is important if session data loads before authToken is processed
+                if (latestSessionData && latestSessionData.length > 0) {
+                    window.sessionManager.displaySessions(latestSessionData); 
+                }
+            } else {
+                console.warn('Could not extract user ID from authToken.');
+            }
+        } else {
+            console.warn('AuthToken not found in storage.');
+        }
+    });
 
     // Initial setup
     // Initial fetch on load, respecting checkbox state (which is initially false)
