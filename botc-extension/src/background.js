@@ -31,12 +31,24 @@ function setupSessionFetchAlarm() {
 chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === FETCH_ALARM_NAME) {
         console.log("[BG_ALARM] Alarm triggered: fetchBotcSessionsAlarm");
-        chrome.storage.local.get(['authToken', 'playerData'], (result) => {
-            if (result.authToken && result.playerData) {
-                fetchAndProcessSessionsInBackground(result.authToken, result.playerData);
-            } else {
-                console.warn("[BG_ALARM] Auth token or player data not found. Skipping background fetch.");
+
+        // Check if botc.app is open before proceeding
+        chrome.tabs.query({ url: "*://botc.app/*", status: "complete" }, (tabs) => { // Added status: "complete" to ensure tab is loaded
+            if (!tabs || tabs.length === 0) {
+                console.log('[BG_ALARM] botc.app is not open or not fully loaded. Skipping background fetch.');
+                // Optional: Consider if the alarm should be cleared or rescheduled if botc.app remains closed for too long.
+                // For now, it will simply skip this cycle.
+                return;
             }
+
+            // botc.app is open, proceed with fetching data
+            chrome.storage.local.get(['authToken', 'playerData'], (result) => {
+                if (result.authToken && result.playerData) {
+                    fetchAndProcessSessionsInBackground(result.authToken, result.playerData);
+                } else {
+                    console.warn("[BG_ALARM] Auth token or player data not found. Skipping background fetch even though botc.app is open.");
+                }
+            });
         });
     }
 });
