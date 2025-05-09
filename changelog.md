@@ -1,9 +1,17 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-08.
+This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 -->
 
 # BotC Player Tracker Extension - Changelog
 ---
+
+## [v1.1.0] - 2025-05-09
+
+### Added
+- **Refresh Player Name**: Added a button ('🔄') to each player card in the 'Manage Users' tab to fetch and update the player's username directly from `botc.app`. This helps keep local player names synchronized with their current official usernames. If a name change is detected, the old name is added to the player's username history.
+
+### Changed
+- **Online Status Accuracy**: The 'Manage Users' tab now accurately reflects a player's online status (including storytellers and spectators) by checking `session.usersAll` from fetched game data. This ensures all users present in a session are shown with an online indicator and their current game session.
 
 ## [v1.0.9] - 2025-05-08
 
@@ -14,6 +22,9 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-08.
 - **UI & Styling**: Enhanced dark mode styling for modals, session content, and player cards, ensuring better visibility and consistency throughout the extension.
 - **Player Card Ratings**: Updated player card rating display to use distinct left-border colors for ratings 1 through 5 (5: Green, 4: Blue, 3: Orange, 2: Light Red, 1: Dark Red). This replaces full background changes for ratings, improving visual clarity in both light and dark themes.
 - Refined CSS for player cards to ensure rating border colors are correctly displayed, particularly addressing previous issues in dark mode.
+- **Player Status Clarity**: Improved the player status display in the 'Manage Users' tab:
+  - Players not in an active game session but recently active on `botc.app` (within the last 2 minutes) will now show status as "Not in game (Active: [time since last seen])" instead of just "Offline".
+  - The green visual 'online-badge' is retained next to the names of players who are actively in a game session.
 
 ### Fixed
 - Resolved CSS specificity issues that previously caused rating indicators (now border colors) to be incorrectly displayed or hidden in dark mode.

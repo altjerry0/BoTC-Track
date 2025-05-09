@@ -320,9 +320,9 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
     const onlinePlayerIds = new Set();
     if (sessionData && Array.isArray(sessionData)) { // Check if sessionData is an array of sessions
         sessionData.forEach(session => {
-            if (session && session.players && Array.isArray(session.players)) {
-                session.players.forEach(player => {
-                    if (player && player.id) onlinePlayerIds.add(player.id.toString());
+            if (session && session.usersAll && Array.isArray(session.usersAll)) {
+                session.usersAll.forEach(user => { // Changed from 'player' to 'user' for clarity
+                    if (user && user.id) onlinePlayerIds.add(user.id.toString());
                 });
             }
         });
@@ -385,10 +385,10 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
 
         if (player.isOnline) {
             let sessionName = null;
-            if (sessionData) {
+            if (sessionData && Array.isArray(sessionData)) { 
                 for (const session of sessionData) {
-                    if (session && session.name && Array.isArray(session.players)) {
-                        const userInSession = session.players.some(user => {
+                    if (session && session.name && Array.isArray(session.usersAll)) {
+                        const userInSession = session.usersAll.some(user => {
                             const isMatch = user && String(user.id) === player.id;
                             return isMatch;
                         });
@@ -544,6 +544,17 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
             toggleFavoriteStatus(player.id, favoriteButton); // Use the toggle function
         };
         buttonContainer.appendChild(favoriteButton);
+
+        // Refresh Name Button
+        const refreshNameButton = document.createElement('button');
+        refreshNameButton.innerHTML = '🔄'; // Refresh icon
+        refreshNameButton.title = 'Refresh Player Name';
+        refreshNameButton.classList.add('refresh-name-btn'); // For styling or specific selection
+        refreshNameButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleRefreshUserName(player.id, refreshNameButton, refreshCallback);
+        });
+        buttonContainer.appendChild(refreshNameButton);
 
         card.appendChild(buttonContainer); // Add button container to card
 
@@ -1168,3 +1179,106 @@ window.toggleFavoriteStatus = toggleFavoriteStatus; // Ensure this is exposed
 window.deletePlayer = deletePlayer; // Expose the delete function
 
 // --- END: Initialization & Utility ---
+
+/**
+ * Handles the process of refreshing a player's username from the API.
+ * @param {string} playerId - The ID of the player whose name to refresh.
+ * @param {HTMLElement} buttonElement - The refresh button element for UI feedback.
+ * @param {Function} refreshListCallback - Callback to refresh the user list display.
+ */
+async function handleRefreshUserName(playerId, buttonElement, refreshListCallback) {
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = '⏳'; // Loading/hourglass emoji
+
+    try {
+        const authToken = await new Promise((resolve, reject) => {
+            chrome.storage.local.get('authToken', (result) => {
+                if (chrome.runtime.lastError) {
+                    return reject(chrome.runtime.lastError);
+                }
+                resolve(result.authToken);
+            });
+        });
+
+        if (!authToken) {
+            alert('Authentication token not found. Please ensure you are logged in to botc.app.');
+            throw new Error('Auth token not found');
+        }
+
+        const response = await fetch(`https://botc.app/backend/user/${playerId}`, {
+            headers: { 'Authorization': authToken }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: response.statusText }));
+            alert(`Error fetching user data: ${errorData.message || response.statusText}`);
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const newUsername = data && data.user ? data.user.username : null;
+
+        if (newUsername) {
+            loadPlayerData(playerData => {
+                const player = playerData[playerId];
+                if (player && player.name !== newUsername) {
+                    const oldUsername = player.name;
+                    player.name = newUsername;
+                    updateUsernameHistory(player, oldUsername); // Ensure this function is defined and works
+                    savePlayerData(playerData, () => {
+                        alert(`Player ${playerId}'s name updated from "${oldUsername}" to "${newUsername}".`);
+                        if (refreshListCallback) refreshListCallback();
+                    });
+                } else if (player && player.name === newUsername) {
+                    alert(`Player ${playerId}'s name "${newUsername}" is already up-to-date.`);
+                } else {
+                    alert(`Player ${playerId} not found in local data. This shouldn't happen.`);
+                }
+            });
+        } else {
+            alert(`Could not retrieve a valid username for player ${playerId}.`);
+        }
+    } catch (error) {
+        console.error('Error refreshing username:', error);
+        // alert('Failed to refresh username. See console for details.'); // Already alerted specific errors
+    } finally {
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = '🔄'; // Reset to refresh icon
+    }
+}
+
+/**
+ * Updates the username history for a player if the new username is different.
+ * This function is adapted from background.js and should be available in userManager.js context.
+ * @param {Object} playerObject - The player object from playerData.
+ * @param {string} oldUsername - The username before the update.
+ */
+function updateUsernameHistory(playerObject, oldUsername) {
+    if (!playerObject) return false;
+
+    const newUsername = playerObject.name; // Assumes playerObject.name has been updated to the new name
+
+    if (oldUsername && newUsername && oldUsername.toLowerCase() !== newUsername.toLowerCase()) {
+        if (!playerObject.usernameHistory) {
+            playerObject.usernameHistory = [];
+        }
+
+        // Check if the old username is already the most recent entry (to avoid duplicates if rapidly changed)
+        const lastHistoryEntry = playerObject.usernameHistory.length > 0 ? playerObject.usernameHistory[0].username : null;
+        
+        // Add the *previous* name to history only if it's not already the latest entry
+        if (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase()) {
+            playerObject.usernameHistory.unshift({ username: oldUsername, timestamp: Date.now() });
+            console.log(`[Username History] Added '${oldUsername}' to history for player ${playerObject.id}. New name: '${newUsername}'.`);
+            return true; // Indicates history was updated
+        }
+    }
+    return false; // No update to history needed
+}
+
+// Ensure loadPlayerData and savePlayerData are available and correctly scoped
+// (They should be, as they are top-level functions in this file typically)
+
+// Expose functions to popup.js if they need to be called from there
+window.addPlayer = addPlayer;
+window.loadPlayerData = loadPlayerData;
