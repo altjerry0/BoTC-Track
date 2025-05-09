@@ -114,10 +114,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const onlineIds = new Set();
             if (response && response.sessions && Array.isArray(response.sessions)) {
                 response.sessions.forEach(session => {
-                    if (session && session.players && Array.isArray(session.players)) {
-                        session.players.forEach(player => {
-                            if (player && player.id) {
-                                onlineIds.add(player.id.toString()); // Ensure ID is string
+                    if (session && session.usersAll && Array.isArray(session.usersAll)) {
+                        session.usersAll.forEach(user => { 
+                            if (user && user.id) {
+                                onlineIds.add(user.id.toString()); // Ensure ID is string
                             }
                         });
                     }

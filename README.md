@@ -1,4 +1,4 @@
-**Current Version (local):** `1.0.9` | **Chrome Web Store Version:** `1.0.1` Pending `1.0.4`
+**Current Version (local):** `1.1.0` | **Chrome Web Store Version:** `1.0.4` Pending `1.1.0`
 ***
 
 # BotC Player Tracker Chrome Extension
@@ -56,7 +56,8 @@ The easiest way to install the BotC Player Tracker is by using the latest releas
 - **Game Info**: View game edition information (official/custom scripts)
 - **Storyteller Highlights**: Easily identify game storytellers
 - **Import/Export**: Save and load player data via CSV files.
-- **Online Favorites Display**: Lists favorite players who are currently active in any of the fetched game sessions, along with a count. (Recently fixed and improved)
+- **Comprehensive Online Status**: In the "Manage Users" tab, accurately indicates players, storytellers, and spectators as 'online' if they are present in any active game session's `usersAll` list. Their current game session is also displayed.
+- **Online Favorites Display**: Lists favorite players who are currently active in any of the fetched game sessions, along with a count.
 - **Improved Session Tracking**: Enhanced session tracking to use session names as unique identifiers and centralized history updates.
 - **General Bug Fixes**: Version 1.0.6 includes numerous fixes to improve stability, user experience, and data accuracy.
 - **Last Seen Time**: For offline players in the "Manage Users" tab, displays how long ago they were last active (e.g., "5 mins ago", "2 days ago").
@@ -69,6 +70,7 @@ The easiest way to install the BotC Player Tracker is by using the latest releas
 *   **Manual Player Data Management**: Users can manually add, edit, or merge player profiles.
 *   **Data Export/Import**: Supports exporting all tracked player data to a JSON file and importing it back, facilitating backups and data migration.
 *   **Dark Mode Support**: Provides a dark theme for the popup interface, configurable via settings.
+*   **Foreground Online Status**: The "Manage Users" tab accurately reflects if a known player (including storytellers and spectators) is currently in an active game by checking the `usersAll` list from fetched sessions.
 *   **Automatic Background Session Monitoring**:
     *   Periodically fetches active game sessions from `botc.app` (every 1 minute).
     *   Tracks `lastSeenTimestamp` for all known players found in any active session.
