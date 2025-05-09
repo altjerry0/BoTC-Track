@@ -449,34 +449,7 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
         editButton.title = 'Edit Player';
         editButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            // Simplified prompt logic, adjust as per original detail if needed
-            const newName = prompt(`Enter new name for ${player.name}:`, player.name);
-            if (newName === null) return;
-
-            const newScoreStr = prompt(`Enter new score (1-5) for ${newName}:`, player.score === null ? '' : player.score.toString());
-            if (newScoreStr === null) return;
-            let newScore = player.score; // Default to old score
-            if (newScoreStr.trim() !== '') {
-                const parsedScore = parseInt(newScoreStr, 10);
-                if (!isNaN(parsedScore) && parsedScore >= 1 && parsedScore <= 5) {
-                    newScore = parsedScore;
-                } else if (newScoreStr.trim() === '') { // Allow clearing the score
-                    newScore = null;
-                } else {
-                    alert("Invalid score. Must be 1-5 or empty. Score not changed.");
-                }
-            }
-
-            const newNotes = prompt(`Enter new notes for ${newName}:`, player.notes === null ? '' : player.notes);
-            if (newNotes === null) return;
-
-            // Use existing addPlayer function for updates, preserving favorite status by passing player.isFavorite
-            addPlayer(id, newName, newScore, newNotes, player.isFavorite, () => {
-                console.log("Player updated, attempting to refresh list.");
-                if (typeof refreshCallback === 'function') {
-                    refreshCallback();
-                }
-            });
+            editPlayerDetails(id);
         });
         buttonContainer.appendChild(editButton);
 
@@ -881,7 +854,7 @@ async function handleRefreshUserName(playerId, buttonElement, refreshListCallbac
         });
 
         if (!authToken) {
-            alert('Authentication token not found. Please ensure you are logged in to botc.app.');
+            ModalManager.showAlert('Error', 'Authentication token not found. Please ensure you are logged in to botc.app.');
             throw new Error('Auth token not found');
         }
 
@@ -891,7 +864,7 @@ async function handleRefreshUserName(playerId, buttonElement, refreshListCallbac
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: response.statusText }));
-            alert(`Error fetching user data: ${errorData.message || response.statusText}`);
+            ModalManager.showAlert('Error', `Error fetching user data: ${errorData.message || response.statusText}`);
             throw new Error(`API error: ${response.status}`);
         }
 
@@ -906,21 +879,21 @@ async function handleRefreshUserName(playerId, buttonElement, refreshListCallbac
                     player.name = newUsername;
                     updateUsernameHistory(player, oldUsername); // Ensure this function is defined and works
                     savePlayerData(playerData, () => {
-                        alert(`Player ${playerId}'s name updated from "${oldUsername}" to "${newUsername}".`);
+                        ModalManager.showAlert('Success', `Player ${playerId}'s name updated from "${oldUsername}" to "${newUsername}".`);
                         if (refreshListCallback) refreshListCallback();
                     });
                 } else if (player && player.name === newUsername) {
-                    alert(`Player ${playerId}'s name "${newUsername}" is already up-to-date.`);
+                    ModalManager.showAlert('Success', `Player ${playerId}'s name "${newUsername}" is already up-to-date.`);
                 } else {
-                    alert(`Player ${playerId} not found in local data. This shouldn't happen.`);
+                    ModalManager.showAlert('Error', `Player ${playerId} not found in local data. This shouldn't happen.`);
                 }
             });
         } else {
-            alert(`Could not retrieve a valid username for player ${playerId}.`);
+            ModalManager.showAlert('Error', `Could not retrieve a valid username for player ${playerId}.`);
         }
     } catch (error) {
         console.error('Error refreshing username:', error);
-        // alert('Failed to refresh username. See console for details.'); // Already alerted specific errors
+        // ModalManager.showAlert('Error', 'Failed to refresh username. See console for details.'); // Already alerted specific errors
     } finally {
         buttonElement.disabled = false;
         buttonElement.innerHTML = '&#x21bb;'; // Reset to refresh icon
@@ -954,4 +927,112 @@ function updateUsernameHistory(playerObject, oldUsername) {
         }
     }
     return false; // No update to history needed
+}
+
+/**
+ * Function to allow editing of player details
+ * @param {string} playerId - The ID of the player to edit
+ */
+async function editPlayerDetails(playerId) {
+    loadPlayerData(playerData => {
+        const player = playerData[playerId]; // Access player directly from the loaded data
+
+        if (!player) {
+            ModalManager.showAlert('Error', 'Player not found.');
+            return;
+        }
+
+        const modalTitle = `Edit Player: ${player.name || `ID: ${player.id}`}`;
+        const modalBodyHtml = `
+            <div>
+                <label for="modalEditPlayerName">Name:</label>
+                <input type="text" id="modalEditPlayerName" value="${player.name || ''}">
+            </div>
+            <div>
+                <label for="modalEditPlayerScore">Score (1-5, optional):</label>
+                <input type="number" id="modalEditPlayerScore" value="${player.score === null || player.score === undefined ? '' : player.score}" min="1" max="5">
+            </div>
+            <div>
+                <label for="modalEditPlayerNotes">Notes (optional):</label>
+                <textarea id="modalEditPlayerNotes" rows="3">${player.notes || ''}</textarea>
+            </div>
+        `;
+
+        ModalManager.showModal(modalTitle, modalBodyHtml, [
+            {
+                text: 'Cancel',
+                className: 'modal-button-secondary'
+            },
+            {
+                text: 'Save Changes',
+                className: 'modal-button-primary',
+                callback: async () => {
+                    const newName = document.getElementById('modalEditPlayerName').value.trim();
+                    const newScoreStr = document.getElementById('modalEditPlayerScore').value.trim();
+                    const newNotes = document.getElementById('modalEditPlayerNotes').value.trim();
+
+                    let newScore = null;
+                    if (newScoreStr) {
+                        const parsedScore = parseInt(newScoreStr, 10);
+                        if (isNaN(parsedScore) || parsedScore < 1 || parsedScore > 5) {
+                            ModalManager.showAlert('Invalid Input', 'Invalid score. Must be a number between 1 and 5. Score will not be changed unless corrected.');
+                            return; // Keep modal open for correction
+                        } else {
+                            newScore = parsedScore;
+                        }
+                    }
+
+                    try {
+                        // Define the UI update callback for after player data is saved
+                        const uiUpdateCallback = (updatedPlayer) => {
+                            if (updatedPlayer) {
+                                ModalManager.showAlert('Success', `Player ${updatedPlayer.name || updatedPlayer.id} details updated.`);
+                                if (typeof window.renderKnownPlayers === 'function') {
+                                    window.renderKnownPlayers(); // Refresh the list
+                                } else if (typeof renderKnownPlayers === 'function') {
+                                    renderKnownPlayers(); // If called from within userManager.js context
+                                }
+                                ModalManager.closeModal();
+                            }
+                        };
+
+                        // Call addPlayer (which handles updates too), ensuring correct parameters
+                        // Parameters: id, name, score, notes, isFavorite, updateUICallback
+                        // Preserve existing isFavorite status. usernameHistory is managed internally by addPlayer.
+                        await addPlayer(player.id, newName || `Player ${player.id}`, newScore, newNotes, player.isFavorite, uiUpdateCallback);
+                    } catch (error) {
+                        console.error('Failed to update player:', error);
+                        ModalManager.showAlert('Error', `Failed to update player: ${error.message}`);
+                    }
+                },
+                closesModal: false // Handle close explicitly
+            }
+        ]);
+    });
+}
+
+/**
+ * Function to delete a player
+ * @param {string} playerId - The ID of the player to delete
+ */
+function deletePlayer(playerId) {
+    ModalManager.showConfirm('Delete Player', `Are you sure you want to delete player ${playerId}? This cannot be undone.`, async () => {
+        loadPlayerData(playerData => {
+            if (!playerData[playerId]) {
+                console.warn(`[Delete Player] Player with ID ${playerId} not found.`);
+                ModalManager.showAlert('Error', "Player not found.");
+                return;
+            }
+
+            // Delete the player data
+            delete playerData[playerId];
+
+            // Save the updated data
+            savePlayerData(playerData, () => {
+                console.log(`[Delete Player] Player ${playerId} deleted successfully.`);
+                ModalManager.showAlert('Success', `Player ${playerId} deleted.`);
+                renderKnownPlayers(); // Refresh the list
+            });
+        });
+    });
 }

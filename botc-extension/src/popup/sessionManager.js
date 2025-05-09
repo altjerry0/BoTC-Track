@@ -190,58 +190,80 @@ function createPlayerCard(
 
     addButton.addEventListener('click', () => {
         // Get current score/notes if known, otherwise use defaults
-        const currentScore = isKnownPlayer ? playerData[user.id]?.score : '3';
-        const currentNotes = isKnownPlayer ? playerData[user.id]?.notes : '';
+        const knownPlayer = playerData[user.id];
+        const currentScore = knownPlayer ? (knownPlayer.score === null || knownPlayer.score === undefined ? '' : knownPlayer.score.toString()) : '3'; // Default to 3 if new
+        const currentNotes = knownPlayer ? (knownPlayer.notes || '') : '';
 
-        const score = prompt('Enter rating (1-5):', currentScore);
-        if (score !== null) {
-            const notes = prompt('Enter notes:', currentNotes);
-            if (notes !== null) {
-                // Define the UI update callback
-                const updateUICallback = (updatedPlayerDataForUser) => {
-                    console.log('Updating UI for player:', user.id, updatedPlayerDataForUser);
-                    
-                    // Update known status and main card class
-                    isKnownPlayer = true; // Player is now known
-                    playerCard.className = `player-card ${window.getRatingClass(updatedPlayerDataForUser.score)}`;
+        const modalTitle = `Update Player: ${user.name || `ID: ${user.id}`}`;
+        const modalBodyHtml = `
+            <p>Update details for <strong>${user.name || `ID: ${user.id}`}</strong>. This will add them to your known players list if they aren't already, or update their existing record.</p>
+            <div>
+                <label for="modalSessionPlayerScore">Score (1-5, optional):</label>
+                <input type="number" id="modalSessionPlayerScore" value="${currentScore}" min="1" max="5">
+            </div>
+            <div>
+                <label for="modalSessionPlayerNotes">Notes (optional):</label>
+                <textarea id="modalSessionPlayerNotes" rows="3">${currentNotes}</textarea>
+            </div>
+        `;
 
-                    // Find or create the details div
-                    let detailsDiv = playerInfo.querySelector('.player-details');
-                    if (!detailsDiv) {
-                        detailsDiv = document.createElement('div');
-                        detailsDiv.className = 'player-details'; // Add a class for easier selection
-                        detailsDiv.style.fontSize = '12px';
-                        detailsDiv.style.marginTop = '4px';
-                        playerInfo.appendChild(detailsDiv); // Append it if it didn't exist
+        ModalManager.showModal(modalTitle, modalBodyHtml, [
+            {
+                text: 'Cancel',
+                className: 'modal-button-secondary'
+            },
+            {
+                text: 'Save Details',
+                className: 'modal-button-primary',
+                callback: async () => {
+                    const scoreStr = document.getElementById('modalSessionPlayerScore').value.trim();
+                    const notes = document.getElementById('modalSessionPlayerNotes').value.trim();
+
+                    let score = null;
+                    if (scoreStr) {
+                        const parsedScore = parseInt(scoreStr, 10);
+                        if (isNaN(parsedScore) || parsedScore < 1 || parsedScore > 5) {
+                            ModalManager.showAlert('Invalid Input', 'Invalid score. Must be a number between 1 and 5. Score will not be saved unless corrected.');
+                            return; // Keep modal open for correction
+                        } else {
+                            score = parsedScore;
+                        }
                     }
-                    detailsDiv.textContent = `Rating: ${updatedPlayerDataForUser.score || 'Unknown'} ${updatedPlayerDataForUser.notes ? `• ${updatedPlayerDataForUser.notes}` : ''}`;
 
-                    // Update button text
-                    addButton.textContent = 'Update Player';
+                    // Define the UI update callback for after player data is saved
+                    const uiUpdateCallback = (updatedPlayer) => {
+                        if (updatedPlayer) {
+                            // Re-render this specific player card or the whole list if simpler
+                            // For now, let's assume a full list refresh might be handled by a broader mechanism
+                            // or that renderSessions might be called again.
+                            // We could also update the card directly if we have its reference.
+                            console.log(`Player ${updatedPlayer.id} updated from session card interaction.`);
+                            ModalManager.showAlert('Success', `Player ${user.name || user.id} details saved.`);
+                            // Potentially refresh the session list or just this card
+                            if (typeof window.fetchAndDisplaySessions === 'function') {
+                                // This might be too broad, ideally just re-render the known players list if it's visible
+                                // and update this specific card's display.
+                                // For now, just log and show success.
+                            }
+                            renderKnownPlayers(); // Re-render the user management tab if it's the active one
+                        }
+                    };
 
-                    // Check if history span needs to be added (if first time saving for this user)
-                    const historySpanExists = nameContainer.querySelector('.history-span');
-                    if (!historySpanExists && updatedPlayerDataForUser.usernameHistory && updatedPlayerDataForUser.usernameHistory.length > 0) {
-                        const historyCount = updatedPlayerDataForUser.usernameHistory.length;
-                        const historySpan = document.createElement('span');
-                        historySpan.className = 'history-span'; // Add class for easier selection
-                        historySpan.style.fontSize = '12px';
-                        historySpan.style.color = '#666';
-                        historySpan.style.cursor = 'pointer';
-                        historySpan.textContent = `(${historyCount} names)`;
-                        historySpan.title = 'Click to view username history';
-                        historySpan.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            createUsernameHistoryModalFunc(updatedPlayerDataForUser.usernameHistory, updatedPlayerDataForUser.name);
-                        });
-                        nameContainer.appendChild(historySpan);
+                    try {
+                        // addPlayerFunc is userManager.addOrUpdatePlayer
+                        // It needs: id, name, score, notes, isFavorite (preserve if known), usernameHistory (preserve if known)
+                        const isFavorite = knownPlayer ? knownPlayer.isFavorite : false;
+                        const usernameHistory = knownPlayer ? knownPlayer.usernameHistory : [];
+                        await addPlayerFunc(user.id, user.name, score, notes, isFavorite, usernameHistory, uiUpdateCallback);
+                        ModalManager.closeModal(); // Close after successful save
+                    } catch (error) {
+                        console.error('Failed to save player details from session card:', error);
+                        ModalManager.showAlert('Error', `Failed to save player details: ${error.message}`);
                     }
-                };
-
-                // Call addPlayer with the UI update callback
-                addPlayerFunc(user.id, user.username, score, notes, updateUICallback);
+                },
+                closesModal: false // Handle close explicitly
             }
-        }
+        ]);
     });
 
     playerCard.appendChild(playerInfo);

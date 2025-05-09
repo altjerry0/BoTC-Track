@@ -294,44 +294,88 @@ document.addEventListener('DOMContentLoaded', function() {
         // addPlayerButton.classList.add('player-action-button'); // Removed
         addPlayerButton.title = 'Add Player Manually'; // Tooltip remains useful
 
-        addPlayerButton.addEventListener('click', () => {
-            const playerId = prompt("Enter Player ID (required):");
-            if (!playerId || playerId.trim() === '') {
-                alert("Player ID cannot be empty.");
-                return; // Stop if no ID
-            }
-            const id = playerId.trim();
-
-            const name = prompt(`Enter name for player ${id}:`, `Player ${id}`);
-            if (name === null) return; // Stop if cancelled
-
-            const scoreStr = prompt(`Enter score (1-5) for ${name || `Player ${id}`}:`, '3');
-            if (scoreStr === null) return; // Stop if cancelled
-
-            let score = parseInt(scoreStr, 10);
-            if (isNaN(score) || score < 1 || score > 5) {
-                alert("Invalid score. Must be 1-5. Setting to 3.");
-                score = 3;
+        addPlayerButton.addEventListener('click', async () => {
+            // Check if the globally exposed addPlayer function from userManager.js is available
+            if (typeof window.addPlayer !== 'function') {
+                ModalManager.showAlert('Error', 'User management feature is unavailable. The addPlayer function is not loaded correctly.');
+                console.error('window.addPlayer is not defined or not a function.');
+                return;
             }
 
-            const notes = prompt(`Enter notes for ${name || `Player ${id}`}:`, '');
-            if (notes === null) return; // Stop if cancelled
+            const modalTitle = 'Add New Player';
+            const modalBodyHtml = `
+                <div>
+                    <label for="modalPlayerId">Player ID (required):</label>
+                    <input type="text" id="modalPlayerId" name="modalPlayerId">
+                </div>
+                <div>
+                    <label for="modalPlayerName">Name:</label>
+                    <input type="text" id="modalPlayerName" name="modalPlayerName">
+                </div>
+                <div>
+                    <label for="modalPlayerScore">Score (1-5, optional):</label>
+                    <input type="number" id="modalPlayerScore" name="modalPlayerScore" min="1" max="5">
+                </div>
+                <div>
+                    <label for="modalPlayerNotes">Notes (optional):</label>
+                    <textarea id="modalPlayerNotes" name="modalPlayerNotes" rows="3"></textarea>
+                </div>
+            `;
 
-            // Call the universal addPlayer function
-            if (typeof window.addPlayer === 'function') {
-                // Assume new players are not favorites by default
-                window.addPlayer(id, name, score, notes, false, (success, message) => {
-                    if (success) {
-                        refreshUserManagementTab(); // Refresh the list
-                    } else {
-                        alert(`Failed to add/update player: ${message}`);
-                        console.error(`Failed to add/update player ${id}: ${message}`);
-                    }
-                });
-            } else {
-                console.error('window.addPlayer function not found!');
-                alert('Add/Update feature is unavailable.');
-            }
+            ModalManager.showModal(modalTitle, modalBodyHtml, [
+                {
+                    text: 'Cancel',
+                    className: 'modal-button-secondary'
+                },
+                {
+                    text: 'Add Player',
+                    className: 'modal-button-primary',
+                    callback: async () => {
+                        const playerId = document.getElementById('modalPlayerId').value.trim();
+                        const name = document.getElementById('modalPlayerName').value.trim();
+                        const scoreStr = document.getElementById('modalPlayerScore').value.trim();
+                        const notes = document.getElementById('modalPlayerNotes').value.trim();
+
+                        if (!playerId) {
+                            ModalManager.showAlert('Error', 'Player ID cannot be empty.');
+                            // Re-show prompt or indicate error on field directly in future enhancement
+                            return; 
+                        }
+
+                        const playerName = name || `Player ${playerId}`;
+                        let score = null;
+                        if (scoreStr) {
+                            const parsedScore = parseInt(scoreStr, 10);
+                            if (isNaN(parsedScore) || parsedScore < 1 || parsedScore > 5) {
+                                ModalManager.showAlert('Invalid Input', 'Invalid score. Must be a number between 1 and 5. Score will be ignored.');
+                                // Don't set score if invalid, or re-prompt / highlight field
+                            } else {
+                                score = parsedScore;
+                            }
+                        }
+
+                        try {
+                            // Define the UI update callback for after player data is saved
+                            const uiUpdateCallback = (updatedPlayer) => {
+                                ModalManager.showAlert('Success', `Player ${updatedPlayer.name} (ID: ${updatedPlayer.id}) ${score !== null ? 'with score ' + score : ''} has been added/updated successfully.`);
+                                if (typeof refreshUserManagementTab === 'function') {
+                                    refreshUserManagementTab(); // Refresh the list using the function defined in popup.js
+                                } else {
+                                    console.warn('refreshUserManagementTab function not found, UI may not update.');
+                                }
+                                ModalManager.closeModal(); // Close the add player modal
+                            };
+                            // Call the globally exposed addPlayer from userManager.js
+                            // Parameters: id, name, score, notes, isFavorite (default false), updateUICallback
+                            await window.addPlayer(playerId, playerName, score, notes, false, uiUpdateCallback);
+                        } catch (error) {
+                            console.error('Failed to add/update player:', error);
+                            ModalManager.showAlert('Error', `Failed to add/update player: ${error.message}`);
+                        }
+                    },
+                    closesModal: false // We handle close explicitly after success or if user needs to correct input
+                }
+            ]);
         });
     } else {
         console.warn('Add Player Manually button not found.');
@@ -344,13 +388,18 @@ document.addEventListener('DOMContentLoaded', function() {
         exportPlayersButton.title = 'Export Players (CSV)'; // Tooltip remains useful
 
         exportPlayersButton.addEventListener('click', () => {
-            window.loadPlayerData(dataToExport => { // Use window.loadPlayerData from userManager.js
-                if (Object.keys(dataToExport).length === 0) {
-                    alert("No player data to export.");
-                    return;
-                }
-                window.exportPlayerDataCSV(dataToExport); // Calls csvManager.exportPlayerDataCSV
-            });
+            if (typeof window.loadPlayerData === 'function' && typeof window.exportPlayerDataCSV === 'function') {
+                window.loadPlayerData(playerData => {
+                    if (Object.keys(playerData).length === 0) {
+                        ModalManager.showAlert('Export Notice', "No player data to export.");
+                        return;
+                    }
+                    window.exportPlayerDataCSV(playerData);
+                });
+            } else {
+                ModalManager.showAlert('Error', 'Export feature is unavailable.');
+                console.error('loadPlayerData or exportPlayerDataCSV not found on window.');
+            }
         });
     } else {
         console.warn('Export Players button not found.');
@@ -391,42 +440,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (clearAllPlayerDataButton) {
         clearAllPlayerDataButton.addEventListener('click', function() {
-            if (confirm("Are you sure you want to clear ALL player data? This action cannot be undone and is primarily for testing.")) {
-                // Save an empty object to the 'playerData' key
-                chrome.storage.local.set({ playerData: {} }, function() {
-                    if (chrome.runtime.lastError) {
-                        console.error('Error clearing player data:', chrome.runtime.lastError);
-                        alert('Error clearing player data. Please try again.');
-                    } else {
-                        console.log('All player data cleared.');
-                        alert('All player data has been cleared.');
-                        
-                        // Update the local cache in userManager.js as well if it's used directly
-                        // This assumes allPlayerData from userManager might be exposed or accessible
-                        if (typeof window.allPlayerData !== 'undefined') {
-                             window.allPlayerData = {}; 
-                        } else if (typeof allPlayerData !== 'undefined') { // if popup.js has its own copy
-                            allPlayerData = {};
-                        }
-
-                        // Refresh the display in the User Management tab
-                        if (typeof refreshUserManagementTab === 'function') {
-                            refreshUserManagementTab();
-                        } else if (typeof displayKnownPlayers === 'function' && typeof window.createUsernameHistoryModal === 'function') {
-                            const knownPlayersDiv = document.getElementById('knownPlayers');
-                            if (knownPlayersDiv) {
-                                // Attempt to call displayKnownPlayers with necessary parameters
-                                // Note: refreshUserManagementTab itself might be the intended callback here
-                                displayKnownPlayers(knownPlayersDiv, '', {}, null, window.createUsernameHistoryModal, refreshUserManagementTab || displayKnownPlayers); 
-                            }
+            ModalManager.showConfirm(
+                'Confirm Clear Data',
+                'Are you sure you want to clear ALL player data? This action cannot be undone and is primarily for testing.',
+                () => { // onConfirm callback
+                    chrome.storage.local.set({ playerData: {} }, function() {
+                        if (chrome.runtime.lastError) {
+                            console.error('Error clearing player data:', chrome.runtime.lastError);
+                            ModalManager.showAlert('Error', 'Error clearing player data. Please try again.');
                         } else {
-                            const knownPlayersDiv = document.getElementById('knownPlayers');
-                            if(knownPlayersDiv) knownPlayersDiv.innerHTML = '<p>No players found. Please switch tabs or reload to refresh.</p>';
+                            console.log('All player data cleared.');
+                            ModalManager.showAlert('Success', 'All player data has been cleared.');
+                            
+                            // Update the local cache in userManager.js as well if it's used directly
+                            if (typeof window.allPlayerData !== 'undefined') {
+                                 window.allPlayerData = {}; 
+                            } else if (typeof allPlayerData !== 'undefined') { // if popup.js has its own copy
+                                allPlayerData = {};
+                            }
+
+                            // Refresh the display in the User Management tab
+                            if (typeof refreshUserManagementTab === 'function') {
+                                refreshUserManagementTab();
+                            } else if (typeof userManager !== 'undefined' && typeof userManager.renderKnownPlayers === 'function') {
+                                userManager.renderKnownPlayers(); // Prefer this if available
+                            } else {
+                                console.warn('Could not refresh user management tab after clearing data.');
+                            }
                         }
-                    }
-                });
-            }
+                    });
+                },
+                () => { // onCancel callback
+                    ModalManager.showAlert('Cancelled', 'Clear data operation was cancelled.');
+                }
+            );
         });
+    } else {
+        console.warn('Clear All Player Data button not found.');
     }
 
     // Initial setup
