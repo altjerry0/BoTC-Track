@@ -289,6 +289,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add Player Manually Button (Handles both Add and Update via window.addPlayer)
     if (addPlayerButton) {
+        // Update button to use SVG icon + text. No longer a player-action-button.
+        addPlayerButton.innerHTML = '<img src="../icons/addbutton.svg" alt="Add Player" class="button-icon" /> Add';
+        // addPlayerButton.classList.add('player-action-button'); // Removed
+        addPlayerButton.title = 'Add Player Manually'; // Tooltip remains useful
+
         addPlayerButton.addEventListener('click', () => {
             const playerId = prompt("Enter Player ID (required):");
             if (!playerId || playerId.trim() === '') {
@@ -334,6 +339,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Export player data
     if (exportPlayersButton) {
+        exportPlayersButton.innerHTML = '<span class="button-icon">📤</span> Export'; // Icon + Text. No longer player-action-button.
+        // exportPlayersButton.classList.add('player-action-button'); // Removed
+        exportPlayersButton.title = 'Export Players (CSV)'; // Tooltip remains useful
+
         exportPlayersButton.addEventListener('click', () => {
             window.loadPlayerData(dataToExport => { // Use window.loadPlayerData from userManager.js
                 if (Object.keys(dataToExport).length === 0) {
@@ -349,6 +358,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Import player data
     if (importPlayersButton && importFileInput && importStatusDiv) {
+        importPlayersButton.innerHTML = '<span class="button-icon">📥</span> Import'; // Icon + Text. No longer player-action-button.
+        // importPlayersButton.classList.add('player-action-button'); // Removed
+        importPlayersButton.title = 'Import Players (CSV)'; // Tooltip remains useful
+
         importPlayersButton.addEventListener('click', () => importFileInput.click());
 
         importFileInput.addEventListener('change', (event) => {

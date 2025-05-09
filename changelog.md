@@ -5,6 +5,25 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 # BotC Player Tracker Extension - Changelog
 ---
 
+## [Unreleased]
+
+### Added
+- Enhanced user list sorting in 'Manage Users' tab:
+  - Online favorite players are now prioritized at the top.
+  - Subsequent sorting is by player rating (descending).
+  - Offline players are sorted by 'last seen' time (most recent first), then by rating.
+
+### Changed
+- **UI Enhancement (User Management Controls):**
+    - Updated 'Add Player Manually', 'Export Players (CSV)', and 'Import Players (CSV)' buttons to include text labels ('Add', 'Export', 'Import') next to their icons for improved clarity. (Reverted icon-only design for these specific buttons).
+    - These buttons now use standard button styling, with icons spaced appropriately from text.
+    - The 'Clear All Player Data' button is now positioned to the far right of the control bar.
+    - Reduced margins between other buttons in the user management control bar for a more compact layout.
+    - Standardized button styles across the extension, removing custom styles in favor of a base button appearance and specific icon-button styles.
+    - Improved icon centering within dedicated icon-only action buttons (e.g., Edit, Delete).
+
+### Fixed
+
 ## [v1.1.1] - [Unreleased]
 
 ### Added
@@ -21,7 +40,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
   - Removed CSS styles associated with the removed player analysis indicators.
 - **CSV Module Separation**: Separated CSV import/export logic from `userManager.js` into a new dedicated `src/popup/csvManager.js` module for better modularity and code clarity.
 
-## [v1.1.0] - 2025-05-09
+## [v1.1.0] - [Unreleased]
 
 ### Added
 - **Refresh Player Name**: Added a button ('🔄') to each player card in the 'Manage Users' tab to fetch and update the player's username directly from `botc.app`. This helps keep local player names synchronized with their current official usernames. If a name change is detected, the old name is added to the player's username history.
@@ -168,13 +187,41 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 
 ---
 
-## [UNRELEASED]
-
-### Added
-- Your new feature here!
+## [v1.2.0] - YYYY-MM-DD 
 
 ### Changed
+- **UI Enhancements - Session View:**
+    - Replaced the "Add Player" text button on player cards within sessions with an SVG icon for a cleaner interface.
+    - Changed the "Show players" and "Hide players" text for session player lists to ▼ and ▲ arrow icons respectively, providing a more intuitive expand/collapse experience.
+- **UI Enhancements - User Management & General:**
+    - Normalized the appearance and size of action buttons (Favorite, Edit, History, Refresh Username, Delete) in the 'Known Players' list for better visual consistency.
+    - Ensured the "Add Player Manually" button aligns with the updated button styling.
+    - Adjusted styling for various buttons to use consistent padding, icon sizing, and hover effects across the extension.
+
+## [Unreleased]
+### Changed
+- **UI Enhancement (User Management Controls):**
+    - Updated 'Add Player Manually', 'Export Players (CSV)', and 'Import Players (CSV)' buttons to include text labels ('Add', 'Export', 'Import') next to their icons for improved clarity. (Reverted icon-only design for these specific buttons).
+    - These buttons now use standard button styling, with icons spaced appropriately from text.
+    - The 'Clear All Player Data' button is now positioned to the far right of the control bar.
+    - Reduced margins between other buttons in the user management control bar for a more compact layout.
+    - Standardized button styles across the extension, removing custom styles in favor of a base button appearance and specific icon-button styles.
+    - Improved icon centering within dedicated icon-only action buttons (e.g., Edit, Delete).
+
+## [v1.0.0] - 2024-03-10
+
+### Added
+- Initial release of the BotC Player Tracker extension.
+- **Core Player Tracking**: Fetch active games, add/manage players, rate players, take notes.
+- **CSV Import/Export**.
+- **Session Filtering** (Official Only).
+- **Basic UI** for popup.
+
+### Changed
+- **Manifest v3 Compliance Checks**: Removed unused `activeTab` permission and `web_accessible_resources` for scripts loaded by `popup.html`.
+- Removed dead code (`content.js`).
 
 ### Fixed
+- Corrected various initial setup issues and minor bugs.
 
 ---

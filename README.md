@@ -96,11 +96,11 @@ This method allows you to install a specific version from GitHub, which might be
     *   **View Username History**: Click the clock icon (🕒) next to a player's name to see their username history.
     *   **Refresh Player Name**: Click the refresh icon (🔄) on a player card to update their current username from `botc.app`.
     *   **Delete Player**: Click the trash can icon (🗑️) to remove a player and their data (confirmation required).
-    *   **Add Player Manually**: Click "Add Player Manually", then provide the Player ID, Name, Score (1-5), and Notes.
+    *   **Add Player Manually**: Click the button with an add icon and "Add" text, then provide the Player ID, Name, Score (1-5), and Notes.
 
 3.  **Importing/Exporting Data ("Manage Users" Tab)**:
-    *   **Export**: Click "Export Players (CSV)". A CSV file (e.g., `botc_player_data_YYYYMMDD_Xusers.csv`) will be downloaded.
-    *   **Import**: Click "Import Players (CSV)", select your CSV file. Data will be merged/updated based on player IDs.
+    *   **Export**: Click the button with an outbox icon and "Export" text. A CSV file (e.g., `botc_player_data_YYYYMMDD_Xusers.csv`) will be downloaded.
+    *   **Import**: Click the button with an inbox icon and "Import" text, select your CSV file. Data will be merged/updated based on player IDs.
 
 ## Project Structure
 
@@ -160,6 +160,8 @@ This project uses GitHub Actions to automate the creation of release ZIP files.
 5.  The action will create a draft release on GitHub with the packaged `botc-tracker-vX.Y.Z.zip` file. Edit the release notes and publish.
 
 ## Screenshots
+
+*(Note: The following screenshots may be slightly outdated due to recent UI updates, particularly button styles. They will be updated in a future commit.)*
 
 Here's a glimpse of the extension in action:
 

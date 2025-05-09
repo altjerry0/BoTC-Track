@@ -179,7 +179,15 @@ function createPlayerCard(
     }
 
     const addButton = document.createElement('button');
-    addButton.textContent = isKnownPlayer ? 'Update Player' : 'Add Player';
+    if (isKnownPlayer) {
+        addButton.textContent = 'Update Player'; // Keep as text for now, or decide on an icon
+        // TODO: Consider an edit icon for 'Update Player' and player-action-button class
+    } else {
+        addButton.innerHTML = `<img src="../icons/addbutton.svg" alt="Add Player" class="button-icon" />`;
+        addButton.classList.add('player-action-button');
+        addButton.title = 'Add this player to your known players list';
+    }
+
     addButton.addEventListener('click', () => {
         // Get current score/notes if known, otherwise use defaults
         const currentScore = isKnownPlayer ? playerData[user.id]?.score : '3';
@@ -409,9 +417,9 @@ function renderSessions(
             sessionTitle.appendChild(editionTag);
 
             const toggleButton = document.createElement('button');
-            toggleButton.textContent = 'Show Players';
-            toggleButton.style.padding = '4px 8px';
-            toggleButton.style.fontSize = '12px';
+            toggleButton.classList.add('session-toggle-button'); // Add class
+            toggleButton.innerHTML = '&#9660;'; // Down arrow for 'Show Players'
+            toggleButton.title = 'Show players in this session';
 
             sessionHeader.appendChild(sessionTitle);
             sessionHeader.appendChild(toggleButton);
@@ -450,7 +458,13 @@ function renderSessions(
             toggleButton.addEventListener('click', () => {
                 const isHidden = sessionContent.style.display === 'none';
                 sessionContent.style.display = isHidden ? 'block' : 'none';
-                toggleButton.textContent = isHidden ? 'Hide Players' : 'Show Players';
+                if (isHidden) {
+                    toggleButton.innerHTML = '&#9650;'; // Up arrow for 'Hide Players'
+                    toggleButton.title = 'Hide players in this session';
+                } else {
+                    toggleButton.innerHTML = '&#9660;'; // Down arrow for 'Show Players'
+                    toggleButton.title = 'Show players in this session';
+                }
             });
 
             sessionContainer.appendChild(sessionHeader);
