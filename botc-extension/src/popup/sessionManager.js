@@ -8,59 +8,6 @@
  */
 
 /**
- * Get CSS class based on player rating
- * @param {number} rating - Player rating
- * @returns {string} CSS class name
- */
-function getRatingClass(rating) {
-    if (!rating) return 'rating-unknown';
-    const validRating = Math.max(1, Math.min(5, parseInt(rating)));
-    return `rating-${validRating}`;
-}
-
-/**
- * Analyze players in a session to count good/bad/total known players
- * @param {Array} users - Array of users in session 
- * @param {Object} playerData - Known player data
- * @returns {Object} Counts of player types
- */
-function analyzeSessionPlayers(users, playerData) {
-    const counts = {
-        total: 0,
-        good: 0,
-        bad: 0
-    };
-
-    users.forEach(user => {
-        const playerInfo = playerData[user.id];
-        if (playerInfo) {
-            counts.total++;
-            if (playerInfo.score >= 4) counts.good++;
-            if (playerInfo.score <= 2) counts.bad++;
-        }
-    });
-
-    return counts;
-}
-
-/**
- * Get storyteller information from session
- * @param {Object} session - Session data
- * @param {Object} playerData - Known player data
- * @returns {Array} Array of storyteller info
- */
-function getStorytellerInfo(session, playerData) {
-    const storytellers = session.usersAll.filter(user => 
-        session.storytellers.some(st => st.id === user.id)
-    );
-    return storytellers.map(st => ({
-        id: st.id,
-        name: st.username,
-        isKnown: playerData[st.id] !== undefined
-    }));
-}
-
-/**
  * Get display name for game edition
  * @param {Object} edition - Edition data 
  * @returns {string} Formatted edition name
@@ -175,8 +122,8 @@ function createPlayerCard(
     }
     playerCard.classList.add('player-card'); // Add base class
 
-    // Add rating class
-    const ratingClass = isKnown ? getRatingClass(knownPlayer.score) : 'rating-unknown';
+    // Add rating class using the one from userManager.js
+    const ratingClass = isKnown && window.getRatingClass ? window.getRatingClass(knownPlayer.score) : 'rating-unknown';
     playerCard.classList.add(ratingClass);
 
     playerCard.dataset.playerId = user.id;
@@ -248,7 +195,7 @@ function createPlayerCard(
                     
                     // Update known status and main card class
                     isKnownPlayer = true; // Player is now known
-                    playerCard.className = `player-card ${getRatingClass(updatedPlayerDataForUser.score)}`;
+                    playerCard.className = `player-card ${window.getRatingClass(updatedPlayerDataForUser.score)}`;
 
                     // Find or create the details div
                     let detailsDiv = playerInfo.querySelector('.player-details');
@@ -438,9 +385,6 @@ function renderSessions(
             const sessionTitle = document.createElement('div');
             sessionTitle.className = 'session-title';
             
-            // Calculate player counts first (for indicators, etc.)
-            const playerCounts = analyzeSessionPlayers(session.usersAll || [], playerData); // Use updated playerData
-
             const titleTextContainer = document.createElement('div');
             titleTextContainer.style.display = 'flex'; // Use flex to align items horizontally
             titleTextContainer.style.alignItems = 'center';
@@ -448,53 +392,21 @@ function renderSessions(
 
             const titleText = document.createElement('div');
             
-            // Calculate the different player counts for the title string
+            // Construct the new player count string
             const playersWithAssignedId = session.players ? session.players.filter(p => p && p.id).length : 0;
             const totalPlayerSlots = session.players ? session.players.length : 0; 
             const totalParticipants = session.usersAll ? session.usersAll.length : 0;
 
-            // Construct the new player count string
             const playerCountString = `Players: ${playersWithAssignedId}/${totalPlayerSlots} (${totalParticipants} total)`;
 
             titleText.innerHTML = `<strong>${session.name}</strong> <span style="color: #666">• Phase ${session.phase}${session.phase === 0 ? '<span class="phase-zero-indicator">In Between Games</span>' : ''} • ${playerCountString}</span>`;
             titleTextContainer.appendChild(titleText);
-
-            // Create and add player indicators if counts exist
-            if (playerCounts.total > 0) {
-                const indicators = document.createElement('div');
-                indicators.className = 'player-indicators'; // Reuse existing class
-                // Remove margin-top if defined in CSS for this class, as it's inline now
-                // indicators.style.marginTop = '0'; 
-                if (playerCounts.good > 0) {
-                    indicators.innerHTML += `<span class="player-indicator good">+${playerCounts.good}</span>`;
-                }
-                if (playerCounts.bad > 0) {
-                    indicators.innerHTML += `<span class="player-indicator bad">-${playerCounts.bad}</span>`;
-                }
-                const neutral = playerCounts.total - (playerCounts.good + playerCounts.bad);
-                if (neutral > 0) {
-                    indicators.innerHTML += `<span class="player-indicator neutral">${neutral}</span>`;
-                }
-                titleTextContainer.appendChild(indicators);
-            }
 
             sessionTitle.appendChild(titleTextContainer); // Add the container with title+indicators
 
             // Add edition tag
             const editionTag = createEditionTag(session.edition);
             sessionTitle.appendChild(editionTag);
-
-            // Add storyteller info
-            const storytellers = getStorytellerInfo(session, playerData);
-            if (storytellers.length > 0) {
-                const storytellerInfo = document.createElement('div');
-                storytellerInfo.className = 'storyteller-info';
-                const names = storytellers.map(st => 
-                    `<span class="storyteller-name">${st.name}</span>${playerData[st.id] ? ' ★' : ''}` // Check against updated playerData
-                ).join(', ');
-                storytellerInfo.innerHTML = `Storyteller${storytellers.length > 1 ? 's' : ''}: ${names}`;
-                sessionTitle.appendChild(storytellerInfo);
-            }
 
             const toggleButton = document.createElement('button');
             toggleButton.textContent = 'Show Players';

@@ -77,16 +77,24 @@ function fetchAndProcessSessionsInBackground(token, playerData) {
                         if (userId && playerData[userId]) {
                             const player = playerData[userId];
                             let playerActivityUpdatedThisCycle = false;
-                            let usernameWasUpdated = false;
+                            // let usernameWasUpdated = false; // Can be inferred if oldUsername exists and is different
 
+                            // Username update logic aligned with userManager.js
                             if (userNameFromApi && player.name !== userNameFromApi) {
-                                player.usernameHistory = player.usernameHistory || [];
-                                if (player.name && (!player.usernameHistory.length || player.usernameHistory[player.usernameHistory.length - 1] !== player.name)) {
-                                    player.usernameHistory.push(player.name);
+                                const oldUsername = player.name;
+                                player.name = userNameFromApi;
+                                
+                                if (!player.usernameHistory) {
+                                    player.usernameHistory = [];
                                 }
-                                console.log(`[BG_FETCH] Username change for ID ${userId}: '${player.name}' -> '${userNameFromApi}'.`);
-                                player.name = userNameFromApi; 
-                                usernameWasUpdated = true; 
+                                // Add old username to history if it's different from the new one and not already the most recent entry
+                                const lastHistoryEntry = player.usernameHistory.length > 0 ? player.usernameHistory[0].username : null;
+                                if (oldUsername && (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase())) {
+                                    player.usernameHistory.unshift({ username: oldUsername, timestamp: Date.now() });
+                                    console.log(`[BG_FETCH] Username change for ID ${userId}: '${oldUsername}' -> '${userNameFromApi}'. History updated.`);
+                                }
+                                
+                                // usernameWasUpdated = true; 
                                 playerActivityUpdatedThisCycle = true;
                             }
 
@@ -160,19 +168,16 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
             }
         }
     },
-    { urls: ["*://botc.app/*"] },
+    {
+        urls: ["*://botc.app/*"],
+        types: ["xmlhttprequest", "main_frame", "sub_frame"] // Added main_frame and sub_frame for broader capture if needed initially.
+    },
     ["requestHeaders"]
 );
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "storeAuthToken") { // This might be redundant if webRequest listener is robust
-        authToken = request.authToken;
-        chrome.storage.local.set({ authToken: authToken }, () => {
-            sendResponse({ success: true });
-        });
-        return true; // Async response because of storage.set
-    } else if (request.action === "requestSession" || request.action === "fetchSessions") { 
+    if (request.action === "requestSession" || request.action === "fetchSessions") { 
         // Use token from local storage if available, fallback to global var (less reliable for service worker)
         chrome.storage.local.get('authToken', (result) => {
             const currentAuthToken = result.authToken || authToken; // Prefer stored token
@@ -199,9 +204,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             })
             .catch(error => {
                 console.error("Error fetching session data (popup fetch):", error);
-                sendResponse({ error: error.message || "Network error" });
+                sendResponse({ error: error.message });
             });
         });
-        return true; // Indicates that the response will be sent asynchronously
+        return true; // Indicates async response
+    } else if (request.action === "getPlayerData") {
+        chrome.storage.local.get('playerData', (data) => {
+            if (chrome.runtime.lastError) {
+                sendResponse({ error: chrome.runtime.lastError.message });
+            } else {
+                sendResponse({ playerData: data.playerData || {} });
+            }
+        });
+        return true; // Keep the channel open for the asynchronous response
     }
+    // Removed 'storeAuthToken' handler as it's unused
+    return false; // Default for synchronous messages or if no handler matches
 });

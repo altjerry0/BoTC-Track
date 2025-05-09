@@ -168,35 +168,23 @@ button:hover {
     color: var(--player-indicator-neutral-text);
 }
 
-.player-indicators {
+.player-list {
     display: flex;
-    gap: 4px;
-    margin-left: 8px;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.player-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+.player-list-section {
+    margin-top: 8px;
 }
 
-.player-indicator.good {
-    color: var(--player-indicator-good-text);
-    background-color: var(--player-indicator-good-bg);
-    border: 1px solid var(--player-indicator-good-bg);
-}
-
-.player-indicator.bad {
-    color: var(--player-indicator-bad-text);
-    background-color: var(--player-indicator-bad-bg);
-    border: 1px solid var(--player-indicator-bad-bg);
-}
-
-.player-indicator.neutral {
-    color: var(--player-indicator-neutral-text);
-    background-color: var(--player-indicator-neutral-bg);
-    border: 1px solid var(--player-indicator-neutral-bg);
+.player-list-section-title {
+    font-size: 12px;
+    color: var(--subtle-text-color);
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .session-content {
@@ -513,25 +501,6 @@ body.dark-mode .player-card.rating-1 {
 .session-header .storyteller-name {
     color: var(--text-color);
     font-weight: 500;
-}
-
-.player-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.player-list-section {
-    margin-top: 8px;
-}
-
-.player-list-section-title {
-    font-size: 12px;
-    color: var(--subtle-text-color);
-    margin-bottom: 4px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .session-controls {

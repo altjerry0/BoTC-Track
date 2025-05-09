@@ -3,7 +3,6 @@
  * Handles all user-related functionality including:
  * - Storing and retrieving user data
  * - Username history tracking
- * - User search functionality
  * - User interface for managing players
  */
 
@@ -87,54 +86,6 @@ function formatTimeSince(timestamp) {
 }
 
 /**
- * Update username history for a player
- * @param {string} id - Player ID
- * @param {string} username - Current username
- * @param {Object} playerData - Current player data
- * @returns {Object} Updated player data
- */
-function updateUsernameHistory(id, username, playerData) {
-    if (!playerData[id]) {
-        playerData[id] = {
-            name: username,
-            usernameHistory: []
-        };
-        return playerData;
-    }
-
-    // Don't update if the name hasn't changed
-    if (playerData[id].name === username) {
-        return playerData;
-    }
-
-    // Check if this name is already in history
-    const existingEntryIndex = (playerData[id].usernameHistory || []).findIndex(
-        entry => entry.name === username
-    );
-
-    if (existingEntryIndex >= 0) {
-        // Remove the existing entry so we can move it to the front
-        playerData[id].usernameHistory.splice(existingEntryIndex, 1);
-    }
-
-    // Add the current name to history
-    if (!playerData[id].usernameHistory) {
-        playerData[id].usernameHistory = [];
-    }
-
-    // Add the old name to history
-    playerData[id].usernameHistory.unshift({
-        name: playerData[id].name,
-        timestamp: Date.now()
-    });
-
-    // Update to the new name
-    playerData[id].name = username;
-
-    return playerData;
-}
-
-/**
  * Create modal to display username history
  * @param {Array} history - Array of username history entries
  * @param {string} currentName - Current username
@@ -210,98 +161,6 @@ function createUsernameHistoryModal(history, currentName) {
             document.body.removeChild(modal);
         }
     });
-}
-
-/**
- * Search through player data
- * @param {string} query - Search query
- * @returns {Array} Array of search results
- */
-function searchPlayers(query) {
-    if (!query) return [];
-    
-    query = query.toLowerCase();
-    const results = [];
-
-    Object.entries(allPlayerData).forEach(([id, playerData]) => {
-        const currentName = playerData.name.toLowerCase();
-        if (currentName.includes(query)) {
-            results.push({
-                id,
-                ...playerData
-            });
-            return;
-        }
-
-        // Check historical names
-        const history = playerData.usernameHistory || [];
-        for (const entry of history) {
-            if (entry.name.toLowerCase().includes(query)) {
-                results.push({
-                    id,
-                    ...playerData
-                });
-                return;
-            }
-        }
-    });
-
-    return results;
-}
-
-/**
- * Display search results
- * @param {Array} results - Search results to display
- * @param {HTMLElement} searchResults - Element to display results in
- */
-function displaySearchResults(results, searchResults) {
-    searchResults.innerHTML = '';
-    
-    if (results.length === 0) {
-        searchResults.style.display = 'none';
-        return;
-    }
-
-    results.forEach(result => {
-        const item = document.createElement('div');
-        item.className = 'search-result-item';
-
-        const info = document.createElement('div');
-        info.className = 'search-result-info';
-
-        const name = document.createElement('div');
-        name.className = 'search-result-name';
-        name.textContent = result.name;
-        info.appendChild(name);
-
-        if (result.usernameHistory && result.usernameHistory.length > 0) {
-            const aliases = document.createElement('div');
-            aliases.className = 'search-result-aliases';
-            const previousNames = result.usernameHistory.map(h => h.name);
-            aliases.textContent = `Also known as: ${previousNames.join(', ')}`;
-            info.appendChild(aliases);
-        }
-
-        const rating = document.createElement('div');
-        rating.className = `search-result-rating rating-${result.score || 'unknown'}`;
-        rating.textContent = result.score ? `Rating: ${result.score}` : 'Unrated';
-        info.appendChild(rating);
-
-        item.appendChild(info);
-
-        // View history button
-        const viewButton = document.createElement('button');
-        viewButton.textContent = 'View History';
-        viewButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            createUsernameHistoryModal(result.usernameHistory, result.name);
-        });
-
-        item.appendChild(viewButton);
-        searchResults.appendChild(item);
-    });
-
-    searchResults.style.display = 'block';
 }
 
 /**
@@ -645,50 +504,6 @@ function addPlayer(id, name, score, notes, isFavorite, updateUICallback) {
 }
 
 /**
- * Toggle username history display
- * @param {string} playerId - Player ID
- * @param {HTMLElement} container - Container element
- */
-function toggleUsernameHistory(playerId, container) {
-    const existingHistory = container.querySelector('.username-history');
-    if (existingHistory) {
-        existingHistory.remove();
-        return;
-    }
-
-    const playerData = allPlayerData[playerId];
-    if (!playerData || !playerData.usernameHistory || playerData.usernameHistory.length === 0) {
-        return;
-    }
-
-    const historyDiv = document.createElement('div');
-    historyDiv.className = 'username-history';
-
-    playerData.usernameHistory.forEach(entry => {
-        const historyItem = document.createElement('div');
-        historyItem.className = 'username-history-item';
-
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'username-history-name';
-        if (entry.oldName && entry.newName) {
-            nameSpan.innerHTML = `<span class="old-name">${entry.oldName}</span> &rarr; <span class="new-name">${entry.newName}</span>`;
-        } else {
-            nameSpan.textContent = entry.name || entry.username || 'Unknown Change';
-        }
-
-        const dateSpan = document.createElement('span');
-        dateSpan.className = 'username-history-date';
-        dateSpan.textContent = formatTimestamp(entry.timestamp);
-
-        historyItem.appendChild(nameSpan);
-        historyItem.appendChild(dateSpan);
-        historyDiv.appendChild(historyItem);
-    });
-
-    container.appendChild(historyDiv);
-}
-
-/**
  * Checks if a player's username from a session differs from the stored one.
  * If it differs, updates the username and history in storage.
  * @param {string} userId - The ID of the player.
@@ -833,15 +648,17 @@ function updateSessionHistoryIfNeeded(userId, currentSessionId, currentPlayerDat
 }
 
 /**
- * Helper function to get rating class
- * @param {number} score - Player rating
- * @returns {string} Rating class
+ * Helper function to get CSS class based on player rating.
+ * Ensures rating is clamped between 1 and 5 for class generation.
+ * @param {number|string} rating - Player rating.
+ * @returns {string} CSS class name (e.g., 'rating-3', 'rating-unknown').
  */
-function getRatingClass(score) {
-    if (score === null || score === undefined) {
-        return 'rating-unknown';
-    }
-    return `rating-${score}`;
+function getRatingClass(rating) {
+    if (rating === null || rating === undefined || rating === '') return 'rating-unknown';
+    const numRating = parseInt(rating, 10);
+    if (isNaN(numRating)) return 'rating-unknown';
+    const validRating = Math.max(1, Math.min(5, numRating));
+    return `rating-${validRating}`;
 }
 
 /**
@@ -854,271 +671,19 @@ function getRatingClass(score) {
  */
 
 
-// -- START: Import/Export --
+// -- START: Data Management & Utility --
 
 /**
- * Helper function to escape CSV special characters (double quotes, commas, newlines).
- * If a field contains a comma, newline, or double quote, it should be enclosed in double quotes.
- * Existing double quotes within the field should be doubled.
- * @param {*} value The value to escape.
- * @returns {string} The escaped string suitable for CSV.
+ * Replaces all player data in memory and saves it to Chrome storage.
+ * @param {Object} newData - The new player data object to replace the current data.
+ * @param {Function} [callback] - Optional callback to execute after saving.
  */
-function escapeCsvValue(value) {
-    const strValue = String(value == null ? "" : value); // Handle null/undefined as empty string
-    if (strValue.includes('"') || strValue.includes(',') || strValue.includes('\n')) {
-        // Enclose in double quotes and double up existing double quotes
-        return `"${strValue.replace(/"/g, '""')}"`;
-    }
-    return strValue;
-}
-
-/**
- * Helper function to parse a single CSV row, handling quoted fields and escaped quotes.
- * @param {string} rowString The string for a single CSV row.
- * @returns {string[]} An array of strings, representing the values in the row.
- */
-function parseCsvRow(rowString) {
-    const values = [];
-    let currentVal = '';
-    let inQuotes = false;
-    for (let i = 0; i < rowString.length; i++) {
-        const char = rowString[i];
-
-        if (char === '"') {
-            if (inQuotes && i + 1 < rowString.length && rowString[i+1] === '"') {
-                // Escaped double quote within a quoted field
-                currentVal += '"';
-                i++; // Skip the second quote of the pair
-            } else {
-                // Start or end of a quoted field
-                inQuotes = !inQuotes;
-            }
-        } else if (char === ',' && !inQuotes) {
-            // Comma separator, and not inside a quoted field
-            values.push(currentVal);
-            currentVal = '';
-        } else {
-            // Regular character
-            currentVal += char;
-        }
-    }
-    values.push(currentVal); // Add the last value
-    return values;
-}
-
-/**
- * Exports current player data to a CSV file.
- */
-function exportPlayerDataCSV() {
-    loadPlayerData(playerData => {
-        if (!playerData || Object.keys(playerData).length === 0) {
-            alert('No player data found to export.');
-            return;
-        }
-
-        const headers = [
-            'id', 'name', 'score', 'notes', 'isFavorite', 
-            'lastSeenSessionId', 'lastSeenTimestamp', 'sessionHistory', 
-            'uniqueSessionCount', 'usernameHistory'
-        ];
-        const csvRows = [headers.join(',')]; // Header row
-
-        // Convert player data object to rows
-        Object.keys(playerData).forEach(id => {
-            const player = playerData[id];
-            const row = [
-                escapeCsvValue(id),
-                escapeCsvValue(player.name || ''),
-                escapeCsvValue(player.score ?? ''),
-                escapeCsvValue(player.notes || ''),
-                escapeCsvValue(player.isFavorite ? 'true' : 'false'),
-                escapeCsvValue(player.lastSeenSessionId || ''),
-                escapeCsvValue(player.lastSeenTimestamp || ''),
-                escapeCsvValue(JSON.stringify(player.sessionHistory || [])),
-                escapeCsvValue(player.uniqueSessionCount || 0),
-                escapeCsvValue(JSON.stringify(player.usernameHistory || []))
-            ];
-            csvRows.push(row.join(','));
-        });
-
-        const csvString = csvRows.join('\n');
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-
-        // Create a link and trigger the download
-        const link = document.createElement('a');
-        if (link.download !== undefined) { // Feature detection
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            // Suggest a filename
-            const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-            link.setAttribute('download', `player_data_export_${timestamp}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url); // Clean up
-        } else {
-            alert('CSV export is not supported in this browser.');
-        }
+function replaceAllPlayerDataAndSave(newData, callback) {
+    allPlayerData = newData; // Replace in-memory store
+    savePlayerData(allPlayerData, () => { // Save to Chrome storage
+        if (callback) callback();
     });
 }
-
-/**
- * Imports player data from a CSV file content, merging with existing data.
- * @param {string} csvContent - The content of the CSV file.
- * @param {Function} callback - Function to call after import attempt (receives success: boolean, message: string).
- * @param {Function} refreshDisplayFunc - Function to refresh the user list display.
- */
-function importPlayerDataCSV(csvContent, callback, refreshDisplayFunc) {
-    if (!csvContent) {
-        callback(false, 'No file content provided.');
-        return;
-    }
-
-    const lines = csvContent.split(/\r\n|\n/); // Split into lines
-    if (lines.length < 2) {
-        callback(false, 'CSV file must have a header row and at least one data row.');
-        return;
-    }
-
-    const headers = parseCsvRow(lines[0]).map(h => h.trim().toLowerCase());
-    const expectedBaseHeaders = ['id', 'name']; // Minimal required
-    const allExpectedHeaders = [
-        'id', 'name', 'score', 'notes', 'isfavorite', 
-        'lastseensessionid', 'lastseentimestamp', 'sessionhistory', 
-        'uniquesessioncount', 'usernamehistory'
-    ]; // Note: all lowercase for easier matching
-
-    if (!expectedBaseHeaders.every(h => headers.includes(h))) {
-         callback(false, `CSV must contain at least '${expectedBaseHeaders.join(', ')}' columns.`);
-         return;
-    }
-    
-    // Find the index of each column we care about
-    const colIndices = {};
-    allExpectedHeaders.forEach(header => {
-        colIndices[header.replace(/\s+/g, '')] = headers.indexOf(header);
-    });
-
-    loadPlayerData(existingPlayerData => {
-        let updatedPlayerData = { ...existingPlayerData }; 
-        let importedCount = 0;
-        let skippedCount = 0; 
-        let errorCount = 0;
-        const errors = [];
-
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i];
-            if (!line.trim()) continue; 
-
-            // Parse the CSV row
-            const values = parseCsvRow(line); 
-
-            const id = colIndices.id !== -1 && values[colIndices.id] ? values[colIndices.id].trim() : null;
-            const name = colIndices.name !== -1 && values[colIndices.name] ? values[colIndices.name].trim() : null;
-
-            if (!id || !name) {
-                console.warn(`[Import CSV] Skipping row ${i + 1}: Missing ID or Name.`);
-                errors.push(`Row ${i + 1}: Missing ID or Name.`);
-                errorCount++;
-                continue;
-            }
-
-            if (updatedPlayerData[id]) {
-                console.log(`[Import CSV] Skipping duplicate player ID ${id} ('${name}'). Data already exists.`);
-                errors.push(`Row ${i + 1}: Skipped duplicate ID ${id} ('${name}')`);
-                skippedCount++;
-                continue; 
-            }
-
-            console.log(`[Import CSV] Adding new player ID ${id} ('${name}')`);
-
-            const score = colIndices.score !== -1 && values[colIndices.score] ? values[colIndices.score].trim() : '';
-            const notes = colIndices.notes !== -1 && values[colIndices.notes] ? values[colIndices.notes].trim() : '';
-            const isFavoriteStr = colIndices.isfavorite !== -1 && values[colIndices.isfavorite] ? values[colIndices.isfavorite].trim().toLowerCase() : 'false';
-            const isFavorite = isFavoriteStr === 'true';
-
-            const lastSeenSessionId = colIndices.lastseensessionid !== -1 && values[colIndices.lastseensessionid] ? values[colIndices.lastseensessionid].trim() : null;
-            const lastSeenTimestampStr = colIndices.lastseentimestamp !== -1 && values[colIndices.lastseentimestamp] ? values[colIndices.lastseentimestamp].trim() : null;
-            const uniqueSessionCountStr = colIndices.uniquesessioncount !== -1 && values[colIndices.uniquesessioncount] ? values[colIndices.uniquesessioncount].trim() : '0';
-
-            const newPlayer = {
-                id,
-                name,
-                score: score ? parseInt(score, 10) : null,
-                notes,
-                isFavorite,
-                lastSeenSessionId,
-                lastSeenTimestamp: lastSeenTimestampStr ? parseInt(lastSeenTimestampStr, 10) : null,
-                sessionHistory: [], // Default, to be parsed
-                uniqueSessionCount: uniqueSessionCountStr ? parseInt(uniqueSessionCountStr, 10) : 0,
-                usernameHistory: [{ timestamp: Date.now(), name: name }] // Default, to be parsed
-            };
-
-            // Parse sessionHistory
-            if (colIndices.sessionhistory !== -1 && values[colIndices.sessionhistory]) {
-                let sessionHistoryStr = values[colIndices.sessionhistory].trim();
-                if (sessionHistoryStr.startsWith('"') && sessionHistoryStr.endsWith('"')) {
-                    sessionHistoryStr = sessionHistoryStr.substring(1, sessionHistoryStr.length - 1).replace(/""/g, '"');
-                }
-                try {
-                    newPlayer.sessionHistory = JSON.parse(sessionHistoryStr);
-                } catch (e) {
-                    console.warn(`[Import CSV] Row ${i + 1}, ID ${id}: Could not parse sessionHistory '${values[colIndices.sessionhistory]}'. Defaulting to empty. Error: ${e.message}`);
-                    errors.push(`Row ${i + 1}, ID ${id}: Error parsing sessionHistory: ${e.message}`);
-                    // newPlayer.sessionHistory remains [] as per default
-                    errorCount++;
-                }
-            } else {
-                 newPlayer.sessionHistory = []; // Ensure it's an array if column missing or empty
-            }
-
-            // Parse usernameHistory
-            if (colIndices.usernamehistory !== -1 && values[colIndices.usernamehistory]) {
-                let usernameHistoryStr = values[colIndices.usernamehistory].trim();
-                if (usernameHistoryStr.startsWith('"') && usernameHistoryStr.endsWith('"')) {
-                    usernameHistoryStr = usernameHistoryStr.substring(1, usernameHistoryStr.length - 1).replace(/""/g, '"');
-                }
-                try {
-                    const parsedHistory = JSON.parse(usernameHistoryStr);
-                    if (Array.isArray(parsedHistory) && parsedHistory.length > 0) {
-                        newPlayer.usernameHistory = parsedHistory;
-                    } else {
-                        // If parsed but empty or not an array, use default
-                        console.warn(`[Import CSV] Row ${i + 1}, ID ${id}: usernameHistory was empty or invalid after parsing. Defaulting.`);
-                         newPlayer.usernameHistory = [{ timestamp: Date.now(), name: name }];
-                    }
-                } catch (e) {
-                    console.warn(`[Import CSV] Row ${i + 1}, ID ${id}: Could not parse usernameHistory '${values[colIndices.usernamehistory]}'. Defaulting. Error: ${e.message}`);
-                    errors.push(`Row ${i + 1}, ID ${id}: Error parsing usernameHistory: ${e.message}`);
-                    // newPlayer.usernameHistory remains default as set above
-                    errorCount++;
-                }
-            } else {
-                // Ensure it's a default array if column missing or empty
-                newPlayer.usernameHistory = [{ timestamp: Date.now(), name: name }];
-            }
-
-
-            updatedPlayerData[id] = newPlayer;
-            importedCount++;
-        }
-
-        savePlayerData(updatedPlayerData, () => {
-            let message = `Import complete. Added: ${importedCount}, Skipped (Duplicates): ${skippedCount}.`;
-            if (errorCount > 0) {
-                 message += ` Other Errors: ${errorCount}. First few errors: ${errors.filter(e => !e.includes('Skipped duplicate')).slice(0,3).join('; ')}`;
-            }
-            console.log(`[Import CSV] ${message}`);
-            callback(true, message);
-            if (refreshDisplayFunc) {
-                refreshDisplayFunc();
-            }
-        });
-    });
-}
-
-// -- END: Import/Export --
 
 // -- START: Initialization & Utility --
 
@@ -1129,7 +694,7 @@ function importPlayerDataCSV(csvContent, callback, refreshDisplayFunc) {
  */
 function toggleFavoriteStatus(playerId, buttonElement) {
     loadPlayerData(playerData => {
-        if (playerData && playerData[playerId]) {
+        if (playerData[playerId]) {
             playerData[playerId].isFavorite = !playerData[playerId].isFavorite; // Toggle status
 
             savePlayerData(playerData, () => {
@@ -1172,13 +737,12 @@ window.loadPlayerData = loadPlayerData;
 window.addPlayer = addPlayer;
 window.displayKnownPlayers = displayKnownPlayers;
 window.createUsernameHistoryModal = createUsernameHistoryModal;
-window.savePlayerData = savePlayerData; // Assuming save might be needed directly sometimes
-window.exportPlayerDataCSV = exportPlayerDataCSV; // Expose export function
-window.importPlayerDataCSV = importPlayerDataCSV; // Expose import function
-window.toggleFavoriteStatus = toggleFavoriteStatus; // Ensure this is exposed
-window.deletePlayer = deletePlayer; // Expose the delete function
-
-// --- END: Initialization & Utility ---
+window.savePlayerData = savePlayerData; 
+window.toggleFavoriteStatus = toggleFavoriteStatus;
+window.deletePlayer = deletePlayer;
+window.getRatingClass = getRatingClass;
+window.handleRefreshUserName = handleRefreshUserName; 
+window.replaceAllPlayerDataAndSave = replaceAllPlayerDataAndSave; 
 
 /**
  * Handles the process of refreshing a player's username from the API.
@@ -1275,10 +839,3 @@ function updateUsernameHistory(playerObject, oldUsername) {
     }
     return false; // No update to history needed
 }
-
-// Ensure loadPlayerData and savePlayerData are available and correctly scoped
-// (They should be, as they are top-level functions in this file typically)
-
-// Expose functions to popup.js if they need to be called from there
-window.addPlayer = addPlayer;
-window.loadPlayerData = loadPlayerData;

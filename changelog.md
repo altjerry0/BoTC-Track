@@ -5,6 +5,22 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 # BotC Player Tracker Extension - Changelog
 ---
 
+## [v1.1.1] - [Unreleased]
+
+### Added
+- **Dynamic Export Filename**: CSV export filenames now include a `YYYYMMDD` datestamp and the count of users being exported (e.g., `botc_player_data_20250509_12users.csv`).
+
+### Changed
+
+### Refactored
+- **Codebase Cleanup**: Removed unused JavaScript functions and CSS classes across multiple files (`background.js`, `popup.js`, `userManager.js`, `sessionManager.js`, `popup.css`) to improve code maintainability and reduce bundle size. This includes:
+  - Removed dead code related to an unused 'storeAuthToken' message handler.
+  - Eliminated redundant or shadowed function definitions (e.g., `updateUsernameHistory`).
+  - Removed uncalled functions previously intended for player search (`searchPlayers`, `displaySearchResults`), inline username history toggling (`toggleUsernameHistory`), session player analysis (`analyzeSessionPlayers`), and specific storyteller info gathering (`getStorytellerInfo`).
+  - Consolidated duplicated `getRatingClass` utility function into a single, more robust version.
+  - Removed CSS styles associated with the removed player analysis indicators.
+- **CSV Module Separation**: Separated CSV import/export logic from `userManager.js` into a new dedicated `src/popup/csvManager.js` module for better modularity and code clarity.
+
 ## [v1.1.0] - 2025-05-09
 
 ### Added
@@ -12,6 +28,8 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 
 ### Changed
 - **Online Status Accuracy**: The 'Manage Users' tab now accurately reflects a player's online status (including storytellers and spectators) by checking `session.usersAll` from fetched game data. This ensures all users present in a session are shown with an online indicator and their current game session.
+
+### Refactored
 
 ## [v1.0.9] - 2025-05-08
 

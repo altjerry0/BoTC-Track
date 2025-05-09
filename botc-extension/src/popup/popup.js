@@ -21,14 +21,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabContents = document.querySelectorAll('.tab-content');
 
     // Content Area References
-    const sessionResultsDiv = document.getElementById('sessionResults'); // This is now just a container for loadingIndicator and sessionList
     const sessionListDiv = document.getElementById('sessionList'); // Specific div for session cards
     const loadingIndicator = document.getElementById('loadingIndicator');
     const knownPlayersDiv = document.getElementById('knownPlayers');
 
     // State
     let latestSessionData = null; // Variable to store the latest session data
-    let lastFetchedSessions = []; // Store the last fetched sessions
     let showOfficialOnly = false; // Store the filter state
     let searchTimeout = null;
 
@@ -243,7 +241,6 @@ document.addEventListener('DOMContentLoaded', function() {
             { officialOnly: showOfficialOnly }, 
             (sessions, finalPlayerData) => { // Modified callback to receive final data
                 latestSessionData = sessions; 
-                lastFetchedSessions = sessions; 
                 if (loadingIndicator) loadingIndicator.style.display = 'none';
                 if (sessionListDiv) sessionListDiv.style.display = 'block'; // Show list again
                 // updateOnlineFavoritesList is already called within checkHistoryAndRender
@@ -263,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Directly call renderSessions from sessionManager.js (assuming it's globally available or imported)
             // This assumes renderSessions is exposed on the window object or properly imported if using modules.
             if (window.renderSessions) {
-                window.renderSessions(lastFetchedSessions, playerData, sessionListDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal);
+                window.renderSessions(latestSessionData, playerData, sessionListDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal);
             } else {
                 console.error('renderSessions function not found. Cannot re-render with filter.');
                 if (sessionListDiv) sessionListDiv.innerHTML = '<p class="error-message">Error applying filter.</p>';
@@ -335,77 +332,48 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('Add Player Manually button not found.');
     }
 
-    // Export Players Button
+    // Export player data
     if (exportPlayersButton) {
         exportPlayersButton.addEventListener('click', () => {
-            if (typeof window.exportPlayerDataCSV === 'function') {
-                window.exportPlayerDataCSV();
-            } else {
-                console.error('window.exportPlayerDataCSV function not found.');
-                alert('Export function is unavailable. Check console.');
-            }
+            window.loadPlayerData(dataToExport => { // Use window.loadPlayerData from userManager.js
+                if (Object.keys(dataToExport).length === 0) {
+                    alert("No player data to export.");
+                    return;
+                }
+                window.exportPlayerDataCSV(dataToExport); // Calls csvManager.exportPlayerDataCSV
+            });
         });
     } else {
         console.warn('Export Players button not found.');
     }
 
-    // Import Players Button (triggers hidden file input)
-    if (importPlayersButton && importFileInput) {
-        importPlayersButton.addEventListener('click', () => {
-            importFileInput.click(); // Open file dialog
-        });
-    } else {
-        console.warn('Import Players button or file input not found.');
-    }
+    // Import player data
+    if (importPlayersButton && importFileInput && importStatusDiv) {
+        importPlayersButton.addEventListener('click', () => importFileInput.click());
 
-    // File Input Change Listener (for import)
-    if (importFileInput && importStatusDiv) {
         importFileInput.addEventListener('change', (event) => {
+            const statusCallback = (message, isError) => {
+                importStatusDiv.textContent = message;
+                importStatusDiv.className = `import-status-message ${isError ? 'error' : 'success'}`;
+                importStatusDiv.style.display = 'block';
+            };
+
             const file = event.target.files[0];
-            if (!file) {
-                return; // No file selected
+            if (file) {
+                const successCallback = (parsedData) => {
+                    window.replaceAllPlayerDataAndSave(parsedData, () => { // Calls userManager.replaceAllPlayerDataAndSave
+                        statusCallback('Player data imported successfully! Reloading list...', false);
+                        refreshUserManagementTab(); // Refresh the user management tab from popup.js
+                        event.target.value = null; // Clear the file input
+                    });
+                };
+                window.importPlayerDataCSV(file, successCallback, statusCallback); // Calls csvManager.importPlayerDataCSV
+            } else {
+                statusCallback('No file selected.', true);
             }
-
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-                const csvContent = e.target.result;
-                if (typeof window.importPlayerDataCSV === 'function') {
-                    importStatusDiv.textContent = 'Importing...';
-                    importStatusDiv.style.color = '#aaa'; // Reset color
-                    importStatusDiv.style.display = 'inline'; // Show status
-                    
-                    window.importPlayerDataCSV(csvContent, (success, message) => {
-                        // Update status message based on import result
-                        importStatusDiv.textContent = message;
-                        importStatusDiv.style.color = success ? 'lightgreen' : 'salmon';
-                        // Optionally hide message after a delay
-                        // setTimeout(() => { importStatusDiv.style.display = 'none'; }, 5000);
-                    }, refreshUserManagementTab); // Pass refresh function
-                } else {
-                    console.error('window.importPlayerDataCSV function not found.');
-                    alert('Import function is unavailable. Check console.');
-                     importStatusDiv.textContent = 'Import unavailable.';
-                     importStatusDiv.style.color = 'salmon';
-                     importStatusDiv.style.display = 'inline';
-                }
-                 // Clear the input value to allow importing the same file again
-                 event.target.value = null;
-            };
-
-            reader.onerror = (e) => {
-                console.error('Error reading file:', e);
-                alert('Error reading file. See console for details.');
-                importStatusDiv.textContent = 'File read error.';
-                importStatusDiv.style.color = 'salmon';
-                importStatusDiv.style.display = 'inline';
-                event.target.value = null; // Clear input value
-            };
-
-            reader.readAsText(file);
         });
     } else {
-        console.warn('Import file input or status div not found.');
+        console.warn('Import Players button, file input, or status div not found.');
     }
 
     if (clearAllPlayerDataButton) {
@@ -459,21 +427,14 @@ document.addEventListener('DOMContentLoaded', function() {
         { officialOnly: showOfficialOnly }, 
         (sessions, finalPlayerData) => {
         latestSessionData = sessions; // Store initially fetched sessions
-        lastFetchedSessions = sessions; // Store initially fetched sessions
         // Load initial players for the hidden management tab
         loadPlayerData(playerData => {
-            displayKnownPlayers(knownPlayersDiv, '', playerData, latestSessionData, createUsernameHistoryModal);
+            displayKnownPlayers(knownPlayersDiv, '', playerData, latestSessionData, createUsernameHistoryModal, refreshUserManagementTab);
         });
     });
 
     // Show the default tab (sessions)
     showTab('sessions'); 
-
-    // Load initial player data for known users tab (if it's the default or becomes active)
-    // This might be redundant if showTab handles it, but good for initial explicit load.
-    if (document.getElementById('userManagement').classList.contains('active')) {
-        refreshUserManagementTab();
-    }
 
     // --- Event Listener for Open in Tab --- 
     const openInTabBtn = document.getElementById('open-in-tab-btn');
