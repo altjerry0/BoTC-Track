@@ -80,6 +80,13 @@ This method allows you to install a specific version from GitHub, which might be
     *   Import player data from a previously saved CSV file.
 *   **Player Search**: Search players in the "Manage Users" tab by current/previous usernames, notes, or score.
 *   **Dark Mode**: A user-toggleable dark theme for the popup interface.
+*   **WebSocket Interception**: (Experimental / In Development)
+    *   Intercepts WebSocket communications with `botc.app` to gather real-time game state and chat information.
+    *   Currently undergoing refinement to ensure stable and reliable data capture without interfering with the game's normal operations.
+    *   Utilizes a content script (`content_script.js`) to inject `content_main.js` into the page's main JavaScript environment for full WebSocket access.
+    *   Messages are proxied and sent to the background script for processing.
+    *   Includes logic to extract user IDs from message payloads to help identify participants in the game session (looks for keys `id`/`userId` or direct 10+ digit numeric strings in arrays).
+    *   **Username Enrichment (v3.4-v3.6)**: For newly discovered user IDs, the script attempts to fetch the corresponding username by querying `https://botc.app/backend/user/{USER_ID}`. This request includes an authorization token which is now obtained by messaging the background script (which manages the token, likely via `chrome.storage.local`). Fetched usernames are cached in memory for the session. Both IDs and their associated usernames are logged to the console.
 
 ## Usage Guidelines
 
@@ -150,6 +157,26 @@ To capture real-time game and chat data from `botc.app`, the extension employs a
 
 This system allows the extension to gather data that is not available through standard HTTP APIs, providing insights into active game sessions and player interactions.
 
+## How it Works (Simplified)
+
+1.  **Content Script (Injection)**: `content_script.js` injects `content_main.js` into the page's main JavaScript environment.
+2.  **Content Script (Main Logic)**: `content_main.js` sets up the WebSocket proxy and listens for messages.
+3.  **Message Processing**: When a message is received, it's processed (basic parsing for Socket.IO style messages), scanned for potential user IDs (looking for `id`/`userId` keys or direct numeric strings in arrays), and then sent via `window.postMessage` back to `content_script.js`.
+    *   If new user IDs are found, `content_main.js` also attempts to fetch their usernames from the `botc.app` backend API. It requests the necessary auth token from the background script via `content_script.js`.
+    *   Recent refinements (v3.1-v3.6) focus on ensuring message handlers are called correctly, improving user ID extraction, and implementing username enrichment with authentication via extension messaging.
+4.  **Content Script (Relay)**: `content_script.js` listens for messages from `content_main.js` (via `window.addEventListener('message', ...)`). It relays WebSocket data to `background.js` and also relays auth token requests from `content_main.js` to `background.js` and the responses back.
+5.  **Background Script (`src/background.js`)**: Listens for messages from the content script. It processes WebSocket data and also handles `GET_AUTH_TOKEN` requests by retrieving the token from `chrome.storage.local` and sending it back.
+
+## Configuration
+
+*   The extension now centrally manages the authentication token, typically in `background.js` using `chrome.storage.local`. The mechanism for initially obtaining and storing this token in `background.js` (e.g., by sniffing network requests) is presumed to be in place.
+
+## Known Issues / Future Work
+
+*   **Unique Session Tracking**: The display or calculation of a player's unique session count might need review for accuracy under all conditions.
+*   **Data Sync on Multiple Devices**: Data is stored locally per browser. There's no automatic sync between different Chrome instances/profiles.
+*   **WebSocket Interception**: Ongoing debugging and refinement to ensure stable and reliable data capture without interfering with the game's normal operations.
+
 ## Developer Setup / Loading from Source
 
 These instructions are for developers or users who want to load the extension directly from the source code.
@@ -204,11 +231,6 @@ Here's a glimpse of the extension in action:
 - **Code Organization**: Continue to refine modularity. Consider TypeScript for improved type safety.
 - **UX Improvements**: Refine UI/UX for smoother navigation, clearer loading states, and more intuitive interactions.
 - **Testing**: Implement unit and integration tests for key functionalities.
-
-## Current Status & Known Issues
-
-*   **Unique Session Tracking**: The display or calculation of a player's unique session count might need review for accuracy under all conditions.
-*   **Data Sync on Multiple Devices**: Data is stored locally per browser. There's no automatic sync between different Chrome instances/profiles.
 
 ## Contributing
 

@@ -165,170 +165,319 @@ function fetchAndProcessSessionsInBackground(token, playerData) {
     });
 }
 
-// Listen for network requests to extract the Authorization token
-chrome.webRequest.onBeforeSendHeaders.addListener(
-    (details) => {
-        const authHeader = details.requestHeaders.find(header => header.name.toLowerCase() === "authorization");
-        if (authHeader && authHeader.value.startsWith("Bearer ")) {
-            const newAuthToken = authHeader.value;
-            if (authToken !== newAuthToken) { // Only update if it changed
-                authToken = newAuthToken;
-                // Save to local storage for the alarm to use
-                chrome.storage.local.set({ authToken: authToken }, () => {
-                    console.log("Authorization token extracted and stored.");
-                });
-            }
-        }
-    },
-    {
-        urls: ["*://botc.app/*"],
-        types: ["xmlhttprequest", "main_frame", "sub_frame"] // Added main_frame and sub_frame for broader capture if needed initially.
-    },
-    ["requestHeaders"]
-);
+// Consolidated listener for messages from popup and content scripts
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log(`%c[BG] Received message:`, 'color: #FFD700', message, 'from sender:', sender.tab ? `tab ${sender.tab.id}` : "extension context", sender.url || (sender.id === chrome.runtime.id ? '(self)' : sender.id));
 
-// Listen for messages from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "requestSession" || request.action === "fetchSessions") { 
+    // Messages typically from popup (using message.action)
+    if (message.action === "requestSession" || message.action === "fetchSessions") {
         chrome.storage.local.get('authToken', (result) => {
-            const currentAuthToken = result.authToken || authToken; // Prefer stored token
+            const currentAuthToken = result.authToken || authToken; // authToken is a global let in this file
             if (!currentAuthToken) {
                 console.warn("[BG Popup Fetch] Auth token missing for session fetch.");
                 sendResponse({ error: "Authorization token not available" });
-                return; // Exit from chrome.storage.local.get callback
+                return; // from callback
             }
-
             fetch("https://botc.app/backend/sessions", {
                 method: "GET",
                 headers: { "Authorization": currentAuthToken }
             })
             .then(response => {
                 if (!response.ok) {
-                    // Attempt to parse error as JSON, otherwise use statusText
-                    return response.json().catch(() => null) // if error response isn't valid JSON
+                    return response.json().catch(() => null)
                         .then(errorBody => {
                             const errorMessage = errorBody ? (errorBody.message || JSON.stringify(errorBody)) : response.statusText;
                             const detailedError = `API Error ${response.status}: ${errorMessage}`;
                             console.error(`[BG Popup Fetch] ${detailedError}`);
-                            throw new Error(detailedError); // This will be caught by the .catch() below
+                            throw new Error(detailedError);
                         });
                 }
-                return response.json(); // If response.ok, parse and return JSON
+                return response.json();
             })
             .then(sessionsData => {
-                // Check if the API, despite a 200 OK, returned an error structure
                 if (sessionsData && typeof sessionsData.error !== 'undefined') {
                     console.error("[BG Popup Fetch] API returned 200 OK but with an error payload:", sessionsData.error);
                     sendResponse({ error: sessionsData.error });
                 } else {
-                    sendResponse({ sessions: sessionsData });
+                    sendResponse(sessionsData);
                 }
             })
             .catch(error => {
-                // Catches errors from fetch() network issues or the !response.ok block's throw
-                console.error("[BG Popup Fetch] Error fetching sessions for popup:", error.message);
-                sendResponse({ error: error.message || "Failed to fetch sessions due to an unknown server error." });
+                console.error("[BG Popup Fetch] Error during fetch or processing:", error);
+                sendResponse({ error: error.message || "Failed to fetch sessions" });
             });
         });
-        return true; // Crucial: Indicates that sendResponse will be called asynchronously
-    } else if (request.action === "getPlayerData") {
+        return true; // Crucial for async sendResponse
+    } else if (message.action === "getPlayerData") { // From popup
         chrome.storage.local.get('playerData', (data) => {
             if (chrome.runtime.lastError) {
+                console.error("[BG] Error getting playerData for popup:", chrome.runtime.lastError);
                 sendResponse({ error: chrome.runtime.lastError.message });
             } else {
                 sendResponse({ playerData: data.playerData || {} });
             }
         });
-        return true; // Keep the channel open for the asynchronous response
+        return true; // Async
     }
-    // Removed 'storeAuthToken' handler as it's unused
-    return false; // Default for synchronous messages or if no handler matches
+
+    // Messages from content_script or content_main.js
+    else if (
+        (message.source === 'content_script' &&
+            (message.type === 'GAME_DATA' ||
+             message.type === 'GAME_DATA_RAW' ||
+             message.type === 'USER_ID_BATCH' ||
+             message.type === 'GET_AUTH_TOKEN')
+        ) ||
+        (message.source === 'content_main_js_v3_6' && message.type === 'GET_AUTH_TOKEN')
+    )
+    {
+        switch (message.type) {
+            case 'GAME_DATA': 
+            case 'GAME_DATA_RAW':
+                console.log(`%c[BG] Game data received (via ${message.source}):`, 'color: lightblue', message.payload ? '(payload present)' : '(no payload)');
+                // Ensure lastGameData is defined globally if you intend to use it here
+                // lastGameData = { payload: message.payload, ... }; 
+                const gameUserIds = processWebSocketPayloadForUserIds(message.payload, message.type); 
+                sendResponse({ status: "GAME_DATA received by background", processed_ids: Array.from(gameUserIds) });
+                return false; 
+
+            case 'CHAT_DATA': 
+            case 'CHAT_DATA_RAW':
+                console.log(`%c[BG] Chat data received (via ${message.source}):`, 'color: lightgreen', message.payload ? '(payload present)' : '(no payload)');
+                // Ensure lastChatData is defined globally if you intend to use it here
+                // lastChatData = { payload: message.payload, ... };
+                const chatUserIds = processWebSocketPayloadForUserIds(message.payload, message.type); 
+                sendResponse({ status: "CHAT_DATA received by background", processed_ids: Array.from(chatUserIds) });
+                return false; 
+
+            case 'GET_AUTH_TOKEN': 
+                console.log(`%c[BG] Received GET_AUTH_TOKEN request from ${message.source}.`, 'color: magenta');
+                chrome.storage.local.get('authToken', (result) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('%c[BG] Error getting authToken from storage:', 'color: red', chrome.runtime.lastError);
+                        sendResponse({ token: null, error: chrome.runtime.lastError.message });
+                    } else {
+                        console.log('%c[BG] authToken from storage:', 'color: magenta', result.authToken ? 'Token found' : 'Token NOT found');
+                        sendResponse({ token: result.authToken || null });
+                    }
+                });
+                return true; // Async
+
+            default:
+                console.warn(`%c[BG] Received unknown message type from ${message.source}: ${message.type}`, 'color: orange', message);
+                sendResponse({ status: `Unknown message type from ${message.source}`, type: message.type });
+                return false;
+        }
+    }
+
+    // GET_PLAYER_DATA_MAIN: Specific handler for content_main's request for playerData
+    else if (message.type === 'GET_PLAYER_DATA_MAIN' && message.source === 'content_script') {
+        console.log(`%c[BG] Received GET_PLAYER_DATA_MAIN request from content_script (for content_main, ID: ${message.requestId}).`, 'color: dodgerblue');
+        chrome.storage.local.get('playerData', (data) => {
+            if (chrome.runtime.lastError) {
+                console.error("[BG] Error getting playerData for GET_PLAYER_DATA_MAIN:", chrome.runtime.lastError);
+                sendResponse({ playerData: null, error: chrome.runtime.lastError.message, requestId: message.requestId });
+            } else {
+                // console.log("[BG] Sending playerData to content_script for GET_PLAYER_DATA_MAIN.");
+                sendResponse({ playerData: data.playerData || {}, error: null, requestId: message.requestId });
+            }
+        });
+        return true; // Async
+    }
+
+    // UPDATE_PLAYER_USERNAME_IN_STORAGE: Specific handler for content_main's request to update username
+    else if (message.type === 'UPDATE_PLAYER_USERNAME_IN_STORAGE' && message.source === 'content_script') {
+        const { userId, username } = message.payload;
+        console.log(`%c[BG] Received UPDATE_PLAYER_USERNAME_IN_STORAGE for ${userId} to "${username}".`, 'color: mediumpurple');
+        chrome.storage.local.get('playerData', (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('[BG] Error getting playerData for update:', chrome.runtime.lastError);
+                sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                return;
+            }
+            let playerData = result.playerData || {};
+            let player = playerData[userId];
+            let usernameChanged = false;
+
+            if (!player) {
+                player = {
+                    id: userId,
+                    name: username,
+                    notes: "",
+                    firstSeenTimestamp: Date.now(),
+                    lastSeenTimestamp: Date.now(),
+                    sessionHistory: [],
+                    uniqueSessionCount: 0,
+                    usernameHistory: []
+                };
+                playerData[userId] = player;
+                usernameChanged = true; // New player, so effectively username changed from nothing
+            } else {
+                if (player.name !== username) {
+                    const oldUsername = player.name;
+                    if (oldUsername) { // Only add to history if there was an old username
+                        player.usernameHistory = player.usernameHistory || [];
+                        // Add old username to history if it's different and not already the most recent entry
+                        const lastHistoryEntry = player.usernameHistory.length > 0 ? player.usernameHistory[0].username : null;
+                        if (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase()) {
+                            player.usernameHistory.unshift({ username: oldUsername, timestamp: Date.now() });
+                            console.log(`%c[BG] Username history updated for ID ${userId}: '${oldUsername}' -> '${username}'.`, 'color: mediumpurple');
+                        }
+                    }
+                    player.name = username;
+                    usernameChanged = true;
+                }
+            }
+            player.lastSeenTimestamp = Date.now(); // Always update last seen on any interaction
+
+            if (usernameChanged) {
+                 console.log(`%c[BG] Username for ${userId} updated to "${username}". Saving playerData.`, 'color: mediumpurple');
+            } else {
+                // console.log(`%c[BG] Username for ${userId} is already "${username}". Updating lastSeen. Saving playerData.`, 'color: gray');
+            }
+
+            chrome.storage.local.set({ playerData: playerData }, () => {
+                if (chrome.runtime.lastError) {
+                    console.error('[BG] Error saving updated playerData:', chrome.runtime.lastError);
+                    sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                } else {
+                    sendResponse({ success: true });
+                }
+            });
+        });
+        return true; // Async
+    }
+
+    else if (message.type === "SAVE_PLAYER_NOTES") { 
+        console.log("[BG] Attempting to save player notes for player:", message.playerId, "Notes:", message.notes);
+        chrome.storage.local.get(['playerData'], (result) => {
+             if (chrome.runtime.lastError) {
+                console.error("[BG] Error getting playerData for saving notes:", chrome.runtime.lastError);
+                sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                return;
+            }
+            let allPlayerData = result.playerData || {};
+            if (!allPlayerData[message.playerId]) {
+                allPlayerData[message.playerId] = { 
+                    id: message.playerId, 
+                    name: "Unknown Player", 
+                    notes: "",
+                    // Initialize other fields as necessary
+                    firstSeenTimestamp: Date.now(),
+                    lastSeenTimestamp: Date.now()
+                };
+            }
+            allPlayerData[message.playerId].notes = message.notes;
+            chrome.storage.local.set({ playerData: allPlayerData }, () => {
+                if (chrome.runtime.lastError) {
+                    console.error("[BG] Error saving player notes:", chrome.runtime.lastError);
+                    sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                } else {
+                    console.log("[BG] Player notes saved successfully for player:", message.playerId);
+                    sendResponse({ success: true });
+                }
+            });
+        });
+        return true; // Async
+    }
+
+    return false; // Default for unhandled messages
 });
 
-let activeGameUserIds = new Set();
+// Listen for network requests to extract the Authorization token
+chrome.webRequest.onBeforeSendHeaders.addListener(
+    (details) => {
+        const authHeader = details.requestHeaders.find(header => header.name.toLowerCase() === "authorization");
+        if (authHeader && authHeader.value && authHeader.value.startsWith("Bearer ")) {
+            const newAuthTokenValue = authHeader.value;
+            chrome.storage.local.get('authToken', (result) => {
+                if (result.authToken !== newAuthTokenValue) {
+                    authToken = newAuthTokenValue; // Update global for immediate use
+                    chrome.storage.local.set({ authToken: newAuthTokenValue }, () => {
+                        console.log("[BG] Auth token extracted/updated from network request and stored.");
+                    });
+                }
+            });
+        }
+    },
+    {
+        urls: ["*://botc.app/backend/*"],
+        types: ["xmlhttprequest", "main_frame", "sub_frame"]
+    },
+    ["requestHeaders"]
+);
 
-function extractUserIdsFromPayload(data, foundIds) {
-    if (!data) return;
+// Ensure global variables like activeGameUserIds are defined (they should be in lines 0-166)
+// let lastGameData = null; // Define if used by handlers and not already defined
+// let lastChatData = null; // Define if used by handlers and not already defined
+
+// Function to extract user IDs from WebSocket payloads
+function processWebSocketPayloadForUserIds(payload, messageType) {
+    const newlyFoundIds = new Set();
+    extractUserIdsFromPayloadRecursive(payload, newlyFoundIds);
+
+    if (newlyFoundIds.size > 0) {
+        let addedCount = 0;
+        newlyFoundIds.forEach(id => {
+            if (activeGameUserIds && !activeGameUserIds.has(id)) { // Ensure activeGameUserIds is defined
+                activeGameUserIds.add(id);
+                addedCount++;
+            }
+        });
+        if (addedCount > 0) {
+            console.log(`%c[BG] ${addedCount} new User IDs added from ${messageType}. Current total unique IDs: ${activeGameUserIds ? activeGameUserIds.size : 'N/A'}`, 'color: cyan', Array.from(newlyFoundIds));
+        }
+    }
+    return newlyFoundIds;
+}
+
+// Recursive helper for processWebSocketPayloadForUserIds
+function extractUserIdsFromPayloadRecursive(data, idSet) {
+    if (data === null || data === undefined) return;
+
+    if (typeof data === 'string' && /^\d{10,}$/.test(data)) { idSet.add(data); }
+    if (typeof data === 'number' && /^\d{10,}$/.test(String(data))) { idSet.add(String(data)); }
+
+    if (typeof data !== 'object') { return; }
 
     if (Array.isArray(data)) {
-        data.forEach(item => extractUserIdsFromPayload(item, foundIds));
-    } else if (typeof data === 'object' && data !== null) {
-        // Check for common ID keys
-        const commonIdKeys = ['id', 'userId', 'userID', 'playerId', 'playerID', 'senderId', 'accountId'];
-        for (const key of commonIdKeys) {
-            if (data.hasOwnProperty(key) && (typeof data[key] === 'string' || typeof data[key] === 'number')) {
-                if (String(data[key]).length > 2 && String(data[key]).length < 50) { // Basic sanity check for ID format
-                    foundIds.add(String(data[key]));
+        data.forEach(item => extractUserIdsFromPayloadRecursive(item, idSet));
+    } else { 
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                const value = data[key];
+                if ((key === 'id' || key === 'userId' || key === 'user_id' || key === 'player_id' || key === 'authorID') && 
+                    (typeof value === 'string' || typeof value === 'number')) {
+                    const potentialId = String(value);
+                    if (/^\d{10,}$/.test(potentialId)) {
+                        idSet.add(potentialId);
+                    }
+                }
+                if (typeof value === 'object' && value !== null) {
+                    extractUserIdsFromPayloadRecursive(value, idSet);
                 }
             }
         }
-        // Recursively check other properties that might be objects or arrays
-        for (const key in data) {
-            if (data.hasOwnProperty(key) && !commonIdKeys.includes(key)) { // Avoid re-processing already checked keys
-                extractUserIdsFromPayload(data[key], foundIds);
-            }
-        }
-    } else if (typeof data === 'string' || typeof data === 'number') {
-        // If the payload itself is a simple string/number, it might be an ID in some contexts
-        // This is less reliable and should be used cautiously or with more context
-        // For now, we are focusing on structured data. We can add heuristics later if needed.
     }
 }
 
-function processWebSocketPayloadForUserIds(payload, messageType) { 
-    const newlyFoundIds = new Set();
+console.log("[BG] Consolidated background script event listeners initialized. User ID extraction active.");
 
-    // Special handling for Socket.IO chat messages which arrive as ["event_name", data_object]
-    if ((messageType === 'CHAT_DATA' || messageType === 'CHAT_DATA_RAW') && 
-        Array.isArray(payload) && 
-        payload.length === 2 && 
-        typeof payload[0] === 'string' && 
-        typeof payload[1] === 'object' && payload[1] !== null) {
-        extractUserIdsFromPayload(payload[1], newlyFoundIds); // Process the actual data object
+function clearUserIds() { 
+    if (activeGameUserIds) {
+        activeGameUserIds.clear();
+        console.log("[BG] Active game user IDs cleared.");
     } else {
-        extractUserIdsFromPayload(payload, newlyFoundIds);
+        console.warn("[BG] clearUserIds called, but activeGameUserIds is not defined.");
     }
-
-    if (newlyFoundIds.size > 0) {
-        console.log("Extracting User IDs - Before this payload:", new Set(activeGameUserIds)); // Log current state before adding
-        newlyFoundIds.forEach(id => activeGameUserIds.add(id));
-        console.log("Extracting User IDs - After adding new from this payload:", activeGameUserIds);
-        console.log("Extracting User IDs - IDs found in THIS payload:", newlyFoundIds);
-    }
-    return newlyFoundIds; // Return only the IDs found in *this* payload
 }
 
-// Listen for messages from the content script or other parts of the extension
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // console.log("Background script received message:", message, "from sender:", sender); // Already have a good log for this.
-
-  if (message.source === 'content_script') {
-    console.log(`Received message from content_script: Type: ${message.type}, URL: ${message.url}`);
-    console.log("Full payload from content_script:", JSON.stringify(message.payload, null, 2)); // TEMPORARILY UNCOMMENT FOR DEBUGGING
-
-    switch (message.type) {
-      case 'GAME_DATA':
-      case 'GAME_DATA_RAW': // Assuming raw data might also be structured or become structured
-        console.log("Processing User IDs for", message.type);
-        const gameUserIds = processWebSocketPayloadForUserIds(message.payload, message.type);
-        // console.log("Extracted User IDs from", message.type + ":", gameUserIds); // Covered by logging within processWebSocketPayloadForUserIds
-        sendResponse({ status: "GAME_DATA received", processed_ids: Array.from(gameUserIds) });
-        break;
-      case 'CHAT_DATA':
-      case 'CHAT_DATA_RAW':
-        console.log("Processing User IDs for", message.type);
-        const chatUserIds = processWebSocketPayloadForUserIds(message.payload, message.type);
-        // console.log("Extracted User IDs from", message.type + ":", chatUserIds); // Covered by logging within processWebSocketPayloadForUserIds
-        sendResponse({ status: "CHAT_DATA received", processed_ids: Array.from(chatUserIds) });
-        break;
-      default:
-        console.warn("Received unknown message type from content_script:", message.type);
+chrome.storage.onChanged.addListener(function(changes, namespace) {
+    for (let key in changes) {
+        let storageChange = changes[key];
+        if (key === 'authToken') {
+            console.log('[BG] authToken in chrome.storage.local changed.');
+            authToken = storageChange.newValue; 
+        }
     }
-
-    sendResponse({ status: "success", message: "Data received by background script" });
-    return true; 
-  }
-  return true; 
 });
-
-console.log("Background script loaded and listener is active. User ID extraction enabled.");

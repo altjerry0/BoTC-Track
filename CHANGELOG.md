@@ -12,6 +12,28 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
     - Corrected syntax errors in `content_script.js` logging statements that prevented the script from executing.
     - Refined the WebSocket proxy mechanism in `content_script.js` to use `Object.defineProperty` with a getter for `window.WebSocket`, ensuring more reliable interception of `botc.app` game and chat messages.
     - Ensured `"all_frames": true` is set for the content script in `manifest.json` to allow execution in all relevant frames.
+- **WebSocket Interception Logic**: Refined WebSocket message handling in `content_main.js` (v3.1) to prevent potential double-processing of messages. This aims to improve WebSocket stability and prevent fallback to XHR polling by ensuring `handleSocketMessage` is called only once per event, while still correctly invoking the page's original `onmessage` handler if set.
+
+### Added
+- Initial WebSocket interception for game and chat data on `botc.app`.
+- `content_main.js` injected into the main world to directly proxy `window.WebSocket`.
+- Message passing from `content_main.js` to `content_script.js` (isolated world) and then to `background.js`.
+- Basic parsing of Socket.IO messages and raw data handling.
+- Debug logging throughout the interception process.
+- **User ID Extraction**: Implemented logic in `content_main.js` (v3.2) to recursively scan WebSocket message payloads for user IDs (keys named `id` with long numeric string values). Unique IDs are collected and logged to the console upon updates, aiding in tracking users in the current game.
+- **Username Fetching & Caching (v3.4)**: Implemented functionality in `content_main.js` to fetch usernames for discovered user IDs. When a new ID is found, a request is made to `https://botc.app/backend/user/{USER_ID}`. The extracted username is cached locally (in-memory) to prevent duplicate lookups. Fetched usernames and IDs are logged to the console.
+- **Auth Token for Username Fetch (v3.5)**: Modified `content_main.js` to include an authorization token (read from page's `localStorage` via a configurable key) in `Bearer` format for requests to `https://botc.app/backend/user/{USER_ID}`. This enhances the ability to fetch user details. If token is not found, fetch is attempted without it.
+- **Auth Token via Extension Messaging (v3.6)**: Refactored authentication token retrieval for username fetching. 
+    - `content_main.js` (v3.6) now requests the auth token from `background.js` via `content_script.js` using `window.postMessage` and `chrome.runtime.sendMessage`.
+    - `content_script.js` updated to relay these token requests and responses between `content_main.js` and `background.js`.
+    - `background.js` updated to listen for `GET_AUTH_TOKEN` messages, retrieve the token from `chrome.storage.local`, and send it back. This centralizes token management within the extension's service worker/background context.
+
+### Changed
+- Refined WebSocket message handling in `content_main.js` (v3.1) to prevent potential double-processing of messages. This aims to improve WebSocket stability and prevent fallback to XHR polling by ensuring `handleSocketMessage` is called only once per event, while still correctly invoking the page's original `onmessage` handler if set.
+- **User ID Extraction (v3.3)**: Improved the `extractIdsRecursively` function in `content_main.js` to correctly identify user IDs. It now checks for keys `id` OR `userId`, and also identifies 10+ digit numeric strings that are direct elements in arrays. This addresses cases where IDs were previously missed.
+
+### Fixed
+- Attempted to fix WebSocket instability that was causing `botc.app` to fall back to XHR polling for Socket.IO connections. The primary change involves ensuring our interception logic calls our message handler exactly once.
 
 ## [v1.1.2] - 2025-05-09
 
