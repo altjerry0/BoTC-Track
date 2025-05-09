@@ -197,6 +197,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
     - Normalized the appearance and size of action buttons (Favorite, Edit, History, Refresh Username, Delete) in the 'Known Players' list for better visual consistency.
     - Ensured the "Add Player Manually" button aligns with the updated button styling.
     - Adjusted styling for various buttons to use consistent padding, icon sizing, and hover effects across the extension.
+- **Modal Theming**: Updated modal CSS to correctly use theme variables, ensuring proper display in both light and dark modes.
 
 ## [v1.0.0] - 2024-03-10
 

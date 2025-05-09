@@ -37,6 +37,11 @@
     --score-med-bg: #d4ac0d;
     --score-low-bg: #a52a2a;
     --online-indicator-color: #198754; /* Green */
+    --danger-button-bg: #dc3545; /* Bootstrap danger red */
+    --danger-button-text: #ffffff;
+    --danger-button-hover-bg: #c82333;
+    --danger-button-border: var(--danger-button-bg);
+    --danger-button-hover-border: var(--danger-button-hover-bg);
 }
 
 /* Dark Mode Variables */
@@ -78,6 +83,11 @@ body.dark-mode {
     --score-med-bg: #b08d57; /* Darker yellow/gold */
     --score-low-bg: #b74b4b; /* Darker red/brown */
     --online-indicator-color: #68b36b;
+    --danger-button-bg: #c62828; /* Matches --player-indicator-bad-bg */
+    --danger-button-text: #fce8e6; /* Matches --player-indicator-bad-text */
+    --danger-button-hover-bg: #a71313; /* Darker shade of danger red */
+    --danger-button-border: var(--danger-button-bg);
+    --danger-button-hover-border: var(--danger-button-hover-bg);
 }
 
 body {
@@ -1047,13 +1057,13 @@ body.dark-mode .username-history-item {
 }
 
 /* Modal styles */
-.modal-overlay {
+#universalModal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.75); /* Darker overlay */
+    background-color: var(--modal-backdrop); /* Use variable */
     display: none; /* Hidden by default, shown by JS */
     justify-content: center;
     align-items: center;
@@ -1062,8 +1072,8 @@ body.dark-mode .username-history-item {
 }
 
 .modal-content {
-    background-color: #282c34; /* Darker modal background */
-    color: #abb2bf; /* Softer text color */
+    background-color: var(--modal-bg); /* Use variable */
+    color: var(--text-color); /* Use variable */
     padding: 20px 25px;
     border-radius: 8px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
@@ -1071,7 +1081,7 @@ body.dark-mode .username-history-item {
     max-width: 480px;
     min-width: 320px; /* Minimum width */
     position: relative;
-    border: 1px solid #3e4451;
+    border: 1px solid var(--modal-border); /* Use variable */
     display: flex;
     flex-direction: column;
     max-height: 80vh; /* Max height to prevent overflow on small screens */
@@ -1085,20 +1095,20 @@ body.dark-mode .username-history-item {
     border: none;
     font-size: 2em;
     line-height: 1;
-    color: #6c757d; /* Muted close button */
+    color: var(--modal-close-text); /* Use variable */
     cursor: pointer;
     padding: 5px;
 }
 .modal-close-button:hover {
-    color: #abb2bf; /* Brighter on hover */
+    color: var(--modal-close-hover-text); /* Use variable */
 }
 
 #modalTitle {
     margin-top: 0;
     margin-bottom: 15px;
     font-size: 1.5em;
-    color: #e6efff; /* Lighter title color */
-    border-bottom: 1px solid #3e4451;
+    color: var(--heading-color); /* Use variable */
+    border-bottom: 1px solid var(--modal-header-border); /* Use variable */
     padding-bottom: 10px;
     font-weight: 500;
 }
@@ -1114,13 +1124,14 @@ body.dark-mode .username-history-item {
 #modalBody p {
     margin-top: 0;
     margin-bottom: 10px;
+    /* Inherits color from .modal-content */
 }
 
 #modalBody label {
     display: block;
     margin-bottom: 6px;
     font-weight: 500;
-    color: #9da5b0;
+    color: var(--subtle-text-color); /* Use variable */
 }
 
 #modalBody input[type="text"],
@@ -1131,10 +1142,10 @@ body.dark-mode .username-history-item {
     width: calc(100% - 22px); /* Full width minus padding */
     padding: 10px;
     margin-bottom: 15px;
-    border: 1px solid #3e4451;
+    border: 1px solid var(--input-border); /* Use variable */
     border-radius: 4px;
-    background-color: #21252b; /* Input background */
-    color: #abb2bf; /* Text color in input */
+    background-color: var(--input-bg); /* Use variable */
+    color: var(--text-color); /* Use variable */
     font-size: 1em;
 }
 
@@ -1144,8 +1155,8 @@ body.dark-mode .username-history-item {
 #modalBody textarea:focus,
 #modalBody select:focus {
     outline: none;
-    border-color: #528bff; /* VS Code style focus blue */
-    box-shadow: 0 0 0 1px #528bff;
+    border-color: var(--link-color); /* Use variable */
+    box-shadow: 0 0 0 1px var(--link-color); /* Use variable */
 }
 
 #modalBody textarea {
@@ -1159,13 +1170,13 @@ body.dark-mode .username-history-item {
     gap: 12px;
     margin-top: auto; /* Pushes actions to the bottom if modal content is short */
     padding-top: 15px;
-    border-top: 1px solid #3e4451;
+    border-top: 1px solid var(--modal-header-border); /* Use variable */
     flex-shrink: 0; /* Prevent actions from shrinking */
 }
 
 .modal-actions button {
     padding: 9px 16px;
-    border: 1px solid transparent;
+    /* border: 1px solid transparent; Replaced by specific button styles */
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.95em;
@@ -1174,33 +1185,33 @@ body.dark-mode .username-history-item {
 }
 
 .modal-button-primary {
-    background-color: #528bff;
-    color: white;
-    border-color: #528bff;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid var(--button-bg);
 }
 .modal-button-primary:hover {
-    background-color: #4073cc;
-    border-color: #4073cc;
+    background-color: var(--button-hover-bg);
+    border-color: var(--button-hover-bg);
 }
 
 .modal-button-secondary {
-    background-color: #4a5058;
-    color: #d4d4d4;
-    border-color: #4a5058;
+    background-color: var(--secondary-button-bg);
+    color: var(--text-color); /* Using --text-color for better contrast on secondary bg in dark mode */
+    border: 1px solid var(--secondary-button-bg);
 }
 .modal-button-secondary:hover {
-    background-color: #5a626c;
-    border-color: #5a626c;
+    background-color: var(--secondary-button-hover-bg);
+    border-color: var(--secondary-button-hover-bg);
 }
 
 .modal-button-danger {
-    background-color: #da3633; /* Red for danger/delete actions */
-    color: white;
-    border-color: #da3633;
+    background-color: var(--danger-button-bg);
+    color: var(--danger-button-text);
+    border: 1px solid var(--danger-button-border);
 }
 .modal-button-danger:hover {
-    background-color: #b02a27;
-    border-color: #b02a27;
+    background-color: var(--danger-button-hover-bg);
+    border-color: var(--danger-button-hover-border);
 }
 
 /* Ensure body doesn't scroll when modal is open */
