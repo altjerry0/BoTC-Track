@@ -3,3 +3,5 @@ botc-extension/_metadata
 /.windsurf
 botc-extension/src/firebase-config.js
 /botc-extension/src/lib
+/node_modules
+/botc-extension/dist
