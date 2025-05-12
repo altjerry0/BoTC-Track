@@ -1337,3 +1337,19 @@ body.dark-mode .score-bad {
     box-shadow: 0 0 2px var(--online-indicator-color);
     border: 1px solid var(--text-color); 
 }
+
+/* Sync Status Styles */
+.sync-success {
+    color: green;
+    font-weight: bold;
+}
+
+.sync-error {
+    color: red;
+    font-weight: bold;
+}
+
+/* Styling for the results container */
+.results-container {
+    margin-top: 15px;
+}

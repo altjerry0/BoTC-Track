@@ -7,6 +7,9 @@
  * - Handling game edition information
  */
 
+// Import necessary functions
+import { getRatingClass } from './userManager.js';
+
 /**
  * Get display name for game edition
  * @param {Object} edition - Edition data 
@@ -133,8 +136,16 @@ function createPlayerCard(
     playerCard.classList.add('player-card'); // Add base class
 
     // Add rating class using the one from userManager.js
-    const ratingClass = isKnown && window.getRatingClass ? window.getRatingClass(knownPlayer.score) : 'rating-unknown';
+    const ratingClass = isKnown ? getRatingClass(knownPlayer.score) : 'rating-unknown'; // Use imported function
     playerCard.classList.add(ratingClass);
+
+    // Add known and favorite classes for styling
+    if (isKnown) {
+        playerCard.classList.add('known-player'); // Match CSS
+        if (knownPlayer.isFavorite) {
+            playerCard.classList.add('favorite-player'); // Match CSS
+        }
+    }
 
     playerCard.dataset.playerId = user.id;
     playerCard.dataset.playerName = user.username; // Store current username
@@ -313,20 +324,38 @@ function createPlayerCard(
  * @param {HTMLElement} resultDiv - Container for results.
  * @param {Object} options - Display options.
  * @param {Function} addPlayer - Function to add a player.
- * @param {Function} createUsernameHistoryModal - Function to create the history modal.
+ * @param {Function} createUsernameHistoryModal - Function to create the username history modal.
  * @param {Function} updateOnlineFavoritesListFunc - Function to update the online favorites list UI.
  */
 async function checkHistoryAndRender(
-    sessions,
-    initialPlayerData,
+    sessions,             // Array of session objects
+    initialPlayerData,    // Player data (potentially nested { playerData, lastUpdated } or flat map)
     resultDiv,
     options,
     addPlayerFunc,
     createUsernameHistoryModalFunc,
     updateOnlineFavoritesListFunc
 ) {
-    let playerData = JSON.parse(JSON.stringify(initialPlayerData)); // Deep copy to avoid modifying the original
     let playerDataNeedsSave = false;
+    const updatesMade = {}; // Store updates to merge later
+
+    // --- Ensure we are working with the flat player map --- START
+    let flatPlayerData = initialPlayerData;
+    if (initialPlayerData && typeof initialPlayerData === 'object' && initialPlayerData.hasOwnProperty('playerData') && initialPlayerData.hasOwnProperty('lastUpdated')) {
+        console.warn('[SessionManager] Received nested playerData structure in checkHistoryAndRender. Extracting flat map.');
+        flatPlayerData = initialPlayerData.playerData;
+        if (!flatPlayerData || typeof flatPlayerData !== 'object') {
+            console.error('[SessionManager] Failed to extract flat player data from nested structure. Using empty object.');
+            flatPlayerData = {};
+        }
+    } else if (!initialPlayerData || typeof initialPlayerData !== 'object') {
+        console.warn('[SessionManager] initialPlayerData in checkHistoryAndRender is not a valid object. Using empty object.');
+        flatPlayerData = {};
+    }
+    // --- Ensure we are working with the flat player map --- END
+
+    // Keep track of players needing username checks
+    const playersToCheck = new Map(); // Use Map for efficient lookups: playerId -> user object
 
     // Update username and session history for known players
     for (const session of sessions) {
@@ -358,8 +387,8 @@ async function checkHistoryAndRender(
                 }
                 // --- End Fallback ---
 
-                if (userId && playerData[userId]) {
-                    const player = playerData[userId];
+                if (userId && flatPlayerData[userId]) {
+                    const player = flatPlayerData[userId];
                     let playerUpdatedThisPass = false;
 
                     // Username History Update
@@ -387,75 +416,50 @@ async function checkHistoryAndRender(
                     
                     if (playerUpdatedThisPass) {
                         playerDataNeedsSave = true;
+                        updatesMade[userId] = player; // Store the updated player for later merge
                     }
                 }
             }
         }
     }
 
-    // Sort sessions: prioritize those where the current user is active
-    if (window.currentUserID) {
-        sessions.sort((a, b) => {
-            const currentUserIdStr = String(window.currentUserID);
-            
-            // 1. Check if current user is a participant (using session.usersAll)
-            const aHasCurrentUser = a.usersAll && a.usersAll.some(user => String(user.id) === currentUserIdStr);
-            const bHasCurrentUser = b.usersAll && b.usersAll.some(user => String(user.id) === currentUserIdStr);
+    // After processing all history updates...
+    // const finalPlayerData = { ...initialPlayerData, ...updatesMade }; // Merge initial data with updates // Old way
+    const finalPlayerData = { ...flatPlayerData, ...updatesMade }; // Merge the flat map with updates
 
-            if (aHasCurrentUser && !bHasCurrentUser) return -1; // a comes first
-            if (!aHasCurrentUser && bHasCurrentUser) return 1;  // b comes first
+    // --- Calculate online players and update favorites list --- START
+    const onlinePlayerIds = new Set();
+    sessions.forEach(session => {
+        if (session.usersAll && Array.isArray(session.usersAll)) {
+            session.usersAll.forEach(user => {
+                if (user && user.id) {
+                    onlinePlayerIds.add(user.id);
+                }
+            });
+        }
+    });
 
-            // 2. If user participation is the same, check if it's the active tab's game (using liveGameInfo)
-            const aIsActiveTabGame = window.liveGameInfo && 
-                                      window.liveGameInfo.storytellerId && 
-                                      a.storytellers && a.storytellers.length > 0 && 
-                                      String(window.liveGameInfo.storytellerId) === String(a.storytellers[0].id);
-
-            const bIsActiveTabGame = window.liveGameInfo && 
-                                      window.liveGameInfo.storytellerId && 
-                                      b.storytellers && b.storytellers.length > 0 && 
-                                      String(window.liveGameInfo.storytellerId) === String(b.storytellers[0].id);
-
-            if (aIsActiveTabGame && !bIsActiveTabGame) return -1; // a comes first
-            if (!aIsActiveTabGame && bIsActiveTabGame) return 1;  // b comes first
-
-            // 3. Fallback: Sort by creation timestamp (most recent first)
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
-            return dateB - dateA; // Sort descending by time
-        });
-    }
-
-    // Update online favorites list UI using the centralized function passed from popup.js
-    if (updateOnlineFavoritesListFunc) {
-        const onlinePlayersMap = new Map();
-        sessions.forEach(session => {
-            if (session.usersAll && Array.isArray(session.usersAll)) {
-                session.usersAll.forEach(user => {
-                    if (user.id) { 
-                        // Storing session name can be useful, or just true if presence is enough
-                        onlinePlayersMap.set(user.id.toString(), session.name || true);
-                    }
-                });
-            }
-        });
-
-        // Convert Map to plain object for safer cross-context passing
-        const onlinePlayersObject = Object.fromEntries(onlinePlayersMap);
-
-        // Now call the function from popup.js context if it exists
-        if (typeof window.updateOnlineFavoritesListFunc === 'function') {
-            updateOnlineFavoritesListFunc(playerData, onlinePlayersObject);
-        } else {
-            console.warn("updateOnlineFavoritesListFunc not found on window object. Is popup.js loaded and function exposed?");
+    console.log(`[SessionManager] Calculated ${onlinePlayerIds.size} unique online players from fetched sessions.`);
+    console.log('[SessionManager] Final Player Data for rendering:', finalPlayerData);
+    
+    // Call the update function passed from popup.js
+    if (typeof updateOnlineFavoritesListFunc === 'function') {
+        console.log('[SessionManager] Calling updateOnlineFavoritesListFunc...');
+        try {
+            // Convert Set to a map-like object if needed by the function, or pass the Set directly
+            // Assuming the function in popup.js expects (playerData, onlinePlayerIdsSet)
+             updateOnlineFavoritesListFunc(finalPlayerData, onlinePlayerIds); // Pass the flat map
+        } catch (e) {
+            console.error("Error calling updateOnlineFavoritesListFunc:", e); // Pass the flat map
         }
     } else {
-        // console.warn('updateOnlineFavoritesListFunc not provided to checkHistoryAndRender');
+        console.warn('[SessionManager] updateOnlineFavoritesListFunc is not a function or not provided.');
     }
+    // --- Calculate online players and update favorites list --- END
 
     // Save player data if it was updated during the history check
     if (playerDataNeedsSave) {
-        chrome.storage.local.set({ playerData: playerData }, () => {
+        chrome.storage.local.set({ playerData: finalPlayerData }, () => {
             if (chrome.runtime.lastError) {
                 console.error('[FG SessionRender] Error saving player data after history check:', chrome.runtime.lastError.message);
                 // Optionally: Display a user-friendly error message here using a safe method
@@ -468,11 +472,11 @@ async function checkHistoryAndRender(
 
     // Call renderSessions with potentially updated player data and sorted sessions
     renderSessions(
-        sessions, 
-        playerData, 
-        resultDiv, 
-        options, 
-        addPlayerFunc, 
+        sessions, // Pass the original sessions array
+        finalPlayerData, // Pass the final flat player data with updates
+        resultDiv,
+        options,
+        addPlayerFunc,
         createUsernameHistoryModalFunc
     );
 }
@@ -701,6 +705,16 @@ async function fetchAndDisplaySessions(
     options = {},
     onCompleteCallback = null
 ) {
+    console.log('[SessionManager] fetchAndDisplaySessions called. Received resultDiv:', resultDiv, 'Type:', typeof resultDiv, 'Is Element:', resultDiv instanceof HTMLElement);
+
+    // Ensure resultDiv is a valid DOM element before proceeding
+    if (!(resultDiv instanceof HTMLElement)) {
+        console.error('[SessionManager] Invalid resultDiv received in fetchAndDisplaySessions. Aborting.', resultDiv);
+        // Optionally, display an error in a default location or throw
+        // For now, just log and return to prevent the TypeError
+        return; 
+    }
+
     resultDiv.innerHTML = '<div class="loading-sessions"><div class="spinner"></div> Fetching sessions...</div>';
 
     // Fetch the latest liveGameInfo from background script
@@ -722,7 +736,7 @@ async function fetchAndDisplaySessions(
         // popup.js should ensure window.playerData is populated before calling this.
     }
 
-    chrome.runtime.sendMessage({ action: "fetchSessions" }, (response) => {
+    chrome.runtime.sendMessage({ action: "fetchSessions" }, async (response) => {
         if (chrome.runtime.lastError) {
             console.error("[SM] Error sending fetchSessions message:", chrome.runtime.lastError.message);
             resultDiv.innerHTML = `<p class='error-message'>Error communicating with background: ${chrome.runtime.lastError.message}</p>`;
@@ -756,6 +770,7 @@ async function fetchAndDisplaySessions(
         }
 
         const backendSessions = response.sessions;
+        const playerData = response.players;
         // console.log('[SM] Received sessions from background:', backendSessions.length);
 
         // --- Sort sessions by game phase ---
@@ -772,11 +787,13 @@ async function fetchAndDisplaySessions(
         const totalSessions = backendSessions.length;
         const uniquePlayerIds = new Set();
         backendSessions.forEach(session => {
-            (session.usersAll || []).forEach(user => {
-                if (user && user.id) {
-                    uniquePlayerIds.add(user.id.toString()); // Ensure IDs are strings
-                }
-            });
+            if (session.usersAll && Array.isArray(session.usersAll)) {
+                session.usersAll.forEach(user => {
+                    if (user && user.id) {
+                        uniquePlayerIds.add(user.id.toString()); // Ensure IDs are strings
+                    }
+                });
+            }
         });
         const totalUniquePlayers = uniquePlayerIds.size;
         let knownPlayerCount = 0;
@@ -803,7 +820,7 @@ async function fetchAndDisplaySessions(
         // Call checkHistoryAndRender to handle history updates and rendering
         checkHistoryAndRender(
             backendSessions,
-            currentPlayerData, // Pass currentPlayerData (which is from window.playerData)
+            playerData, // Pass the received player data object
             resultDiv,
             options,
             addPlayerFunc,
@@ -821,6 +838,4 @@ async function fetchAndDisplaySessions(
     });
 }
 
-// --- Expose function needed by popup.js --- 
-window.fetchAndDisplaySessions = fetchAndDisplaySessions;
-window.renderSessions = renderSessions; // Expose renderSessions
+export { fetchAndDisplaySessions };

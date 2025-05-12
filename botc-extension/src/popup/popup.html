@@ -45,8 +45,9 @@
 
         <!-- Tab Navigation -->
         <div class="tab-navigation">
-            <button class="tab-button active" data-tab="sessions">Sessions</button>
-            <button class="tab-button" data-tab="userManagement">Manage Users</button>
+            <button class="tab-button active" id="sessions-tab" data-tab="sessions">Sessions</button>
+            <button class="tab-button" id="manage-tab" data-tab="userManagement">Manage Users</button>
+            <button class="tab-button" id="settings-tab" data-tab="settings">Settings</button>
         </div>
 
         <!-- Tab Content Area -->
@@ -98,14 +99,24 @@
                 <div id="knownPlayers" class="results-container"></div> 
             </div>
 
+            <!-- Settings Tab Content -->
+            <div class="tab-content" id="settings">
+                <h2>Settings & Sync</h2>
+                <div id="auth-status">
+                    <p>Status: <span id="user-status">Checking...</span></p>
+                    <button id="sign-in-button" style="display: none;">Sign in with Google</button>
+                    <button id="sign-out-button" style="display: none;">Sign Out</button>
+                </div>
+                <hr>
+                <div>
+                    <button id="manual-sync-button">Sync Data Now</button>
+                    <span id="manual-sync-status" style="margin-left: 10px;"></span> <!-- Added status span -->
+                </div>
+            </div>
+
         </div> 
     </div>
 
-    <script src="userManager.js"></script>
-    <script src="sessionManager.js"></script>
-    <script src="csvManager.js"></script>
-    <script src="popup.js"></script>
-    <script src="../utils/modal.js"></script>
     <!-- Universal Modal Structure -->
     <div id="universalModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
@@ -119,5 +130,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Load the bundled popup script -->
+    <script src="../../dist/popup.bundle.js"></script>
 </body>
 </html>

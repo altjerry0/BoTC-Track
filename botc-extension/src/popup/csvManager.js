@@ -49,10 +49,10 @@ function parseCsvRow(rowString) {
  * Exports provided player data to a CSV file and triggers a download.
  * @param {Object} playerDataToExport - The player data object to export.
  */
-function exportPlayerDataCSV(playerDataToExport) {
-    if (Object.keys(playerDataToExport).length === 0) {
+export function exportPlayerDataCSV(playerDataToExport) {
+    if (!playerDataToExport || typeof playerDataToExport !== 'object' || Object.keys(playerDataToExport).length === 0) {
         // This check should ideally be in popup.js before calling
-        console.warn("Export called with no data.");
+        console.warn("[Exporter] Export called with no data or invalid data.");
         return; 
     }
 
@@ -109,7 +109,7 @@ function exportPlayerDataCSV(playerDataToExport) {
  * @param {Function} successCallback - Called with parsed player data if successful. function(parsedData)
  * @param {Function} statusCallback - Called with status messages. function(message, isError)
  */
-function importPlayerDataCSV(file, successCallback, statusCallback) {
+export function importPlayerDataCSV(file, successCallback, statusCallback) {
     console.log('[Importer] importPlayerDataCSV started for file:', file ? file.name : 'No file'); // Debug
     const reader = new FileReader();
 
@@ -205,6 +205,3 @@ function importPlayerDataCSV(file, successCallback, statusCallback) {
     console.log('[Importer] Calling reader.readAsText...'); // Debug
     reader.readAsText(file);
 }
-
-window.exportPlayerDataCSV = exportPlayerDataCSV;
-window.importPlayerDataCSV = importPlayerDataCSV;

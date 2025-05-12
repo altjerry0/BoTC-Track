@@ -15,14 +15,14 @@ let allPlayerData = {};
  */
 async function loadPlayerData() {
     return new Promise((resolve, reject) => {
-        chrome.storage.local.get('playerData', (data) => {
+        chrome.storage.local.get('botcPlayerData', (data) => {
             if (chrome.runtime.lastError) {
                 console.error("Error loading playerData from storage:", chrome.runtime.lastError.message);
                 // Resolve with an empty object in case of error to prevent breaking subsequent logic
                 allPlayerData = {};
                 resolve({});
             } else {
-                allPlayerData = data.playerData || {};
+                allPlayerData = data.botcPlayerData ? data.botcPlayerData.playerData : {};
                 resolve(allPlayerData);
             }
         });
@@ -34,18 +34,33 @@ async function loadPlayerData() {
  * @param {Object} playerData - Player data to save.
  * @returns {Promise<void>} A promise that resolves when saving is complete.
  */
-async function savePlayerData(playerData) {
-    return new Promise((resolve, reject) => {
-        allPlayerData = playerData; // Update local cache immediately
-        chrome.storage.local.set({ playerData }, () => {
+async function savePlayerData(playerDataObject) {
+    console.log('[UserManager] Preparing to save player data.');
+    // Wrap the data with a timestamp
+    const dataToSave = {
+        lastUpdated: Date.now(),
+        playerData: playerDataObject
+    };
+
+    try {
+        // Save locally first
+        await chrome.storage.local.set({ botcPlayerData: dataToSave });
+        console.log('[UserManager] Player data saved locally.');
+        allPlayerData = playerDataObject; // Update in-memory cache (just the data part)
+
+        // Then, send the wrapped data to the background script for potential Firebase sync
+        chrome.runtime.sendMessage({ action: 'SAVE_PLAYER_DATA', payload: dataToSave }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error("Error saving playerData to storage:", chrome.runtime.lastError.message);
-                reject(chrome.runtime.lastError);
+                console.error('[UserManager] Error sending SAVE_PLAYER_DATA to background:', chrome.runtime.lastError.message);
+            } else if (response && response.status === 'error') {
+                console.error('[UserManager] Background script failed to save data:', response.message);
             } else {
-                resolve(); // Resolve promise on successful save
+                console.log('[UserManager] Sent SAVE_PLAYER_DATA to background script.');
             }
         });
-    });
+    } catch (error) {
+        console.error('[UserManager] Error saving player data:', error);
+    }
 }
 
 /**
@@ -615,11 +630,8 @@ async function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPla
         // Add the *previous* name to history only if it's not already the latest entry
         if (!latestHistoryEntry || latestHistoryEntry.username !== currentStoredName) {
             history.push({ username: currentStoredName, timestamp: Date.now() });
-            // Trim history if it exceeds max length (e.g., 10 entries)
-            if (history.length > 10) {
-                 history.shift(); // Remove the oldest entry
-            }
-             needsSave = true;
+            // console.log(`[Username History] Added '${currentStoredName}' to history for player ${userId}. New name: '${sessionUsername}'.`);
+            needsSave = true;
         }
 
         // Update the player's current name to the new one from the session
@@ -749,8 +761,13 @@ function getRatingClass(rating) {
  * @param {Function} [callback] - Optional callback to execute after saving.
  */
 async function replaceAllPlayerDataAndSave(newData) {
-    allPlayerData = newData; // Replace in-memory store
-    await savePlayerData(allPlayerData);
+    console.log('[UserManager] Replacing all player data with imported data.');
+    // Use the existing savePlayerData function, which handles both local storage
+    // and potentially Firebase sync via background script message.
+    await savePlayerData(newData);
+    console.log('[UserManager] Player data replaced successfully.');
+    // Note: savePlayerData likely already sends a message to background
+    // for Firestore sync if implemented.
 }
 
 // -- START: Initialization & Utility --
@@ -1055,26 +1072,13 @@ async function editPlayerDetails(playerId) {
     ModalManager.showModal(modalTitle, modalBodyContent, buttonsConfig);
 }
 
-/**
- * Creates and displays a modal showing the username history for a given player.
- * @param {Object} player - The player object containing the username history.
- * @param {HTMLElement} [triggerElement=null] - The element that triggered the modal (optional, for positioning).
- */
-function createUsernameHistoryModal(player, triggerElement = null) {
-    if (!player || !player.usernameHistory || player.usernameHistory.length === 0) {
-        // Handle case where player has no history
-        return;
-    }
-
-    // Rest of the function remains the same
-}
 
 /**
  * Render the known players list, optionally filtering by search term.
  * @param {HTMLElement} container - The container element to render into.
  * @param {string} [searchTerm=''] - Optional search term to filter players.
  */
-async function renderKnownPlayers(container, searchTerm = '') {
+export async function renderKnownPlayers(container, searchTerm = '') {
     if (!container) {
         console.error("Container element not provided for rendering known players.");
         return;
@@ -1147,3 +1151,42 @@ async function fetchAndUpdatePlayerName(playerId, refreshListCallback) {
         ModalManager.showAlert('Error', `Failed to fetch/update player name: ${error.message}`);
     }
 }
+
+/**
+ * Initialize player data store
+ */
+async function initializePlayerData() {
+    console.log('[UserManager] Initializing player data store...');
+    try {
+        const result = await chrome.storage.local.get('botcPlayerData');
+        if (result.botcPlayerData && result.botcPlayerData.playerData) {
+            // Load only the playerData part into the in-memory cache
+            allPlayerData = result.botcPlayerData.playerData;
+            console.log(`[UserManager] Player data initialized from local storage. Found ${Object.keys(allPlayerData).length} players.`);
+        } else {
+            allPlayerData = {};
+            console.log('[UserManager] No player data found in local storage, initializing empty.');
+            // Optionally save the initial empty structure if it doesn't exist
+            // await savePlayerData({}); // Might cause loop if background isn't ready
+        }
+    } catch (error) {
+        console.error('[UserManager] Error initializing player data from local storage:', error);
+        allPlayerData = {}; // Initialize empty on error
+    }
+    // Trigger initial render if the render function is available
+    if (typeof window.renderKnownPlayers === 'function') {
+        window.renderKnownPlayers();
+    }
+}
+
+// Initialize player data store
+// initializePlayerData(); // Removed, let the importing module call it if needed
+
+// Expose necessary functions globally for sessionManager or popup
+export {
+    addPlayer, // popup.js imports this as addOrUpdatePlayer
+    createUsernameHistoryModal,
+    initializePlayerData,
+    getRatingClass, // Exporting this too, as popup.js uses it
+    replaceAllPlayerDataAndSave // Export this if csvManager needs it via import
+};
