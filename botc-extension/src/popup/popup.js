@@ -4,7 +4,6 @@
 // Globally accessible filter options for the popup
 let currentFilterOptions = { officialOnly: false, hideCompleted: false };
 
-import { renderKnownPlayers } from './userManager.js'; // Corrected path
 import { initializeEditPlayerModal, initializeAddPlayerModal } from '../utils/modal.js'; // Corrected path and combined import
 import { fetchAndDisplaySessions, createSessionCard, formatTimeAgo } from './sessionManager.js';
 import {
@@ -17,7 +16,7 @@ import {
     replaceAllPlayerDataAndSave, // <-- Import added here
     setupUserManagementListeners,
 } from './userManager.js';
-import ModalManager from '../utils/modal.js';
+import { ModalManager } from '../utils/modal.js'; // Use named import
 import { exportPlayerDataCSV, importPlayerDataCSV } from './csvManager.js';
 
 // Firebase imports (only what's needed for popup-triggered sign-in)
