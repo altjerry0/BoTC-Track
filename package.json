@@ -1,0 +1,28 @@
+{
+  "name": "botcraterdev",
+  "version": "1.0.0",
+  "description": "**Current Version (local):** `1.1.4` | **Chrome Web Store Version:** `1.1.0` (Pending `1.1.3a` Review)\r ***",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/altjerry0/BoTC-Track.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/altjerry0/BoTC-Track/issues"
+  },
+  "homepage": "https://github.com/altjerry0/BoTC-Track#readme",
+  "devDependencies": {
+    "firebase": "^11.7.1",
+    "webpack": "^5.99.8",
+    "webpack-cli": "^6.0.1"
+  }
+}

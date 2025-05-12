@@ -85,6 +85,7 @@ This method allows you to install a specific version from GitHub, which might be
     *   Import player data from a previously saved CSV file.
 *   **Player Search**: Search players in the "Manage Users" tab by current/previous usernames, notes, or score.
 *   **Dark Mode**: A user-toggleable dark theme for the popup interface.
+*   **Player Data Sync (via Firebase - Anonymous Auth):** Automatically backs up your player notes and data to Firebase Firestore using anonymous authentication. This allows your data to persist across browser sessions and potentially be recovered if local storage is cleared (as long as the anonymous Firebase user ID remains stable).
 
 ## Usage Guidelines
 
@@ -145,6 +146,40 @@ These instructions are for developers or users who want to load the extension di
 5.  Click **Load unpacked**.
 6.  Select the `botc-extension` directory from the cloned project.
 7.  The extension should now be loaded. Pin it for easy access.
+
+### Build Process
+
+Due to Manifest V3 restrictions on executing remote code, the background script now uses the Firebase SDK and requires bundling. We use Webpack for this.
+
+1.  Install dependencies: `npm install`
+2.  Run Webpack to bundle the background script: `npx webpack`
+    *   This creates `botc-extension/dist/background.bundle.js` which is referenced in the `manifest.json`.
+3.  Load the extension in Chrome via `chrome://extensions/` -> "Load unpacked" -> select the `botc-extension` folder.
+
+### Firebase Setup (for Development/Forking)
+
+This extension uses Firebase Firestore to sync player data. If you are developing locally or forking this project, you will need to set up your own Firebase project:
+
+1.  **Create a Firebase Project:** Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
+2.  **Add a Web App:** Within your project, add a new Web application.
+3.  **Copy Firebase Config:** Firebase will provide a configuration object (containing `apiKey`, `authDomain`, `projectId`, etc.). Copy this object.
+4.  **Update `background.js`:** Paste your Firebase config object into `botc-extension/src/background.js`, replacing the placeholder or existing configuration in the `firebaseConfig` constant.
+5.  **Enable Firestore:** In the Firebase Console, navigate to "Firestore Database" and create a database. Start in **production mode**. (Do *not* start in test mode, as its rules expire).
+6.  **Enable Anonymous Authentication:** In the Firebase Console, navigate to "Authentication" -> "Sign-in method" and enable the "Anonymous" provider.
+7.  **Set Firestore Security Rules:** Go back to the "Firestore Database" -> "Rules" tab and paste the following rules. These ensure users can only read/write their own data:
+    ```firestore-rules
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        // Allow users to read and write only their own data document
+        match /userPlayerData/{userId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+    }
+    ```
+8.  **Rebuild:** Run `npx webpack` again to bundle your configuration into the background script.
+9.  **Reload Extension:** Reload the extension in Chrome.
 
 ## Release Workflow
 

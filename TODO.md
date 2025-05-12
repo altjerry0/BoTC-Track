@@ -25,10 +25,11 @@ This file tracks planned features and improvements for the BotC Player Tracker e
   -   Consider more distinct visual cues for official vs. experimental games.
   -   Provide clearer feedback on import/export success/failure.
   - [ ] **Update Screenshots**: Update screenshots in `README.md` to reflect recent UI changes (modal system, button styles).
-- [ ] **Firebase Integration - Phase 2 (Data Sync)**
-    -   Basic authentication UI and setup is in place.
-    -   Implement Firestore synchronization for `playerData` in `userManager.js` (`loadPlayerData`, `savePlayerData`).
-    -   Define sync strategy (e.g., Firestore as source of truth, merge strategies for conflicts if any).
+- [x] **Firebase Integration - Phase 1 (Anonymous Auth Sync)**
+- [ ] **Firebase Integration - Phase 2 (Google Sign-in)**
+    - Implement Google Sign-in flow to link Firebase data to a persistent Google account.
+    - Goal: Allow users to recover their player data reliably across different devices or after browser data clears by logging in with their Google account.
+    - Requires UI elements for Sign-in/Sign-out and managing account state.
 
 ## Bugs / Technical Debt
 

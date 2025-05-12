@@ -1,5 +1,9 @@
 botc-extension/samplesessions.json
 botc-extension/_metadata
 /.windsurf
-botc-extension/src/firebase-config.js
-/botc-extension/src/lib
+
+# Node dependencies
+node_modules/
+
+# Webpack build output
+botc-extension/dist/

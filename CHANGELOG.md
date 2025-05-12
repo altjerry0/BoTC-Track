@@ -262,6 +262,17 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
     - The session card header receives a "glow" effect for visual distinction.
     - This involved updating JWT parsing in `popup.js` (already present), modifying `sessionManager.js` for sorting and class application based on `usersAll`, and updating `popup.css` for the glow effect.
 
+## [Unreleased]
+
+### Added
+- **Firebase Firestore Sync (Initial Implementation):**
+  - Integrated Firebase SDK for Firestore and Authentication.
+  - Implemented anonymous authentication for initial user identification.
+  - Player data (`playerData` object from local storage) is now automatically saved to Firestore under the user's unique Firebase ID (`/userPlayerData/{userId}/playerData`).
+  - Player data is loaded from Firestore on extension startup, restoring state across sessions/devices (requires anonymous auth to be stable).
+  - Added Webpack for bundling background script due to Manifest V3 requirements.
+  - Updated Manifest V3 Content Security Policy to allow connections to Firebase and `botc.app`.
+
 ## [v1.0.0] - 2024-03-10
 
 ### Added

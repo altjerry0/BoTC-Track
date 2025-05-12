@@ -1,3 +1,150 @@
+// Firebase Imports
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDVk_kuvYQ_JH700jKXrdSpOtcd3DFC9Rs", 
+  authDomain: "botctracker.firebaseapp.com",
+  projectId: "botctracker",
+  storageBucket: "botctracker.appspot.com", 
+  messagingSenderId: "234038964353",
+  appId: "1:234038964353:web:94c42aa23b68e003fd9d80",
+  measurementId: "G-C4FLY32JKZ"
+};
+
+// Firebase Global Variables
+let firebaseApp = null;
+let auth = null;
+let db = null;
+let firebaseUserId = null;
+let isFirebaseInitialized = false; 
+
+// --- Firebase Initialization and Auth Function ---
+async function initializeFirebaseAndAuth() {
+    if (isFirebaseInitialized) return;
+    isFirebaseInitialized = true; 
+
+    console.log('[BG Firebase] Initializing Firebase...');
+    try {
+        firebaseApp = initializeApp(firebaseConfig);
+        auth = getAuth(firebaseApp);
+        db = getFirestore(firebaseApp);
+
+        console.log('[BG Firebase] Signing in anonymously...');
+        const userCredential = await signInAnonymously(auth);
+        firebaseUserId = userCredential.user.uid;
+        console.log('[BG Firebase] Signed in with Firebase UID:', firebaseUserId);
+
+        // Ensure the user's document exists before trying to load data
+        await ensureUserDocumentExists();
+
+        // Load data from Firebase after successful sign-in
+        await loadPlayerDataFromFirebase();
+
+    } catch (error) {
+        console.error('[BG Firebase] Firebase initialization/auth failed:', error);
+        // Reset flag if initialization failed significantly
+        isFirebaseInitialized = false;
+    }
+}
+
+// --- Ensure User Document Exists ---
+async function ensureUserDocumentExists() {
+    if (!firebaseUserId || !db) {
+        console.error('[BG Firebase EnsureDoc] Cannot ensure document: Firebase not ready or no user ID.');
+        return;
+    }
+
+    console.log(`[BG Firebase EnsureDoc] Ensuring document exists for user ${firebaseUserId}...`);
+    const docRef = doc(db, 'userPlayerData', firebaseUserId);
+
+    try {
+        // Use set with merge:true. Creates the doc if it doesn't exist,
+        // or harmlessly merges {} into it if it does.
+        await setDoc(docRef, {}, { merge: true });
+        console.log(`[BG Firebase EnsureDoc] Document existence ensured for user ${firebaseUserId}.`);
+    } catch (error) {
+        // This write should generally be allowed by the rules, but log if it fails.
+        console.error('[BG Firebase EnsureDoc] Error ensuring user document exists:', error);
+    }
+}
+
+// --- Firestore Load Function ---
+async function loadPlayerDataFromFirebase() {
+    if (!firebaseUserId || !db) {
+        console.error('[BG Firebase Load] Cannot load data: Firebase not ready or no user ID.');
+        return;
+    }
+
+    console.log(`[BG Firebase Load] Attempting to load data for user ${firebaseUserId}...`);
+    const docRef = doc(db, 'userPlayerData', firebaseUserId);
+
+    try {
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const firebaseData = docSnap.data();
+            console.log('[BG Firebase Load] Data found in Firestore:', firebaseData);
+            if (firebaseData && firebaseData.playerData) {
+                // Here you might add logic to merge or compare timestamps later.
+                // For now, overwrite local storage if Firebase has data.
+                chrome.storage.local.set({ playerData: firebaseData.playerData }, () => {
+                    if (chrome.runtime.lastError) {
+                        console.error('[BG Firebase Load] Error saving fetched data to local storage:', chrome.runtime.lastError);
+                    } else {
+                        console.log('[BG Firebase Load] Local storage updated with data from Firestore.');
+                    }
+                });
+            } else {
+                console.log('[BG Firebase Load] Firestore document exists but has no playerData field.');
+            }
+        } else {
+            console.log('[BG Firebase Load] No player data found in Firestore for this user. Local data will be kept or synced up later.');
+            // Optional: If local data exists, maybe trigger an initial save to Firebase here?
+            // Consider saving existing local data UP to firebase if it doesn't exist there.
+            chrome.storage.local.get('playerData', (result) => {
+                if (!chrome.runtime.lastError && result.playerData && Object.keys(result.playerData).length > 0) {
+                    console.log('[BG Firebase Load] Existing local data found. Triggering initial sync to Firestore.');
+                    savePlayerDataToFirebase(result.playerData); // Save local data up to Firebase
+                }
+            });
+        }
+    } catch (error) {
+        console.error('[BG Firebase Load] Error getting document:', error);
+    }
+}
+
+// --- Firestore Save Function ---
+async function savePlayerDataToFirebase(playerData) {
+    if (!firebaseUserId || !db) {
+        console.error('[BG Firebase Save] Cannot save data: Firebase not ready or no user ID.');
+        return;
+    }
+    if (!playerData) {
+        console.warn('[BG Firebase Save] Attempted to save null/undefined playerData. Skipping.');
+        return;
+    }
+
+    console.log(`[BG Firebase Save] Saving data to Firestore for user ${firebaseUserId}...`);
+    const docRef = doc(db, 'userPlayerData', firebaseUserId);
+
+    try {
+        // We store the entire playerData object under a key 'playerData' within the user's document
+        await setDoc(docRef, { playerData: playerData }, { merge: true }); // Use merge to avoid overwriting other potential fields later
+        console.log('[BG Firebase Save] Player data successfully saved to Firestore.');
+    } catch (error) {
+        console.error('[BG Firebase Save] Error saving data to Firestore:', error);
+    }
+}
+
+// --- Global variable for live game info ---
+let liveGameInfo = null;
+
+// --- Initialize Firebase on Startup ---
+initializeFirebaseAndAuth();
+
 // --- Message Listener from Content Script or Popup ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // console.log(`[BG Message] Received message:`, request, `from sender:`, sender);
@@ -34,11 +181,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.payload) {
             chrome.storage.local.set({ playerData: request.payload }, () => {
                 if (chrome.runtime.lastError) {
-                    console.error('[BG Save] Error saving player data:', chrome.runtime.lastError);
+                    console.error('[BG Save] Error saving player data to local storage:', chrome.runtime.lastError);
                     sendResponse({ success: false, error: chrome.runtime.lastError.message });
                 } else {
-                    // console.log("[BG Save] Player data saved via popup request (type: SAVE_PLAYER_DATA).");
-                    sendResponse({ success: true });
+                    // console.log("[BG Save] Player data saved locally via popup request (type: SAVE_PLAYER_DATA).");
+                    sendResponse({ success: true }); // Send success response back immediately
+
+                    // *** Now, trigger async save to Firebase ***
+                    savePlayerDataToFirebase(request.payload);
                 }
             });
             return true; // Indicate asynchronous response for storage set
@@ -47,135 +197,68 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: false, error: "Missing payload" });
         }
 
+    } else if (request.action === 'fetchSessions') { // Handle request from popup
+        console.log('[BG Popup Fetch] Received fetchSessions request from popup.');
+        chrome.storage.local.get('authToken', (result) => {
+            const currentAuthToken = result.authToken;
+            if (!currentAuthToken) {
+                console.warn("[BG Popup Fetch] Auth token missing for session fetch.");
+                sendResponse({ error: "Authorization token not available" });
+                return;
+            }
+
+            fetch("https://botc.app/backend/sessions", {
+                method: "GET",
+                headers: { "Authorization": currentAuthToken }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().catch(() => ({ message: `HTTP error ${response.status}` }))
+                        .then(errorBody => {
+                            const errorMessage = errorBody.message || response.statusText;
+                            throw new Error(`API Error ${response.status}: ${errorMessage}`);
+                        });
+                }
+                return response.json();
+            })
+            .then(sessionsData => {
+                if (sessionsData && typeof sessionsData.error !== 'undefined') {
+                    console.error("[BG Popup Fetch] API returned 200 OK but with an error:", sessionsData.error);
+                    sendResponse({ error: sessionsData.error });
+                } else {
+                    // console.log('[BG Popup Fetch] Sending sessions data to popup:', sessionsData);
+                    sendResponse({ sessions: sessionsData });
+                }
+            })
+            .catch(error => {
+                console.error("[BG Popup Fetch] Error fetching sessions for popup:", error);
+                sendResponse({ error: error.message || "Failed to fetch sessions." });
+            });
+        });
+        return true; // Crucial: Indicate async response
+
     } else if (request.type === 'CURRENT_GAME_INFO') { // Handler for info from content script
         // console.log('[BG Game Info] Received game info from content script:', request.payload);
         liveGameInfo = request.payload; // Update the stored game info
-        // Notify popup (if open) that live game info has been updated
-        chrome.runtime.sendMessage({ type: 'LIVE_GAME_INFO_UPDATED', payload: liveGameInfo }, response => {
-            if (chrome.runtime.lastError) {
-                // This error is expected if the popup is not open, so we don't need to log it aggressively.
-                // console.warn("[BG Game Info] Error sending LIVE_GAME_INFO_UPDATED (popup might be closed):", chrome.runtime.lastError.message);
-            }
-        });
-        sendResponse({ status: "Live game info received by background." });
-        return true; // Indicate async response
+        // Maybe notify popup if it's open?
+        // chrome.runtime.sendMessage({ type: 'GAME_INFO_UPDATED', payload: liveGameInfo });
+        sendResponse({ success: true }); // Acknowledge receipt
+        // No return true needed as response is synchronous here
 
-    } else if (request.type === 'GET_CURRENT_GAME_INFO') { // Handler for requests from popup
-        // console.log('[BG Game Info] Popup requested live game info. Sending:', liveGameInfo);
+    } else if (request.type === 'GET_CURRENT_GAME_INFO') { // Handler for popup requesting info
+        // console.log('[BG Game Info Req] Popup requested current game info.');
         sendResponse({ gameInfo: liveGameInfo });
-        // This one is synchronous, no need to return true
+        // No return true needed
 
-    } else if (request.type === 'GET_USERNAME_BY_ID') {
-        const playerIdToLookup = request.payload.playerId;
-        if (!playerIdToLookup) {
-            sendResponse({ error: 'Player ID missing' });
-        } else {
-            chrome.storage.local.get('authToken', (result) => {
-                const authToken = result.authToken;
-                if (!authToken) {
-                    sendResponse({ error: 'Auth token not found for username lookup.' });
-                } else {
-                    fetch(`https://botc.app/backend/user/${playerIdToLookup}`, {
-                        headers: { 'Authorization': authToken }
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().catch(() => ({ message: response.statusText })).then(errorData => {
-                                throw new Error(`API error fetching username (${response.status}): ${errorData.message || response.statusText}`);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        const username = data && data.user ? data.user.username : null;
-                        if (!username) {
-                            throw new Error(`Username not found in API response for ID ${playerIdToLookup}`);
-                        }
-                        sendResponse({ username: username });
-                    })
-                    .catch(error => {
-                        console.error(`[BG Lookup] Error fetching username for ID ${playerIdToLookup}:`, error);
-                        sendResponse({ error: error.message });
-                    });
-                }
-            });
-            return true; // Indicate async response
-        }
-
-    } else if (request.action) { // Fallback to action-based handling for older messages or specific actions
-        switch (request.action) {
-            case "requestSession": // Note: Combined case for fetchSessions for clarity or remove if only one is used
-            case "fetchSessions":
-                chrome.storage.local.get('authToken', (result) => {
-                    const currentAuthToken = result.authToken || authToken; // Prefer stored token
-                    if (!currentAuthToken) {
-                        console.warn("[BG Popup Fetch] Auth token missing for session fetch.");
-                        sendResponse({ error: "Authorization token not available" });
-                        return; // Exit from chrome.storage.local.get callback
-                    }
-
-                    fetch("https://botc.app/backend/sessions", {
-                        method: "GET",
-                        headers: { "Authorization": currentAuthToken }
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            // Attempt to parse error as JSON, otherwise use statusText
-                            return response.json().catch(() => null) // if error response isn't valid JSON
-                                .then(errorBody => {
-                                    const errorMessage = errorBody ? (errorBody.message || JSON.stringify(errorBody)) : response.statusText;
-                                    const detailedError = `API Error ${response.status}: ${errorMessage}`;
-                                    console.error(`[BG Popup Fetch] ${detailedError}`);
-                                    throw new Error(detailedError); // This will be caught by the .catch() below
-                                });
-                        }
-                        return response.json(); // If response.ok, parse and return JSON
-                    })
-                    .then(sessionsData => {
-                        // Check if the API, despite a 200 OK, returned an error structure
-                        if (sessionsData && typeof sessionsData.error !== 'undefined') {
-                            console.error("[BG Popup Fetch] API returned 200 OK but with an error payload:", sessionsData.error);
-                            sendResponse({ error: sessionsData.error });
-                        } else {
-                            sendResponse({ sessions: sessionsData });
-                        }
-                    })
-                    .catch(error => {
-                        // Catches errors from fetch() network issues or the !response.ok block's throw
-                        console.error("[BG Popup Fetch] Error fetching sessions for popup:", error.message);
-                        sendResponse({ error: error.message || "Failed to fetch sessions due to an unknown server error." });
-                    });
-                });
-                return true; // Crucial: Indicates that sendResponse will be called asynchronously
-
-            case "savePlayerData": // This is now handled by request.type === 'SAVE_PLAYER_DATA'
-                if (request.playerData) { // Note: older format used .playerData, new uses .payload
-                    chrome.storage.local.set({ playerData: request.playerData }, () => {
-                        // console.log("[BG Save] Player data saved via popup request (action: savePlayerData).");
-                        if (chrome.runtime.lastError) {
-                            console.error("[BG Save] Error saving player data:", chrome.runtime.lastError);
-                            sendResponse({ success: false, error: chrome.runtime.lastError.message });
-                        } else {
-                            sendResponse({ success: true });
-                        }
-                    });
-                    return true; // Indicate asynchronous response for storage set
-                } else {
-                    console.error("[BG Save] Received savePlayerData (action) request without playerData.");
-                    sendResponse({ success: false, error: "Missing playerData" });
-                }
-                break;
-            
-            default:
-                console.warn('[BG Message] Received unknown action in message:', request);
-                sendResponse({ status: 'error', message: 'Unknown action in message' });
-                // Synchronous response here, no need to return true
-                break;
-        }
     } else {
-        console.warn('[BG Message] Received message with no recognized type or action:', request);
-        sendResponse({ status: 'error', message: 'Unrecognized message format' });
+        console.log('[BG Message] Received unknown message type:', request.type ? request.type : JSON.stringify(request));
+        // Optional: sendResponse({ error: 'Unknown message type' });
     }
+
+    // Return false if no async operation is pending for this message type
+    // (If we reached here and didn't return true earlier)
+    // Note: This is tricky with mixed sync/async handlers. The `return true` in specific
+    // async branches is the more reliable pattern.
 });
 
 // Helper to get auth token as a promise
@@ -204,7 +287,6 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 let authToken = null;
-let liveGameInfo = null; // Added to store live game info from content script
 const FETCH_ALARM_NAME = 'fetchBotcSessionsAlarm';
 const FETCH_PERIOD_MINUTES = 1; // Fetch every 1 minute
 
@@ -229,7 +311,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         console.log("[BG_ALARM] Alarm triggered: fetchBotcSessionsAlarm");
 
         // Check if botc.app is open before proceeding
-        chrome.tabs.query({ url: "*://botc.app/*", status: "complete" }, (tabs) => { // Added status: "complete" to ensure tab is loaded
+        chrome.tabs.query({ url: "*://botc.app/*", status: "complete" }, (tabs) => { 
             if (!tabs || tabs.length === 0) {
                 console.log('[BG_ALARM] botc.app is not open or not fully loaded. Skipping background fetch.');
                 // Optional: Consider if the alarm should be cleared or rescheduled if botc.app remains closed for too long.
@@ -390,7 +472,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     },
     {
         urls: ["*://botc.app/*"],
-        types: ["xmlhttprequest", "main_frame", "sub_frame"] // Added main_frame and sub_frame for broader capture if needed initially.
+        types: ["xmlhttprequest", "main_frame", "sub_frame"] 
     },
     ["requestHeaders"]
 );
