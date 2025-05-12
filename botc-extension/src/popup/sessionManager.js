@@ -291,7 +291,7 @@ function createPlayerCard(
  * @param {Function} createUsernameHistoryModal - Function to create the history modal.
  * @param {Function} updateOnlineFavoritesListFunc - Function to update the online favorites list UI.
  */
-function checkHistoryAndRender(
+async function checkHistoryAndRender(
     sessions,
     initialPlayerData,
     resultDiv,
@@ -300,19 +300,41 @@ function checkHistoryAndRender(
     createUsernameHistoryModalFunc,
     updateOnlineFavoritesListFunc
 ) {
-    // Deep clone initialPlayerData for modifications to avoid side effects on the original object
-    const processedPlayerData = JSON.parse(JSON.stringify(initialPlayerData)); 
-    let playerDataWasActuallyUpdatedDuringHistoryCheck = false;
+    let playerData = JSON.parse(JSON.stringify(initialPlayerData)); // Deep copy to avoid modifying the original
+    let playerDataNeedsSave = false;
 
-    // Process sessions for potential player data updates (e.g., username history, session history)
-    sessions.forEach(session => {
+    // Update username and session history for known players
+    for (const session of sessions) {
         if (session.usersAll && Array.isArray(session.usersAll)) {
-            session.usersAll.forEach(userInSession => {
-                const userId = userInSession.id ? userInSession.id.toString() : null;
-                const userNameFromApi = userInSession.username ? userInSession.username.trim() : null;
+            for (const userInSession of session.usersAll) {
+                const userId = userInSession.id ? String(userInSession.id) : null;
+                let userNameFromApi = userInSession.username ? userInSession.username.trim() : null;
 
-                if (userId && processedPlayerData[userId]) {
-                    const player = processedPlayerData[userId];
+                // --- Fallback: Fetch username if missing from session data ---
+                if (!userNameFromApi && userId) {
+                    console.warn(`[SM CheckHistory] Username missing for ID ${userId} in session '${session.name}'. Attempting API lookup.`);
+                    try {
+                        const lookupResponse = await window.sendMessagePromise({ 
+                            type: 'GET_USERNAME_BY_ID', 
+                            payload: { playerId: userId } 
+                        });
+
+                        if (lookupResponse && lookupResponse.username) {
+                            userNameFromApi = lookupResponse.username;
+                            console.log(`[SM CheckHistory] Successfully fetched username '${userNameFromApi}' for ID ${userId}.`);
+                        } else if (lookupResponse && lookupResponse.error) {
+                            console.error(`[SM CheckHistory] API lookup failed for ID ${userId}: ${lookupResponse.error}`);
+                        } else {
+                            console.error(`[SM CheckHistory] API lookup for ID ${userId} returned unexpected response:`, lookupResponse);
+                        }
+                    } catch (error) {
+                        console.error(`[SM CheckHistory] Error during sendMessagePromise for username lookup (ID: ${userId}):`, error);
+                    }
+                }
+                // --- End Fallback ---
+
+                if (userId && playerData[userId]) {
+                    const player = playerData[userId];
                     let playerUpdatedThisPass = false;
 
                     // Username History Update
@@ -339,52 +361,48 @@ function checkHistoryAndRender(
                     }
                     
                     if (playerUpdatedThisPass) {
-                        playerDataWasActuallyUpdatedDuringHistoryCheck = true;
+                        playerDataNeedsSave = true;
                     }
                 }
-            });
-        }
-    });
-
-    // Save player data if it was updated during the history check
-    if (playerDataWasActuallyUpdatedDuringHistoryCheck) {
-        chrome.storage.local.set({ playerData: processedPlayerData }, () => {
-            if (chrome.runtime.lastError) {
-                console.error('[FG SessionRender] Error saving player data after history check:', chrome.runtime.lastError.message);
-                // Optionally: Display a user-friendly error message here using a safe method
-                // e.g., ModalManager.showNotification("Error saving updated player data.", true, 3000);
-            } else {
-                console.log('[FG SessionRender] Player data updated with historical info and saved.');
             }
-        });
+        }
     }
 
-    // Sort sessions: ones with the current user first, then by date (original order)
-    if (window.currentUserID && sessions && Array.isArray(sessions)) {
+    // Sort sessions: prioritize those where the current user is active
+    if (window.currentUserID) {
         sessions.sort((a, b) => {
-            const userInA = a.usersAll && a.usersAll.some(u => u.id && u.id.toString() === window.currentUserID.toString());
-            const userInB = b.usersAll && b.usersAll.some(u => u.id && u.id.toString() === window.currentUserID.toString());
+            const currentUserIdStr = String(window.currentUserID);
+            
+            // 1. Check if current user is a participant (using session.usersAll)
+            const aHasCurrentUser = a.usersAll && a.usersAll.some(user => String(user.id) === currentUserIdStr);
+            const bHasCurrentUser = b.usersAll && b.usersAll.some(user => String(user.id) === currentUserIdStr);
 
-            if (userInA && !userInB) return -1; // A comes first
-            if (!userInA && userInB) return 1;  // B comes first
-            // If both are active or both are not, maintain original relative order (often chronological from API)
-            return 0; 
+            if (aHasCurrentUser && !bHasCurrentUser) return -1; // a comes first
+            if (!aHasCurrentUser && bHasCurrentUser) return 1;  // b comes first
+
+            // 2. If user participation is the same, check if it's the active tab's game (using liveGameInfo)
+            const aIsActiveTabGame = window.liveGameInfo && 
+                                      window.liveGameInfo.storytellerId && 
+                                      a.storytellers && a.storytellers.length > 0 && 
+                                      String(window.liveGameInfo.storytellerId) === String(a.storytellers[0].id);
+
+            const bIsActiveTabGame = window.liveGameInfo && 
+                                      window.liveGameInfo.storytellerId && 
+                                      b.storytellers && b.storytellers.length > 0 && 
+                                      String(window.liveGameInfo.storytellerId) === String(b.storytellers[0].id);
+
+            if (aIsActiveTabGame && !bIsActiveTabGame) return -1; // a comes first
+            if (!aIsActiveTabGame && bIsActiveTabGame) return 1;  // b comes first
+
+            // 3. Fallback: Sort by creation timestamp (most recent first)
+            const dateA = new Date(a.createdAt).getTime();
+            const dateB = new Date(b.createdAt).getTime();
+            return dateB - dateA; // Sort descending by time
         });
     }
 
-    // Call renderSessions with potentially updated player data and sorted sessions
-    renderSessions(
-        sessions, 
-        playerDataWasActuallyUpdatedDuringHistoryCheck ? processedPlayerData : initialPlayerData, 
-        resultDiv, 
-        options, 
-        addPlayerFunc, 
-        createUsernameHistoryModalFunc
-    );
-
-    // Update the online favorites list if the function is provided
+    // Update online favorites list UI using the centralized function passed from popup.js
     if (updateOnlineFavoritesListFunc) {
-        // Construct the map of online players: { playerId: sessionName or true }
         const onlinePlayersMap = new Map();
         sessions.forEach(session => {
             if (session.usersAll && Array.isArray(session.usersAll)) {
@@ -402,14 +420,36 @@ function checkHistoryAndRender(
 
         // Now call the function from popup.js context if it exists
         if (typeof window.updateOnlineFavoritesListFunc === 'function') {
-            console.log('[SessionManager] onlinePlayersObject before passing:', onlinePlayersObject);
-            window.updateOnlineFavoritesListFunc(processedPlayerData, onlinePlayersObject);
+            updateOnlineFavoritesListFunc(playerData, onlinePlayersObject);
         } else {
             console.warn("updateOnlineFavoritesListFunc not found on window object. Is popup.js loaded and function exposed?");
         }
     } else {
         // console.warn('updateOnlineFavoritesListFunc not provided to checkHistoryAndRender');
     }
+
+    // Save player data if it was updated during the history check
+    if (playerDataNeedsSave) {
+        chrome.storage.local.set({ playerData: playerData }, () => {
+            if (chrome.runtime.lastError) {
+                console.error('[FG SessionRender] Error saving player data after history check:', chrome.runtime.lastError.message);
+                // Optionally: Display a user-friendly error message here using a safe method
+                // e.g., ModalManager.showNotification("Error saving updated player data.", true, 3000);
+            } else {
+                console.log('[FG SessionRender] Player data updated with historical info and saved.');
+            }
+        });
+    }
+
+    // Call renderSessions with potentially updated player data and sorted sessions
+    renderSessions(
+        sessions, 
+        playerData, 
+        resultDiv, 
+        options, 
+        addPlayerFunc, 
+        createUsernameHistoryModalFunc
+    );
 }
 
 /**
@@ -429,187 +469,198 @@ function renderSessions(
     addPlayerFunc,
     createUsernameHistoryModalFunc
 ) {
-    // Always clear the results div before rendering
-    if (resultDiv) {
-        resultDiv.innerHTML = '';
-    } else {
-        console.error('[Render Error] resultDiv is null or undefined in renderSessions.');
-        return; // Cannot render without a container
-    }
- 
-    // Filter sessions based on options
-    const filteredSessions = (sessions || []).filter(session => {
-        if (options.officialOnly && session.edition && !session.edition.isOfficial) return false; // Check session.edition exists
-        return true;
-    });
- 
-    if (filteredSessions.length === 0) {
-        // console.log('No sessions to display after filtering.'); // Can be noisy, enable for debug
-        resultDiv.innerHTML = '<p>No active sessions found matching the criteria.</p>';
+    resultDiv.innerHTML = ''; // Clear previous results
+
+    if (!sessions || sessions.length === 0) {
+        resultDiv.innerHTML = '<p class="no-sessions-message">No sessions found.</p>';
         return;
     }
- 
-    filteredSessions.forEach((session, index) => {
-        try {
-            const sessionContainer = document.createElement('div');
-            sessionContainer.className = 'session-container';
-            sessionContainer.dataset.sessionId = session.id; // Store session ID for potential future use
 
-            // Check if the current user is present in this session's usersAll array
-            if (window.currentUserID && session.usersAll && Array.isArray(session.usersAll)) {
-                const isCurrentUserInSession = session.usersAll.some(u => u.id && u.id.toString() === window.currentUserID.toString());
-                if (isCurrentUserInSession) {
-                    sessionContainer.classList.add('active-user-session');
-                }
-            }
+    const fragment = document.createDocumentFragment();
+    let displayedCount = 0;
 
-            const sessionHeader = document.createElement('div');
-            sessionHeader.className = 'session-header';
-
-            const sessionTitle = document.createElement('div');
-            sessionTitle.className = 'session-title';
-            
-            const titleTextContainer = document.createElement('div'); // Main container for title line elements
-            titleTextContainer.className = 'session-title-line'; // Assign a class for potential flex styling if session-title itself isn't flex
-
-            const mainTitleInfo = document.createElement('div');
-            mainTitleInfo.className = 'session-main-info';
-            
-            // Construct the new player count string
-            const playersWithAssignedId = session.players ? session.players.filter(p => p && p.id).length : 0;
-            const totalPlayerSlots = session.players ? session.players.length : 0; 
-            const totalParticipants = session.usersAll ? session.usersAll.length : 0;
-
-            const playerCountString = `Players: ${playersWithAssignedId}/${totalPlayerSlots} (${totalParticipants} total)`;
-
-            const titleText = document.createElement('div');
-            titleText.innerHTML = `<strong>${session.name}</strong> <span style="color: #666">• Phase ${session.phase}${session.phase === 0 ? '<span class="phase-zero-indicator">In Between Games</span>' : ''} • ${playerCountString}</span>`;
-            mainTitleInfo.appendChild(titleText);
-
-            // *** NEW: Player Score Indicators ***
-            let scoreIndicatorsContainer; // Declare here to be in scope
-            if (playerData && session.usersAll) {
-                let good_scores = 0;
-                let neutral_scores = 0;
-                let bad_scores = 0;
-
-                session.usersAll.forEach(userInSession => {
-                    if (userInSession && userInSession.id && playerData[userInSession.id]) {
-                        const knownPlayer = playerData[userInSession.id];
-                        const category = getScoreCategory(knownPlayer.score);
-                        if (category === 'good') good_scores++;
-                        else if (category === 'neutral') neutral_scores++;
-                        else if (category === 'bad') bad_scores++;
-                    }
-                });
-
-                let indicatorsHtml = ''; // Changed const to let
-                if (good_scores > 0) {
-                    indicatorsHtml += `<span class="score-good" title="Good (Score 4-5)">+${good_scores}</span> `;
-                }
-                if (neutral_scores > 0) {
-                    indicatorsHtml += `<span class="score-neutral" title="Neutral (Score 3)">●${neutral_scores}</span> `;
-                }
-                if (bad_scores > 0) {
-                    indicatorsHtml += `<span class="score-bad" title="Bad (Score 1-2)">-${bad_scores}</span>`;
-                }
-                
-                if (indicatorsHtml.trim() !== '') {
-                    // Create container only if there's content
-                    scoreIndicatorsContainer = document.createElement('span');
-                    scoreIndicatorsContainer.className = 'session-player-score-indicators';
-                    scoreIndicatorsContainer.innerHTML = indicatorsHtml.trim();
-                }
-            }
-            // *** END NEW: Player Score Indicators ***
-
-            titleTextContainer.appendChild(mainTitleInfo);
-
-            // Add edition tag to titleTextContainer, after mainTitleInfo
-            const editionTag = createEditionTag(session.edition);
-            titleTextContainer.appendChild(editionTag);
-
-            sessionTitle.appendChild(titleTextContainer); // Add the container with title + edition
-
-            // Create a new container for right-side controls (indicators + toggle button)
-            const rightHeaderControls = document.createElement('div');
-            rightHeaderControls.className = 'session-header-right-controls';
-
-            // Add score indicators to the new right-side container IF they exist
-            if (scoreIndicatorsContainer) {
-                rightHeaderControls.appendChild(scoreIndicatorsContainer);
-            }
-
-            const toggleButton = document.createElement('button');
-            toggleButton.classList.add('session-toggle-button'); // Add class
-            toggleButton.innerHTML = '&#9660;'; // Down arrow for 'Show Players'
-            toggleButton.title = 'Show players in this session';
-            rightHeaderControls.appendChild(toggleButton); // Add toggle button to the new container
-
-            sessionHeader.appendChild(sessionTitle);
-            sessionHeader.appendChild(rightHeaderControls); // Add the new right-side controls container to the header
-
-            const sessionContent = document.createElement('div');
-            sessionContent.className = 'session-content';
-            sessionContent.style.display = 'none';
-
-            // Create a Set of active player IDs for quick lookup (filter out nulls)
-            const activePlayerIds = new Set(
-                (session.players || []).filter(p => p && p.id).map(p => p.id)
-            );
-
-            // Create a Set of storyteller IDs
-            const storytellerIds = new Set(
-                (session.storytellers || []).filter(st => st && st.id).map(st => st.id)
-            );
-
-            // Sort players by known status, using updated playerData
-            const sortedPlayers = sortSessionPlayers(session, playerData, storytellerIds, activePlayerIds);
-            sortedPlayers.forEach(user => {
-                // Determine if this user is an active player
-                const isPlaying = activePlayerIds.has(user.id);
-                // Create player card for each user
-                const playerCardElement = createPlayerCard(
-                    user, 
-                    playerData, 
-                    session, 
-                    addPlayerFunc, 
-                    createUsernameHistoryModalFunc,
-                    isPlaying // Pass playing status
-                );
-                sessionContent.appendChild(playerCardElement);
-            });
-
-            toggleButton.addEventListener('click', () => {
-                const isHidden = sessionContent.style.display === 'none';
-                sessionContent.style.display = isHidden ? 'block' : 'none';
-                if (isHidden) {
-                    toggleButton.innerHTML = '&#9650;'; // Up arrow for 'Hide Players'
-                    toggleButton.title = 'Hide players in this session';
-                } else {
-                    toggleButton.innerHTML = '&#9660;'; // Down arrow for 'Show Players'
-                    toggleButton.title = 'Show players in this session';
-                }
-            });
-
-            sessionContainer.appendChild(sessionHeader);
-            sessionContainer.appendChild(sessionContent);
-            resultDiv.appendChild(sessionContainer);
-        } catch (error) {
-            console.error(`[Render Error] Failed to render session ${index}: ${session?.name}. Error:`, error, 'Session data:', session);
-            // Optionally display an error message in the UI for this specific session
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'session-container error'; // Style appropriately
-            errorDiv.textContent = `Error rendering session: ${session.name || 'Unknown Session'}. See console for details.`;
-            resultDiv.appendChild(errorDiv);
+    sessions.forEach(session => {
+        if (!session || !session.name) { 
+            console.warn("[Render Warn] Invalid session object or missing session name:", session);
+            return; // Skip this invalid session object
         }
+
+        if (options && options.officialOnly && session.edition && !session.edition.isOfficial) {
+            return; // Skip non-official if filter is active
+        }
+
+        displayedCount++;
+        const sessionContainer = document.createElement('div');
+        sessionContainer.className = 'session-container';
+        sessionContainer.dataset.sessionId = session.name; 
+
+        // Highlight if current user is in this session
+        // Logic now based on live game info from content script
+        const isUserDetectedInLiveGame = window.liveGameInfo && 
+                                         window.liveGameInfo.playerIds &&
+                                         window.currentUserID && 
+                                         window.liveGameInfo.playerIds.includes(String(window.currentUserID));
+
+        const isLiveGameMatchingThisSession = window.liveGameInfo && 
+                                              window.liveGameInfo.storytellerId &&
+                                              session.storytellers && 
+                                              session.storytellers.length > 0 && 
+                                              String(window.liveGameInfo.storytellerId) === String(session.storytellers[0].id);
+
+        // Highlight if this session matches the game in the active botc.app tab
+        sessionContainer.classList.remove('current-tab-game-session'); // Clear previous state
+        if (isLiveGameMatchingThisSession) {
+            sessionContainer.classList.add('current-tab-game-session');
+            // console.log(`[SM] Session "${session.name}" marked as current-tab-game-session.`);
+        }
+
+        // Separately, highlight if the logged-in user is part of this session's roster (from backend data)
+        sessionContainer.classList.remove('active-user-session'); // Clear previous state
+        if (window.currentUserID && session.usersAll && session.usersAll.some(user => user && String(user.id) === String(window.currentUserID))) {
+            sessionContainer.classList.add('active-user-session');
+            // console.log(`[SM] Session "${session.name}" marked as active-user-session for user ${window.currentUserID}.`);
+        }
+
+        // Determine player roles for sorting and display within this session
+        const sessionHeader = document.createElement('div');
+        sessionHeader.className = 'session-header';
+
+        const sessionTitle = document.createElement('div');
+        sessionTitle.className = 'session-title';
+        
+        const titleTextContainer = document.createElement('div'); // Main container for title line elements
+        titleTextContainer.className = 'session-title-line'; // Assign a class for potential flex styling if session-title itself isn't flex
+
+        const mainTitleInfo = document.createElement('div');
+        mainTitleInfo.className = 'session-main-info';
+        
+        // Construct the new player count string
+        const playersWithAssignedId = session.players ? session.players.filter(p => p && p.id).length : 0;
+        const totalPlayerSlots = session.players ? session.players.length : 0; 
+        const totalParticipants = session.usersAll ? session.usersAll.length : 0;
+
+        const playerCountString = `Players: ${playersWithAssignedId}/${totalPlayerSlots} (${totalParticipants} total)`;
+
+        const titleText = document.createElement('div');
+        titleText.innerHTML = `<strong>${session.name}</strong> <span style="color: #666">• Phase ${session.phase}${session.phase === 0 ? '<span class="phase-zero-indicator">In Between Games</span>' : ''} • ${playerCountString}</span>`;
+        mainTitleInfo.appendChild(titleText);
+
+        // *** NEW: Player Score Indicators ***
+        let scoreIndicatorsContainer; // Declare here to be in scope
+        if (playerData && session.usersAll) {
+            let good_scores = 0;
+            let neutral_scores = 0;
+            let bad_scores = 0;
+
+            session.usersAll.forEach(userInSession => {
+                if (userInSession && userInSession.id && playerData[userInSession.id]) {
+                    const knownPlayer = playerData[userInSession.id];
+                    const category = getScoreCategory(knownPlayer.score);
+                    if (category === 'good') good_scores++;
+                    else if (category === 'neutral') neutral_scores++;
+                    else if (category === 'bad') bad_scores++;
+                }
+            });
+
+            let indicatorsHtml = ''; // Changed const to let
+            if (good_scores > 0) {
+                indicatorsHtml += `<span class="score-good" title="Good (Score 4-5)">+${good_scores}</span> `;
+            }
+            if (neutral_scores > 0) {
+                indicatorsHtml += `<span class="score-neutral" title="Neutral (Score 3)">●${neutral_scores}</span> `;
+            }
+            if (bad_scores > 0) {
+                indicatorsHtml += `<span class="score-bad" title="Bad (Score 1-2)">-${bad_scores}</span>`;
+            }
+            
+            if (indicatorsHtml.trim() !== '') {
+                // Create container only if there's content
+                scoreIndicatorsContainer = document.createElement('span');
+                scoreIndicatorsContainer.className = 'session-player-score-indicators';
+                scoreIndicatorsContainer.innerHTML = indicatorsHtml.trim();
+            }
+        }
+        // *** END NEW: Player Score Indicators ***
+
+        titleTextContainer.appendChild(mainTitleInfo);
+
+        // Add edition tag to titleTextContainer, after mainTitleInfo
+        const editionTag = createEditionTag(session.edition);
+        titleTextContainer.appendChild(editionTag);
+
+        sessionTitle.appendChild(titleTextContainer); // Add the container with title + edition
+
+        // Create a new container for right-side controls (indicators + toggle button)
+        const rightHeaderControls = document.createElement('div');
+        rightHeaderControls.className = 'session-header-right-controls';
+
+        // Add score indicators to the new right-side container IF they exist
+        if (scoreIndicatorsContainer) {
+            rightHeaderControls.appendChild(scoreIndicatorsContainer);
+        }
+
+        const toggleButton = document.createElement('button');
+        toggleButton.classList.add('session-toggle-button'); // Add class
+        toggleButton.innerHTML = '&#9660;'; // Down arrow for 'Show Players'
+        toggleButton.title = 'Show players in this session';
+        rightHeaderControls.appendChild(toggleButton); // Add toggle button to the new container
+
+        sessionHeader.appendChild(sessionTitle);
+        sessionHeader.appendChild(rightHeaderControls); // Add the new right-side controls container to the header
+
+        const sessionContent = document.createElement('div');
+        sessionContent.className = 'session-content';
+        sessionContent.style.display = 'none';
+
+        // Create a Set of active player IDs for quick lookup (filter out nulls)
+        const activePlayerIds = new Set(
+            (session.players || []).filter(p => p && p.id).map(p => p.id)
+        );
+
+        // Create a Set of storyteller IDs
+        const storytellerIds = new Set(
+            (session.storytellers || []).filter(st => st && st.id).map(st => st.id)
+        );
+
+        // Sort players by known status, using updated playerData
+        const sortedPlayers = sortSessionPlayers(session, playerData, storytellerIds, activePlayerIds);
+        sortedPlayers.forEach(user => {
+            // Determine if this user is an active player
+            const isPlaying = activePlayerIds.has(user.id);
+            // Create player card for each user
+            const playerCardElement = createPlayerCard(
+                user, 
+                playerData, 
+                session, 
+                addPlayerFunc, 
+                createUsernameHistoryModalFunc,
+                isPlaying // Pass playing status
+            );
+            sessionContent.appendChild(playerCardElement);
+        });
+
+        toggleButton.addEventListener('click', () => {
+            const isHidden = sessionContent.style.display === 'none';
+            sessionContent.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                toggleButton.innerHTML = '&#9650;'; // Up arrow for 'Hide Players'
+                toggleButton.title = 'Hide players in this session';
+            } else {
+                toggleButton.innerHTML = '&#9660;'; // Down arrow for 'Show Players'
+                toggleButton.title = 'Show players in this session';
+            }
+        });
+
+        sessionContainer.appendChild(sessionHeader);
+        sessionContainer.appendChild(sessionContent);
+        fragment.appendChild(sessionContainer);
     });
 
+    resultDiv.appendChild(fragment);
 }
 
 /**
  * Fetch session data, check/update history, then display sessions.
- * @param {Function} loadPlayerDataFunc - Function to load player data.
  * @param {Function} addPlayerFunc - Function to add a player.
  * @param {Function} createUsernameHistoryModalFunc - Function to create the username history modal.
  * @param {Function} updateOnlineFavoritesListFunc - Function to update the online favorites list UI.
@@ -617,107 +668,134 @@ function renderSessions(
  * @param {Object} [options={}] - Filtering/display options.
  * @param {Function} [onCompleteCallback=null] - Optional callback after completion.
  */
-function fetchAndDisplaySessions(
-    loadPlayerDataFunc, 
-    addPlayerFunc, 
+async function fetchAndDisplaySessions(
+    addPlayerFunc,
     createUsernameHistoryModalFunc,
-    updateOnlineFavoritesListFunc, 
+    updateOnlineFavoritesListFunc,
     resultDiv,
     options = {},
     onCompleteCallback = null
 ) {
+    resultDiv.innerHTML = '<div class="loading-sessions"><div class="spinner"></div> Fetching sessions...</div>';
+
+    // Fetch the latest liveGameInfo from background script
+    try {
+        const liveGameInfoResponse = await window.sendMessagePromise({ type: 'GET_CURRENT_GAME_INFO' });
+        window.liveGameInfo = liveGameInfoResponse ? liveGameInfoResponse.gameInfo : null;
+        // console.log('[SM] Fetched liveGameInfo in sessionManager:', JSON.stringify(window.liveGameInfo, null, 2));
+    } catch (error) {
+        console.error('[SM] Error fetching liveGameInfo in sessionManager:', error);
+        window.liveGameInfo = null; // Ensure it's null on error
+    }
+
+    // Directly use window.playerData which should be populated by popup.js
+    // Ensure it defaults to an empty object if window.playerData is null or undefined
+    const currentPlayerData = window.playerData || {};
+    // console.log('[SM] Using window.playerData in fetchAndDisplaySessions. Player count:', Object.keys(currentPlayerData).length);
+    if (Object.keys(currentPlayerData).length === 0) {
+        console.warn('[SM] window.playerData is empty or not yet populated when fetchAndDisplaySessions is called.');
+        // popup.js should ensure window.playerData is populated before calling this.
+    }
+
     chrome.runtime.sendMessage({ action: "fetchSessions" }, (response) => {
-        if (response && response.error) {
-            console.error("Error fetching sessions:", response.error);
-            resultDiv.innerHTML = `<p class='error-message'>Error fetching sessions: ${response.error}</p>`;
-            if (onCompleteCallback) onCompleteCallback(null, response.error); // Indicate error
+        if (chrome.runtime.lastError) {
+            console.error("[SM] Error sending fetchSessions message:", chrome.runtime.lastError.message);
+            resultDiv.innerHTML = `<p class='error-message'>Error communicating with background: ${chrome.runtime.lastError.message}</p>`;
+            if (onCompleteCallback) onCompleteCallback(null, chrome.runtime.lastError.message);
             return;
         }
+
+        if (response && response.error) {
+            console.error("[SM] Error fetching sessions from background:", response.error);
+            resultDiv.innerHTML = `<p class='error-message'>Error fetching sessions: ${response.error}</p>`;
+            if (onCompleteCallback) onCompleteCallback(null, response.error);
+            return;
+        }
+
         if (!response || !response.sessions) {
-            console.error("No sessions data received.");
-            resultDiv.innerHTML = "<p>No active games found, or the format was unexpected.</p>";
-            if (onCompleteCallback) onCompleteCallback([], {}); // No sessions, empty player data map
+            console.warn("[SM] No sessions found or invalid response from background. Response:", response);
+            resultDiv.innerHTML = "<p class='no-sessions'>No active sessions found, or could not retrieve session data.</p>";
+            // Still call checkHistoryAndRender with empty sessions to ensure UI consistency (e.g., clearing old results)
+            // and to correctly use currentPlayerData for any residual UI elements that might depend on it.
+            checkHistoryAndRender(
+                [], // empty sessions array
+                currentPlayerData, // Pass the currentPlayerData (from window.playerData)
+                resultDiv,
+                options,
+                addPlayerFunc,
+                createUsernameHistoryModalFunc,
+                updateOnlineFavoritesListFunc
+            );
+            if (onCompleteCallback) onCompleteCallback([]); // Indicate successful fetch (of no sessions)
             return;
         }
 
         const backendSessions = response.sessions;
+        // console.log('[SM] Received sessions from background:', backendSessions.length);
 
-        // Sort sessions by phase (0 first, then ascending)
+        // --- Sort sessions by game phase ---
         backendSessions.sort((a, b) => {
-            const phaseA = typeof a.phase === 'number' ? a.phase : Infinity; // Treat non-numbers as lowest priority
-            const phaseB = typeof b.phase === 'number' ? b.phase : Infinity;
+            const phaseA = (typeof a.phase === 'number' && !isNaN(a.phase)) ? a.phase : Infinity;
+            const phaseB = (typeof b.phase === 'number' && !isNaN(b.phase)) ? b.phase : Infinity;
 
-            if (phaseA === 0 && phaseB !== 0) return -1; // Phase 0 comes first
-            if (phaseB === 0 && phaseA !== 0) return 1;  // Phase 0 comes first
+            if (phaseA === 0 && phaseB !== 0) return -1; // Phase 0 (active game) comes first
+            if (phaseB === 0 && phaseA !== 0) return 1;
             return phaseA - phaseB; // Otherwise, sort numerically ascending
         });
 
-        // 1. Load current player data
-        loadPlayerDataFunc(initialPlayerData => {
-            // --- Calculate and Display Fetch Statistics (Optional: can be kept or removed) ---
-            const totalSessions = backendSessions.length;
-            const uniquePlayerIds = new Set();
-            backendSessions.forEach(session => {
-                (session.usersAll || []).forEach(user => {
-                    if (user && user.id) {
-                        uniquePlayerIds.add(user.id);
-                    }
-                });
+        // --- Calculate and Display Fetch Statistics ---
+        const totalSessions = backendSessions.length;
+        const uniquePlayerIds = new Set();
+        backendSessions.forEach(session => {
+            (session.usersAll || []).forEach(user => {
+                if (user && user.id) {
+                    uniquePlayerIds.add(user.id.toString()); // Ensure IDs are strings
+                }
             });
-            const totalUniquePlayers = uniquePlayerIds.size;
-            let knownPlayerCount = 0;
+        });
+        const totalUniquePlayers = uniquePlayerIds.size;
+        let knownPlayerCount = 0;
+
+        // console.log('[SM] Stats: currentPlayerData type:', typeof currentPlayerData, 'Is null?', currentPlayerData === null, 'Keys available:', Object.keys(currentPlayerData).length);
+        if (typeof currentPlayerData !== 'object' || currentPlayerData === null) {
+            console.error('[SM] CRITICAL: currentPlayerData is NOT a valid object for stats calculation!', currentPlayerData);
+        } else {
             uniquePlayerIds.forEach(id => {
-                if (initialPlayerData[id]) {
+                if (currentPlayerData[id]) { // Use currentPlayerData
                     knownPlayerCount++;
                 }
             });
+        }
 
-            const statsSpan = document.getElementById('fetchStats');
-            if (statsSpan) {
-                statsSpan.textContent = `(${totalUniquePlayers} Players | ${knownPlayerCount} Known | ${totalSessions} Sessions)`;
-            } else {
-                console.warn("fetchStats element not found in popup.html");
-            }
-            // --- End Statistics Calculation ---
+        const statsSpan = document.getElementById('fetchStats');
+        if (statsSpan) {
+            statsSpan.textContent = `(${totalUniquePlayers} Players | ${knownPlayerCount} Known | ${totalSessions} Sessions)`;
+        } else {
+            // console.warn("[SM] fetchStats element not found in popup.html"); // Less noisy log
+        }
+        // --- End Statistics Calculation ---
 
-            // 2. Call checkHistoryAndRender to handle history updates and rendering
-            // It will internally call renderSessions after processing.
-            checkHistoryAndRender(
-                backendSessions, 
-                initialPlayerData, 
-                resultDiv, 
-                options, 
-                addPlayerFunc, 
-                createUsernameHistoryModalFunc,
-                updateOnlineFavoritesListFunc // Pass it through
-            );
-            // The renderSessions function inside checkHistoryAndRender handles UI updates.
-            // If onCompleteCallback needs to be tied to the full completion including rendering,
-            // checkHistoryAndRender might need to be modified to accept and call it,
-            // or we assume completion once checkHistoryAndRender is invoked if it's synchronous enough for this purpose.
-            // For now, calling it here means it's called after initiating the history check & render process.
-            if (onCompleteCallback) {
-                // Consider that checkHistoryAndRender is asynchronous due to promises.
-                // A more robust way would be for checkHistoryAndRender to return a promise or accept a callback.
-                // For simplicity now, calling it after invoking checkHistoryAndRender.
-                // If checkHistoryAndRender needs to signal completion, its structure would need to change.
-                // Assuming onCompleteCallback is mainly to signal that fetching and *initiation* of processing is done.
-                Promise.all(backendSessions.flatMap(session => 
-                    (session.usersAll || []).map(user => 
-                        new Promise(resolve => {
-                            // This is a placeholder to ensure callback runs after promises in checkHistoryAndRender *could* have run.
-                            // A better approach is for checkHistoryAndRender to return a promise itself.
-                            setTimeout(resolve, 0); 
-                        })
-                    )
-                )).then(() => {
-                    if (onCompleteCallback) onCompleteCallback(backendSessions);
-                });
-            }
-        });
+        // Call checkHistoryAndRender to handle history updates and rendering
+        checkHistoryAndRender(
+            backendSessions,
+            currentPlayerData, // Pass currentPlayerData (which is from window.playerData)
+            resultDiv,
+            options,
+            addPlayerFunc,
+            createUsernameHistoryModalFunc,
+            updateOnlineFavoritesListFunc
+        );
+
+        if (onCompleteCallback) {
+            // Ensure callback is executed after the current execution stack clears,
+            // allowing checkHistoryAndRender to initiate its asynchronous operations.
+            Promise.resolve().then(() => {
+                 if (onCompleteCallback) onCompleteCallback(backendSessions);
+            });
+        }
     });
 }
 
-// --- Expose function needed by popup.js ---
+// --- Expose function needed by popup.js --- 
 window.fetchAndDisplaySessions = fetchAndDisplaySessions;
 window.renderSessions = renderSessions; // Expose renderSessions

@@ -1,3 +1,198 @@
+// --- Message Listener from Content Script or Popup ---
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    // console.log(`[BG Message] Received message:`, request, `from sender:`, sender);
+
+    if (request.type === 'GET_AUTH_TOKEN') {
+        // console.log('[BG Auth] Received request for auth token.');
+        chrome.storage.local.get(['authToken'], (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('[BG Auth] Error retrieving auth token:', chrome.runtime.lastError);
+                sendResponse({ token: null, error: chrome.runtime.lastError.message });
+            } else {
+                const token = result.authToken || null;
+                // console.log('[BG Auth] Sending auth token:', token ? '********' : 'null'); // Mask token in log
+                sendResponse({ token: token });
+            }
+        });
+        return true; // Crucial: Indicate async response
+
+    } else if (request.type === 'GET_PLAYER_DATA') {
+        // console.log('[BG PlayerData] Received request for player data.');
+        chrome.storage.local.get('playerData', (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('[BG PlayerData] Error fetching player data:', chrome.runtime.lastError);
+                sendResponse({ playerData: {}, error: chrome.runtime.lastError.message });
+            } else {
+                // console.log('[BG PlayerData] Sending player data:', result.playerData ? Object.keys(result.playerData).length + ' players' : '{}');
+                sendResponse({ playerData: result.playerData || {} });
+            }
+        });
+        return true; // Crucial: Indicate async response
+
+    } else if (request.type === 'SAVE_PLAYER_DATA') {
+        // console.log('[BG Save] Received request to save player data.');
+        if (request.payload) {
+            chrome.storage.local.set({ playerData: request.payload }, () => {
+                if (chrome.runtime.lastError) {
+                    console.error('[BG Save] Error saving player data:', chrome.runtime.lastError);
+                    sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                } else {
+                    // console.log("[BG Save] Player data saved via popup request (type: SAVE_PLAYER_DATA).");
+                    sendResponse({ success: true });
+                }
+            });
+            return true; // Indicate asynchronous response for storage set
+        } else {
+            console.error("[BG Save] Received SAVE_PLAYER_DATA request without payload.");
+            sendResponse({ success: false, error: "Missing payload" });
+        }
+
+    } else if (request.type === 'CURRENT_GAME_INFO') { // Handler for info from content script
+        // console.log('[BG Game Info] Received game info from content script:', request.payload);
+        liveGameInfo = request.payload; // Update the stored game info
+        // Notify popup (if open) that live game info has been updated
+        chrome.runtime.sendMessage({ type: 'LIVE_GAME_INFO_UPDATED', payload: liveGameInfo }, response => {
+            if (chrome.runtime.lastError) {
+                // This error is expected if the popup is not open, so we don't need to log it aggressively.
+                // console.warn("[BG Game Info] Error sending LIVE_GAME_INFO_UPDATED (popup might be closed):", chrome.runtime.lastError.message);
+            }
+        });
+        sendResponse({ status: "Live game info received by background." });
+        return true; // Indicate async response
+
+    } else if (request.type === 'GET_CURRENT_GAME_INFO') { // Handler for requests from popup
+        // console.log('[BG Game Info] Popup requested live game info. Sending:', liveGameInfo);
+        sendResponse({ gameInfo: liveGameInfo });
+        // This one is synchronous, no need to return true
+
+    } else if (request.type === 'GET_USERNAME_BY_ID') {
+        const playerIdToLookup = request.payload.playerId;
+        if (!playerIdToLookup) {
+            sendResponse({ error: 'Player ID missing' });
+        } else {
+            chrome.storage.local.get('authToken', (result) => {
+                const authToken = result.authToken;
+                if (!authToken) {
+                    sendResponse({ error: 'Auth token not found for username lookup.' });
+                } else {
+                    fetch(`https://botc.app/backend/user/${playerIdToLookup}`, {
+                        headers: { 'Authorization': authToken }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().catch(() => ({ message: response.statusText })).then(errorData => {
+                                throw new Error(`API error fetching username (${response.status}): ${errorData.message || response.statusText}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const username = data && data.user ? data.user.username : null;
+                        if (!username) {
+                            throw new Error(`Username not found in API response for ID ${playerIdToLookup}`);
+                        }
+                        sendResponse({ username: username });
+                    })
+                    .catch(error => {
+                        console.error(`[BG Lookup] Error fetching username for ID ${playerIdToLookup}:`, error);
+                        sendResponse({ error: error.message });
+                    });
+                }
+            });
+            return true; // Indicate async response
+        }
+
+    } else if (request.action) { // Fallback to action-based handling for older messages or specific actions
+        switch (request.action) {
+            case "requestSession": // Note: Combined case for fetchSessions for clarity or remove if only one is used
+            case "fetchSessions":
+                chrome.storage.local.get('authToken', (result) => {
+                    const currentAuthToken = result.authToken || authToken; // Prefer stored token
+                    if (!currentAuthToken) {
+                        console.warn("[BG Popup Fetch] Auth token missing for session fetch.");
+                        sendResponse({ error: "Authorization token not available" });
+                        return; // Exit from chrome.storage.local.get callback
+                    }
+
+                    fetch("https://botc.app/backend/sessions", {
+                        method: "GET",
+                        headers: { "Authorization": currentAuthToken }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            // Attempt to parse error as JSON, otherwise use statusText
+                            return response.json().catch(() => null) // if error response isn't valid JSON
+                                .then(errorBody => {
+                                    const errorMessage = errorBody ? (errorBody.message || JSON.stringify(errorBody)) : response.statusText;
+                                    const detailedError = `API Error ${response.status}: ${errorMessage}`;
+                                    console.error(`[BG Popup Fetch] ${detailedError}`);
+                                    throw new Error(detailedError); // This will be caught by the .catch() below
+                                });
+                        }
+                        return response.json(); // If response.ok, parse and return JSON
+                    })
+                    .then(sessionsData => {
+                        // Check if the API, despite a 200 OK, returned an error structure
+                        if (sessionsData && typeof sessionsData.error !== 'undefined') {
+                            console.error("[BG Popup Fetch] API returned 200 OK but with an error payload:", sessionsData.error);
+                            sendResponse({ error: sessionsData.error });
+                        } else {
+                            sendResponse({ sessions: sessionsData });
+                        }
+                    })
+                    .catch(error => {
+                        // Catches errors from fetch() network issues or the !response.ok block's throw
+                        console.error("[BG Popup Fetch] Error fetching sessions for popup:", error.message);
+                        sendResponse({ error: error.message || "Failed to fetch sessions due to an unknown server error." });
+                    });
+                });
+                return true; // Crucial: Indicates that sendResponse will be called asynchronously
+
+            case "savePlayerData": // This is now handled by request.type === 'SAVE_PLAYER_DATA'
+                if (request.playerData) { // Note: older format used .playerData, new uses .payload
+                    chrome.storage.local.set({ playerData: request.playerData }, () => {
+                        // console.log("[BG Save] Player data saved via popup request (action: savePlayerData).");
+                        if (chrome.runtime.lastError) {
+                            console.error("[BG Save] Error saving player data:", chrome.runtime.lastError);
+                            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                        } else {
+                            sendResponse({ success: true });
+                        }
+                    });
+                    return true; // Indicate asynchronous response for storage set
+                } else {
+                    console.error("[BG Save] Received savePlayerData (action) request without playerData.");
+                    sendResponse({ success: false, error: "Missing playerData" });
+                }
+                break;
+            
+            default:
+                console.warn('[BG Message] Received unknown action in message:', request);
+                sendResponse({ status: 'error', message: 'Unknown action in message' });
+                // Synchronous response here, no need to return true
+                break;
+        }
+    } else {
+        console.warn('[BG Message] Received message with no recognized type or action:', request);
+        sendResponse({ status: 'error', message: 'Unrecognized message format' });
+    }
+});
+
+// Helper to get auth token as a promise
+function getAuthToken() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get('authToken', (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('[BG Auth Helper] Error getting auth token:', chrome.runtime.lastError.message);
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve(result.authToken);
+            }
+        });
+    });
+}
+
+// --- Alarms and Periodic Tasks ---
 chrome.runtime.onInstalled.addListener(() => {
     console.log("Extension installed");
     setupSessionFetchAlarm(); // Setup alarm on install
@@ -9,6 +204,7 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 let authToken = null;
+let liveGameInfo = null; // Added to store live game info from content script
 const FETCH_ALARM_NAME = 'fetchBotcSessionsAlarm';
 const FETCH_PERIOD_MINUTES = 1; // Fetch every 1 minute
 
@@ -165,6 +361,18 @@ function fetchAndProcessSessionsInBackground(token, playerData) {
     });
 }
 
+// Helper function to log stored data (for debugging)
+function logStoredData() {
+    chrome.storage.local.get(null, (items) => {
+        console.log('[BG Debug] Current stored data:', items);
+    });
+}
+
+// Example: Call logStoredData on startup or other events if needed for debugging
+// chrome.runtime.onStartup.addListener(() => {
+//     logStoredData(); 
+// });
+
 // Listen for network requests to extract the Authorization token
 chrome.webRequest.onBeforeSendHeaders.addListener(
     (details) => {
@@ -175,7 +383,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
                 authToken = newAuthToken;
                 // Save to local storage for the alarm to use
                 chrome.storage.local.set({ authToken: authToken }, () => {
-                    console.log("Authorization token extracted and stored.");
+                    // console.log("Authorization token extracted and stored.");
                 });
             }
         }
@@ -186,61 +394,3 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     },
     ["requestHeaders"]
 );
-
-// Listen for messages from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "requestSession" || request.action === "fetchSessions") { 
-        chrome.storage.local.get('authToken', (result) => {
-            const currentAuthToken = result.authToken || authToken; // Prefer stored token
-            if (!currentAuthToken) {
-                console.warn("[BG Popup Fetch] Auth token missing for session fetch.");
-                sendResponse({ error: "Authorization token not available" });
-                return; // Exit from chrome.storage.local.get callback
-            }
-
-            fetch("https://botc.app/backend/sessions", {
-                method: "GET",
-                headers: { "Authorization": currentAuthToken }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    // Attempt to parse error as JSON, otherwise use statusText
-                    return response.json().catch(() => null) // if error response isn't valid JSON
-                        .then(errorBody => {
-                            const errorMessage = errorBody ? (errorBody.message || JSON.stringify(errorBody)) : response.statusText;
-                            const detailedError = `API Error ${response.status}: ${errorMessage}`;
-                            console.error(`[BG Popup Fetch] ${detailedError}`);
-                            throw new Error(detailedError); // This will be caught by the .catch() below
-                        });
-                }
-                return response.json(); // If response.ok, parse and return JSON
-            })
-            .then(sessionsData => {
-                // Check if the API, despite a 200 OK, returned an error structure
-                if (sessionsData && typeof sessionsData.error !== 'undefined') {
-                    console.error("[BG Popup Fetch] API returned 200 OK but with an error payload:", sessionsData.error);
-                    sendResponse({ error: sessionsData.error });
-                } else {
-                    sendResponse({ sessions: sessionsData });
-                }
-            })
-            .catch(error => {
-                // Catches errors from fetch() network issues or the !response.ok block's throw
-                console.error("[BG Popup Fetch] Error fetching sessions for popup:", error.message);
-                sendResponse({ error: error.message || "Failed to fetch sessions due to an unknown server error." });
-            });
-        });
-        return true; // Crucial: Indicates that sendResponse will be called asynchronously
-    } else if (request.action === "getPlayerData") {
-        chrome.storage.local.get('playerData', (data) => {
-            if (chrome.runtime.lastError) {
-                sendResponse({ error: chrome.runtime.lastError.message });
-            } else {
-                sendResponse({ playerData: data.playerData || {} });
-            }
-        });
-        return true; // Keep the channel open for the asynchronous response
-    }
-    // Removed 'storeAuthToken' handler as it's unused
-    return false; // Default for synchronous messages or if no handler matches
-});

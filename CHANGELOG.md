@@ -5,12 +5,38 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 # BotC Player Tracker Extension - Changelog
 ---
 
-## [v1.1.2] - 2025-05-09
+## [v1.1.2] - 2025-05-12
 
 ### Fixed
 - Resolved `chrome.runtime.lastError: The message port closed before a response was received` by improving asynchronous handling and `sendResponse` calls in the background script's message listener for session fetching.
 - Fixed `TypeError: updateOnlineFavoritesListFunc not found` by correctly exposing the function from `popup.js` to `sessionManager.js` via the `window` object.
 - Addressed `TypeError: Cannot read properties of null (reading 'style')` (and related `getElementById` returning `null` issues) by resolving conflicts related to multiple script executions or DOM access timing within `popup.js`, ensuring reliable UI element initialization.
+
+### Added
+- **Enhanced Session Highlighting:**
+  - Sessions in the popup list are now highlighted with a distinct blue glow if they match the game currently open in the active `botc.app/play` tab (based on storyteller ID match from live game data).
+  - Sessions where the logged-in user is a participant (based on backend session data) continue to be highlighted with an orange glow.
+  - If a session meets both criteria (current tab's game AND user is a participant), it will display a combined visual highlight (blue outer glow with an orange inner glow).
+  - Added corresponding CSS variables for these highlights, including theme-appropriate adjustments for dark mode.
+
+### Changed
+- **UI Enhancements - Session View:**
+    - Replaced the "Add Player" text button on player cards within sessions with an SVG icon for a cleaner interface.
+    - Changed the "Show players" and "Hide players" text for session player lists to ▼ and ▲ arrow icons respectively, providing a more intuitive expand/collapse experience.
+- **UI Enhancements - User Management & General:**
+    - Normalized the appearance and size of action buttons (Favorite, Edit, History, Refresh Username, Delete) in the 'Known Players' list for better visual consistency.
+    - Ensured the "Add Player Manually" button aligns with the updated button styling.
+    - Adjusted styling for various buttons to use consistent padding, icon sizing, and hover effects across the extension.
+- **Modal Theming**: Updated modal CSS to correctly use theme variables, ensuring proper display in both light and dark modes.
+- **Active Session Highlighting**: Sessions where the logged-in user is participating (present in `usersAll`) are now prioritized:
+    - These sessions are sorted to appear at the top of the session list.
+    - The session card header receives a "glow" effect for visual distinction.
+    - This involved updating JWT parsing in `popup.js` (already present), modifying `sessionManager.js` for sorting and class application based on `usersAll`, and updating `popup.css` for the glow effect.
+- **Session Sorting**: Refined session list sorting logic. Sessions where the logged-in user is participating (`active-user-session`) are now given higher priority than sessions matching the current game tab (`current-tab-game-session`). Both are prioritized over other sessions, which are sorted by creation date.
+- **Username Handling**: Implemented a fallback mechanism to fetch usernames directly via the user API (`/backend/user/{id}`) if the username is missing from the primary session API data (`/api/session`). This improves robustness in displaying player names.
+
+### Internal
+- **Code Cleanup**: Removed numerous debug `console.log` statements across various files (`popup.js`, `sessionManager.js`, `userManager.js`, `background.js`, `play_page_observer.js`, `modal.js`) to improve performance and reduce console noise.
 
 ## [v1.1.1] - 2025-05-09
 

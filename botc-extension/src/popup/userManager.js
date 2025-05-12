@@ -492,7 +492,7 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
         deleteButton.addEventListener('click', (e) => {
             e.stopPropagation();
             deletePlayer(id, () => { // Pass the refreshCallback to the version of deletePlayer that accepts it.
-                console.log("Player deleted, attempting to refresh list after modal confirmation.");
+                // console.log("Player deleted, attempting to refresh list after modal confirmation.");
                 if (typeof refreshCallback === 'function') {
                     refreshCallback();
                 }
@@ -550,7 +550,7 @@ function addPlayer(id, name, score, notes, isFavorite, updateUICallback) {
 
         // If updating, check if name changed and update history
         if (isUpdate && playerData[id].name !== name) {
-            console.log(`Updating name for ${id}: "${playerData[id].name}" -> "${name}"`);
+            // console.log(`Updating name for ${id}: "${playerData[id].name}" -> "${name}"`);
             usernameHistory.unshift({ username: playerData[id].name, timestamp: Date.now() });
             // Limit history size if needed (e.g., keep last 10)
             if (usernameHistory.length > 10) {
@@ -574,7 +574,7 @@ function addPlayer(id, name, score, notes, isFavorite, updateUICallback) {
         };
 
         savePlayerData(playerData, () => {
-            console.log('Player data saved:', playerData);
+            // console.log('Player data saved:', playerData);
             // Pass the updated data for this specific player to the callback
             if (updateUICallback && typeof updateUICallback === 'function') {
                 // Ensure the callback receives the full updated player data, including isFavorite
@@ -794,7 +794,7 @@ function toggleFavoriteStatus(playerId, buttonElement, playerObject) {
                 // Optionally, revert UI change if save failed, though this can be complex
                 return;
             }
-            console.log(`Player ${playerId} favorite status saved: ${playerData[playerId].isFavorite}`);
+            // console.log(`Player ${playerId} favorite status saved: ${playerData[playerId].isFavorite}`);
             // Update button text/appearance
             if (buttonElement) {
                 buttonElement.textContent = playerData[playerId].isFavorite ? '★ Unfavorite' : '☆ Favorite';
@@ -832,7 +832,7 @@ function deletePlayer(playerId, callback) {
                 delete playerData[playerId]; // Delete the player data
 
                 savePlayerData(playerData, () => {
-                    console.log(`[Delete Player] Player ${deletedPlayerName} deleted successfully.`);
+                    // console.log(`[Delete Player] Player ${deletedPlayerName} deleted successfully.`);
                     ModalManager.showNotification('Success', `Player ${deletedPlayerName} deleted.`, 500);
                     if (callback) callback(true, playerId, "Player deleted."); 
                 });
@@ -934,7 +934,7 @@ function updateUsernameHistory(playerObject, oldUsername) {
         // Add the *previous* name to history only if it's not already the latest entry
         if (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase()) {
             playerObject.usernameHistory.unshift({ username: oldUsername, timestamp: Date.now() });
-            console.log(`[Username History] Added '${oldUsername}' to history for player ${playerObject.id}. New name: '${newUsername}'.`);
+            // console.log(`[Username History] Added '${oldUsername}' to history for player ${playerObject.id}. New name: '${newUsername}'.`);
             return true; // Indicates history was updated
         }
     }
