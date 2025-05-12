@@ -42,6 +42,8 @@
     --danger-button-hover-bg: #c82333;
     --danger-button-border: var(--danger-button-bg);
     --danger-button-hover-border: var(--danger-button-hover-bg);
+    --active-user-glow-color: rgba(255, 165, 0, 0.7);
+    --current-tab-glow-color: rgba(0, 123, 255, 0.6);
 }
 
 /* Dark Mode Variables */
@@ -88,6 +90,8 @@ body.dark-mode {
     --danger-button-hover-bg: #a71313; /* Darker shade of danger red */
     --danger-button-border: var(--danger-button-bg);
     --danger-button-hover-border: var(--danger-button-hover-bg);
+    --active-user-glow-color: rgba(255, 193, 7, 0.7); /* Brighter Orange/Amber for dark mode */
+    --current-tab-glow-color: rgba(138, 180, 248, 0.7); /* Lighter/brighter Blue for dark mode (opacity increased slightly) */
 }
 
 body {
@@ -1297,18 +1301,28 @@ body.dark-mode .score-bad {
 /* Apply glow to the entire active session container */
 .session-container.active-user-session {
     /* Glow effect */
-    box-shadow: 0 0 12px 3px var(--link-color); 
+    box-shadow: 0 0 12px 3px var(--active-user-glow-color); 
     /* Ensure the container has a border-radius if it doesn't inherit one that looks good with a glow */
     border-radius: var(--border-radius); /* Or match .session-header's if different and preferred */
     position: relative; /* Good for stacking context if needed */
+    /* Adding a subtle border of the same color for definition */
+    border: 1px solid var(--active-user-glow-color);
     z-index: 1; /* Bring to front to ensure glow isn't clipped by subsequent non-active sessions */
     /* Add a little margin if containers are too close and glow gets cut off by next element */
     /* margin-bottom: 5px; */ /* Example: uncomment and adjust if needed */
 }
 
-/* Dark mode specific adjustment for glow on the container */
-body.dark-mode .session-container.active-user-session {
-    box-shadow: 0 0 12px 4px #00aeff; /* A bright blue glow for dark mode */
+.session-container.current-tab-game-session {
+    box-shadow: 0 0 10px 3px var(--current-tab-glow-color); /* Blue glow, variable for theming */
+    border: 1px solid var(--current-tab-glow-color); /* Blue border to match */
+}
+
+.session-container.current-tab-game-session.active-user-session {
+    /* Combine or prioritize glows. Example: Keep blue outer, orange inner, or make one dominant */
+    box-shadow: 0 0 10px 3px var(--current-tab-glow-color), /* Blue outer glow */
+                0 0 6px 2px var(--active-user-glow-color) inset; /* Orange inner glow */
+    /* Border could be one, or a mix, or prioritized. Let's use the 'current-tab' one as dominant. */
+    border-color: var(--current-tab-glow-color); 
 }
 
 /* Styles for the online status indicator for favorite players */
