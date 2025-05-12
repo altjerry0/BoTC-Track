@@ -33,7 +33,7 @@ jobs:
               exit;
             }
             found_section { print; }
-          ' changelog.md > RELEASE_NOTES.md
+          ' CHANGELOG.md > RELEASE_NOTES.md
 
       - name: Package extension
         run: |

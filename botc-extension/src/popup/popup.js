@@ -169,16 +169,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Load data if switching to user management tab
         if (tabId === 'userManagement') {
-            loadPlayerData(playerData => {
-                displayKnownPlayers(
-                    knownPlayersDiv, 
-                    searchInput.value.trim(), 
-                    playerData, 
-                    latestSessionData, 
-                    createUsernameHistoryModal,
-                    refreshUserManagementTab
-                );
-            });
+            // Call the async render function from userManager.js
+            // This function now handles loading data itself.
+            // No need to await if we don't need the result immediately.
+            renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
         }
     }
 
@@ -186,25 +180,29 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     /**
      * Fetches the set of currently online player IDs from the backend.
-     * @param {function(Set<string>)} callback - Receives a Set of online player IDs.
+     * @returns {Promise<Set<string>>} A promise that resolves with a Set of online player IDs.
      */
-    function fetchOnlinePlayerIds(callback) {
-        chrome.runtime.sendMessage({ action: "fetchSessions" }, (response) => {
-            const onlineIds = new Set();
-            if (response && response.sessions && Array.isArray(response.sessions)) {
-                response.sessions.forEach(session => {
-                    if (session && session.usersAll && Array.isArray(session.usersAll)) {
-                        session.usersAll.forEach(user => { 
-                            if (user && user.id) {
-                                onlineIds.add(user.id.toString()); 
-                            }
-                        });
-                    }
-                });
-            } else {
-                console.warn("No sessions found or invalid format when fetching online IDs.", response);
-            }
-            callback(onlineIds);
+    async function fetchOnlinePlayerIds() {
+        return new Promise((resolve) => {
+            // Use sendMessagePromise for built-in error handling
+            sendMessagePromise({ action: "fetchSessions" }).then(response => {
+                const onlineIds = new Set();
+                if (response && response.sessions && Array.isArray(response.sessions)) {
+                    response.sessions.forEach(session => {
+                        if (session && session.usersAll && Array.isArray(session.usersAll)) {
+                            session.usersAll.forEach(user => {
+                                if (user && user.id) {
+                                    onlineIds.add(user.id.toString());
+                                }
+                            });
+                        }
+                    });
+                }
+                resolve(onlineIds); // Resolve with the Set
+            }).catch(error => {
+                console.error("Error fetching online player IDs:", error);
+                resolve(new Set()); // Resolve with an empty set on error
+            });
         });
     }
 
@@ -267,6 +265,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Expose functions globally if needed by other scripts
     window.updateOnlineFavoritesListFunc = updateOnlineFavoritesList;
     window.refreshUserManagementTab = refreshUserManagementTab; 
+    window.fetchOnlinePlayerIds = fetchOnlinePlayerIds;
 
     /**
      * Refreshes the content of the User Management tab.
@@ -276,26 +275,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('User list container not found for refresh.');
             return;
         }
-        knownPlayersDiv.innerHTML = '<p class="loading-message">Loading player data...</p>'; 
-
-        if (typeof window.loadPlayerData === 'function' && typeof window.displayKnownPlayers === 'function') {
-            fetchOnlinePlayerIds(onlinePlayerIds => {
-                window.loadPlayerData((playerData) => {
-                    window.displayKnownPlayers(
-                        knownPlayersDiv,
-                        searchInput.value.trim(), 
-                        playerData,
-                        latestSessionData, 
-                        createUsernameHistoryModal, 
-                        refreshUserManagementTab
-                    );
-                });
-            });
-       
-        } else {
-            console.error('Required functions (loadPlayerData or displayKnownPlayers) not found on window.');
-            knownPlayersDiv.innerHTML = '<p class="error-message">Error loading player management functions.</p>';
-        }
+        // Call the async render function from userManager.js
+        // This function now handles loading data and displaying.
+        // No need to await if we don't need the result immediately.
+        renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
     }
 
     // Function to refresh the session display
@@ -365,6 +348,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
+    // Search Input Listener (User Management Tab)
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            // Clear the previous timeout if there is one
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            // Set a new timeout to call renderKnownPlayers after 300ms
+            searchTimeout = setTimeout(() => {
+                // Check if the user management tab is currently active before re-rendering
+                if (document.getElementById('userManagement').classList.contains('active')) {
+                    renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+                }
+            }, 300); // Debounce time: 300ms
+        });
+    } else {
+        console.warn('Search input element not found.');
+    }
+
     fetchButton.addEventListener('click', async () => {
         if (sessionListDiv) {
             sessionListDiv.innerHTML = '<p class="loading-message">Fetching sessions...</p>';
@@ -405,23 +407,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            loadPlayerData(playerData => {
-                displayKnownPlayers(
-                    knownPlayersDiv, 
-                    searchTerm, 
-                    playerData, 
-                    latestSessionData, 
-                    createUsernameHistoryModal, 
-                    refreshUserManagementTab
-                );
-            });
-        }, 300);
-    });
-
     // Add Player Manually Button (Handles both Add and Update via window.addPlayer)
     if (addPlayerButton) {
         addPlayerButton.innerHTML = '<img src="../icons/addbutton.svg" alt="Add Player" class="button-icon" /> Add';
@@ -434,30 +419,72 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            const modalTitle = 'Add New Player';
-            const modalBodyHtml = `
-                <div>
-                    <label for="modalPlayerId">Player ID (required):</label>
-                    <input type="text" id="modalPlayerId" name="modalPlayerId">
-                </div>
-                <div>
-                    <label for="modalPlayerName">Name:</label>
-                    <input type="text" id="modalPlayerName" name="modalPlayerName">
-                </div>
-                <div>
-                    <label for="modalPlayerScore">Score (1-5, optional):</label>
-                    <input type="number" id="modalPlayerScore" name="modalPlayerScore" min="1" max="5">
-                </div>
-                <div>
-                    <label for="modalPlayerNotes">Notes (optional):</label>
-                    <textarea id="modalPlayerNotes" name="modalPlayerNotes" rows="3"></textarea>
-                </div>
-            `;
+            const modalTitle = 'Add New Player Manually';
 
-            ModalManager.showModal(modalTitle, modalBodyHtml, [
+            // Create modal body using DOM manipulation
+            const modalBodyContent = document.createElement('div');
+            modalBodyContent.classList.add('modal-add-player-form');
+
+            // Player ID Input
+            const idDiv = document.createElement('div');
+            const idLabel = document.createElement('label');
+            idLabel.htmlFor = 'modalPlayerId';
+            idLabel.textContent = 'Player ID:';
+            const idInput = document.createElement('input');
+            idInput.type = 'text';
+            idInput.id = 'modalPlayerId';
+            idInput.name = 'modalPlayerId'; // Keep name for potential form handling
+            idInput.required = true;
+            idDiv.appendChild(idLabel);
+            idDiv.appendChild(idInput);
+            modalBodyContent.appendChild(idDiv);
+
+            // Player Name Input
+            const nameDiv = document.createElement('div');
+            const nameLabel = document.createElement('label');
+            nameLabel.htmlFor = 'modalPlayerName';
+            nameLabel.textContent = 'Name:';
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.id = 'modalPlayerName';
+            nameInput.name = 'modalPlayerName';
+            nameDiv.appendChild(nameLabel);
+            nameDiv.appendChild(nameInput);
+            modalBodyContent.appendChild(nameDiv);
+
+            // Score Input
+            const scoreDiv = document.createElement('div');
+            const scoreLabel = document.createElement('label');
+            scoreLabel.htmlFor = 'modalPlayerScore';
+            scoreLabel.textContent = 'Score (1-5, optional):';
+            const scoreInput = document.createElement('input');
+            scoreInput.type = 'number';
+            scoreInput.id = 'modalPlayerScore';
+            scoreInput.name = 'modalPlayerScore';
+            scoreInput.min = '1';
+            scoreInput.max = '5';
+            scoreDiv.appendChild(scoreLabel);
+            scoreDiv.appendChild(scoreInput);
+            modalBodyContent.appendChild(scoreDiv);
+
+            // Notes Input
+            const notesDiv = document.createElement('div');
+            const notesLabel = document.createElement('label');
+            notesLabel.htmlFor = 'modalPlayerNotes';
+            notesLabel.textContent = 'Notes (optional):';
+            const notesTextarea = document.createElement('textarea');
+            notesTextarea.id = 'modalPlayerNotes';
+            notesTextarea.name = 'modalPlayerNotes';
+            notesTextarea.rows = 3;
+            notesDiv.appendChild(notesLabel);
+            notesDiv.appendChild(notesTextarea);
+            modalBodyContent.appendChild(notesDiv);
+
+            // Show modal with the created DOM node
+            ModalManager.showModal(modalTitle, modalBodyContent, [
                 {
                     text: 'Cancel',
-                    className: 'modal-button-secondary'
+                    className: 'modal-button-secondary',
                 },
                 {
                     text: 'Add Player',

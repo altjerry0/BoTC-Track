@@ -51,15 +51,29 @@
     /**
      * Shows a generic modal.
      * @param {string} title - The title of the modal.
-     * @param {string} contentHtml - HTML string for the modal body.
+     * @param {string | Node} content - HTML string for the modal body OR a DOM Node/Fragment to append.
      * @param {Array<Object>} [buttonsConfig=[]] - Array of button configurations.
      *        Each object: { text: string, callback: function, className: string (e.g., 'modal-button-primary'), closesModal: boolean (default true) }
      */
-    function showModal(title, contentHtml, buttonsConfig = []) {
+    function showModal(title, content, buttonsConfig = []) {
         if (!initializeModalElements()) return; // Ensure initialized
 
         modalTitleElement.textContent = title;
-        modalBodyElement.innerHTML = contentHtml;
+        modalBodyElement.innerHTML = ''; // Clear previous content
+
+        if (content instanceof Node) {
+            // If content is a DOM Node or DocumentFragment, append it directly (safer)
+            modalBodyElement.appendChild(content);
+        } else if (typeof content === 'string') {
+            // WARNING: Caller is responsible for ensuring 'content' string is safe HTML.
+            // Avoid passing unsanitized user input directly here.
+            // Prefer constructing DOM nodes and passing the node instead where possible.
+            modalBodyElement.innerHTML = content;
+        } else {
+            console.error("[Modal] Invalid content type provided:", typeof content);
+            modalBodyElement.textContent = "Error: Invalid content provided.";
+        }
+
         modalActionsElement.innerHTML = ''; // Clear previous buttons
 
         buttonsConfig.forEach(btnConfig => {

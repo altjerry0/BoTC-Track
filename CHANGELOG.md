@@ -5,6 +5,15 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 # BotC Player Tracker Extension - Changelog
 ---
 
+## [v1.1.3] - 2025-05-12
+
+### Fixed
+- Corrected an issue where editing a player's details in the 'Manage Users' tab would incorrectly mark them as a favorite.
+- Refactored player data loading and saving (`loadPlayerData`, `savePlayerData`, and related functions) to use Promises and `async/await`, resolving issues where the UI wouldn't refresh correctly after changes without manual reloads.
+- Fixed a bug where the 'Manage Users' tab would appear blank after the async refactor due to incorrect function calls.
+- Restored the 'Online' status indicator for players in the 'Manage Users' tab, ensuring it correctly reflects players currently in active game sessions.
+- Fixed the search functionality within the 'Manage Users' tab.
+
 ## [v1.1.2] - 2025-05-12
 
 ### Fixed

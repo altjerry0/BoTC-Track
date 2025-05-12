@@ -205,19 +205,44 @@ function createPlayerCard(
         const currentNotes = knownPlayer ? (knownPlayer.notes || '') : '';
 
         const modalTitle = `Update Player: ${user.name || `ID: ${user.id}`}`;
-        const modalBodyHtml = `
-            <p>Update details for <strong>${user.name || `ID: ${user.id}`}</strong>. This will add them to your known players list if they aren't already, or update their existing record.</p>
-            <div>
-                <label for="modalSessionPlayerScore">Score (1-5, optional):</label>
-                <input type="number" id="modalSessionPlayerScore" value="${currentScore}" min="1" max="5">
-            </div>
-            <div>
-                <label for="modalSessionPlayerNotes">Notes (optional):</label>
-                <textarea id="modalSessionPlayerNotes" rows="3">${currentNotes}</textarea>
-            </div>
-        `;
 
-        ModalManager.showModal(modalTitle, modalBodyHtml, [
+        // Create modal body using DOM manipulation
+        const modalBodyContent = document.createElement('div');
+
+        const infoParagraph = document.createElement('p');
+        infoParagraph.innerHTML = `Update details for <strong>${user.name || `ID: ${user.id}`}</strong>. This will add them to your known players list if they aren't already, or update their existing record.`; // InnerHTML ok here as WE control the structure
+        modalBodyContent.appendChild(infoParagraph);
+
+        // Score Input
+        const scoreDiv = document.createElement('div');
+        const scoreLabel = document.createElement('label');
+        scoreLabel.htmlFor = 'modalSessionPlayerScore';
+        scoreLabel.textContent = 'Score (1-5, optional):';
+        const scoreInput = document.createElement('input');
+        scoreInput.type = 'number';
+        scoreInput.id = 'modalSessionPlayerScore';
+        scoreInput.value = currentScore;
+        scoreInput.min = '1';
+        scoreInput.max = '5';
+        scoreDiv.appendChild(scoreLabel);
+        scoreDiv.appendChild(scoreInput);
+        modalBodyContent.appendChild(scoreDiv);
+
+        // Notes Input
+        const notesDiv = document.createElement('div');
+        const notesLabel = document.createElement('label');
+        notesLabel.htmlFor = 'modalSessionPlayerNotes';
+        notesLabel.textContent = 'Notes (optional):';
+        const notesTextarea = document.createElement('textarea');
+        notesTextarea.id = 'modalSessionPlayerNotes';
+        notesTextarea.rows = 3;
+        notesTextarea.textContent = currentNotes; // Use textContent for safety
+        notesDiv.appendChild(notesLabel);
+        notesDiv.appendChild(notesTextarea);
+        modalBodyContent.appendChild(notesDiv);
+
+        // Show the modal with the created DOM element
+        ModalManager.showModal(modalTitle, modalBodyContent, [
             {
                 text: 'Cancel',
                 className: 'modal-button-secondary'
