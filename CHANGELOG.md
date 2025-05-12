@@ -4,6 +4,20 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 
 # BotC Player Tracker Extension - Changelog
 ---
+## [v1.1.4] - YYYY-MM-DD
+
+### Added
+
+- 
+
+### Changed
+
+- 
+
+### Fixed
+
+- 
+
 ## [v1.1.3a] - 2025-05-12
 
 ### Fixed
