@@ -7,7 +7,28 @@ let currentFilterOptions = { officialOnly: false };
 document.addEventListener('DOMContentLoaded', async function() {
     // Assign core utility functions to window object IMMEDIATELY
     // so they are available even if subsequent async operations fail.
-    window.sendMessagePromise = sendMessagePromise;
+    window.sendMessagePromise = (message) => {
+        return new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage(message, (response) => {
+                if (chrome.runtime.lastError) {
+                    // Don't reject if the error is expected (like popup closed before response)
+                    // but log it as a warning.
+                    if (chrome.runtime.lastError.message.includes("Extension context invalidated") ||
+                        chrome.runtime.lastError.message.includes("Could not establish connection") || 
+                        chrome.runtime.lastError.message.includes("message port closed")) {
+                         console.warn(`sendMessagePromise: Ignoring expected error - ${chrome.runtime.lastError.message}`);
+                         // Resolve indicating potential issue but not a hard error
+                         resolve({ error: chrome.runtime.lastError.message, potentiallyClosed: true }); 
+                    } else {
+                        console.error("sendMessagePromise Runtime Error:", chrome.runtime.lastError.message);
+                        reject(chrome.runtime.lastError);
+                    }
+                } else {
+                    resolve(response);
+                }
+            });
+        });
+    };
     window.parseJwt = parseJwt;
 
     // Button and Controls References
@@ -68,19 +89,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // --- Helper to promisify chrome.runtime.sendMessage ---
-    function sendMessagePromise(message) {
-        return new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage(message, (response) => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else {
-                    resolve(response);
-                }
-            });
-        });
-    }
-
     // --- Dark Mode Functionality ---
     function setDarkMode(isDark) {
         if (isDark) {
@@ -110,12 +118,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // Fetch Auth Token and parse User ID
-        console.log('[Popup Init] Requesting Auth Token...');
+        // console.log('[Popup Init] Requesting Auth Token...');
         const tokenResponse = await sendMessagePromise({ type: 'GET_AUTH_TOKEN' });
         if (tokenResponse && tokenResponse.token) {
-            console.log('[Popup Init] Auth Token received.');
+            // console.log('[Popup Init] Auth Token received.');
             window.currentUserID = parseJwt(tokenResponse.token);
-            console.log('[Popup Init] Parsed User ID:', window.currentUserID);
+            // console.log('[Popup Init] Parsed User ID:', window.currentUserID);
         } else {
             console.warn('[Popup Init] No Auth Token received from background.');
             window.currentUserID = null;
@@ -206,7 +214,7 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @param {Object} onlinePlayersMap - Object of online player IDs to their session names.
      */
     function updateOnlineFavoritesList(playerData, onlinePlayersMap) {
-        console.log('[Popup] onlinePlayersMap received (should be object):', onlinePlayersMap, 'Is Map?', onlinePlayersMap instanceof Map); 
+        // console.log('[Popup] onlinePlayersMap received (should be object):', onlinePlayersMap, 'Is Map?', onlinePlayersMap instanceof Map); 
         const favoritesListDiv = document.getElementById('onlineFavoritesList');
         const favoritesCountSpan = document.getElementById('onlineFavoritesCount');
 
@@ -292,7 +300,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Function to refresh the session display
     async function refreshDisplayedSessions() {
-        console.log('[Popup] Refreshing displayed sessions...');
+        // console.log('[Popup] Refreshing displayed sessions...');
         if (loadingIndicator) loadingIndicator.style.display = 'block';
         if (sessionListDiv) sessionListDiv.innerHTML = ''; // Clear previous sessions
         if (fetchStatsSpan) fetchStatsSpan.textContent = ''; // Clear previous stats
@@ -309,7 +317,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             try {
                 const playerDataResponse = await sendMessagePromise({ type: 'GET_PLAYER_DATA' });
                 window.playerData = (playerDataResponse && playerDataResponse.playerData) ? playerDataResponse.playerData : {};
-                console.log('[Popup] Fallback playerData load completed during refresh.');
+                // console.log('[Popup] Fallback playerData load completed during refresh.');
             } catch (err) {
                 console.error('[Popup] Error during fallback playerData load:', err);
                 window.playerData = {}; // Ensure it's at least an empty object
@@ -330,7 +338,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         console.error("[Popup] Error reported by fetchAndDisplaySessions:", error);
                         if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>Failed to display sessions: ${error}</p>`;
                     } else {
-                        console.log("[Popup] Sessions displayed/updated.");
+                        // console.log("[Popup] Sessions displayed/updated.");
                         latestSessionData = sessions; // Store the latest session data
                         // After sessions are rendered, update the user management tab if it's active
                         // This ensures player statuses (e.g., online) are current
@@ -613,7 +621,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add listener for live game info updates from background script
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.type === 'LIVE_GAME_INFO_UPDATED') {
-            console.log('[Popup] Received LIVE_GAME_INFO_UPDATED:', JSON.stringify(request.payload, null, 2));
+            // console.log('[Popup] Received LIVE_GAME_INFO_UPDATED:', JSON.stringify(request.payload, null, 2));
             const oldLiveGameInfoString = JSON.stringify(window.liveGameInfo);
             window.liveGameInfo = request.payload;
             const newLiveGameInfoString = JSON.stringify(window.liveGameInfo);

@@ -5,8 +5,8 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 ## Features to Implement
 
 - [x] **Investigate Player Not Found**: Debug logs indicate instances where players are not found in player data during session history updates. This may require further investigation into player data management and synchronization, especially with WebSocket updates.
-- [ ] **Refine UI for Current Game Players (Post-MVP)**: Once WebSocket interception is stable and core logic is robust, revisit displaying players from the *current* live game in a dedicated UI section in the popup (feature was previously on 'current-game-sockets' branch and removed for MVP focus).
-    - Consider how to differentiate these from players in fetched historical/recent sessions.
+- [x] **Refine UI for Current Game Players (Post-MVP)**: Addressed by implementing distinct visual highlighting for the session matching the current `botc.app/play` tab (blue glow) and sessions the user is participating in (orange glow). This provides clear differentiation directly within the existing session list. ~~Once WebSocket interception is stable and core logic is robust, revisit displaying players from the *current* live game in a dedicated UI section in the popup (feature was previously on 'current-game-sockets' branch and removed for MVP focus).~~
+    ~~- Consider how to differentiate these from players in fetched historical/recent sessions.~~
 - [x] **Refine Dark Mode Styling**: Improve the visual appearance and consistency of dark mode across all extension components.
 - [x] **Replace `prompt()`** pop-ups in player management (add/edit) with a user-friendly modal dialog.
 

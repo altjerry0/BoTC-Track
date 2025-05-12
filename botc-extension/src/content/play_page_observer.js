@@ -1,5 +1,5 @@
 // Content script injected into https://botc.app/play/* to observe game state
-console.log('[BotC Tracker - ECG] Play Page Observer Loaded');
+// console.log('[BotC Tracker - ECG] Play Page Observer Loaded');
 
 // Debounce function to limit the rate of DOM scan calls
 function debounce(func, wait) {
@@ -47,7 +47,7 @@ function safeSendMessage(message) {
 
 // Function to scan the DOM for player and storyteller IDs
 function scanPlayPageForGameInfo() {
-    console.log('[BotC Tracker - ECG] Scanning Play Page DOM...');
+    // console.log('[BotC Tracker - ECG] Scanning Play Page DOM...');
     const playerIds = new Set();
     let storytellerId = null;
 
@@ -80,12 +80,12 @@ function scanPlayPageForGameInfo() {
 
     // Only send message if we found any players or a storyteller
     if (gameInfo.playerIds.length > 0 || gameInfo.storytellerId) {
-         console.log('[BotC Tracker - ECG] Found Game Info:', gameInfo);
-         safeSendMessage({ type: 'CURRENT_GAME_INFO', payload: gameInfo });
+        // console.log('[BotC Tracker - ECG] Found Game Info:', gameInfo);
+        safeSendMessage({ type: 'CURRENT_GAME_INFO', payload: gameInfo });
     } else {
-        console.log('[BotC Tracker - ECG] No player/storyteller IDs found in DOM.');
-         // Send null if no game is detected (e.g., user left the game)
-         safeSendMessage({ type: 'CURRENT_GAME_INFO', payload: null });
+        // console.log('[BotC Tracker - ECG] No player/storyteller IDs found in DOM.');
+        // Send null if no game is detected (e.g., user left the game)
+        safeSendMessage({ type: 'CURRENT_GAME_INFO', payload: null });
     }
 }
 
@@ -109,21 +109,21 @@ if (targetNode) {
         for(const mutation of mutationsList) {
             // Check if a class attribute changed, or if nodes were added/removed
             if (mutation.type === 'childList' || (mutation.type === 'attributes' && mutation.attributeName === 'class')) {
-                 // Check if the change involves elements likely related to players/storyteller
-                 // This is a heuristic; refine if needed
-                 const targetElement = mutation.target;
-                 if (targetElement && typeof targetElement.matches === 'function' && 
-                     (targetElement.matches('.player, .storyteller, .player *, .storyteller *') || 
-                      (mutation.addedNodes && Array.from(mutation.addedNodes).some(node => node.nodeType === 1 && (node.matches('.player, .storyteller') || node.querySelector('.player, .storyteller')))) ||
-                      (mutation.removedNodes && Array.from(mutation.removedNodes).some(node => node.nodeType === 1 && (node.matches('.player, .storyteller') || node.querySelector('.player, .storyteller'))))
-                     )) {
+                // Check if the change involves elements likely related to players/storyteller
+                // This is a heuristic; refine if needed
+                const targetElement = mutation.target;
+                if (targetElement && typeof targetElement.matches === 'function' && 
+                    (targetElement.matches('.player, .storyteller, .player *, .storyteller *') || 
+                     (mutation.addedNodes && Array.from(mutation.addedNodes).some(node => node.nodeType === 1 && (node.matches('.player, .storyteller') || node.querySelector('.player, .storyteller')))) ||
+                     (mutation.removedNodes && Array.from(mutation.removedNodes).some(node => node.nodeType === 1 && (node.matches('.player, .storyteller') || node.querySelector('.player, .storyteller'))))
+                    )) {
                     relevantChangeDetected = true;
                     break; // No need to check further mutations in this batch
-                 }
+                }
             }
         }
         if (relevantChangeDetected) {
-            console.log('[BotC Tracker - ECG] Relevant DOM mutation detected.');
+            // console.log('[BotC Tracker - ECG] Relevant DOM mutation detected.');
             debouncedScan(); // Trigger a debounced scan
         }
     };
@@ -133,7 +133,7 @@ if (targetNode) {
 
     // Start observing the target node for configured mutations
     observer.observe(targetNode, config);
-    console.log('[BotC Tracker - ECG] MutationObserver started.');
+    // console.log('[BotC Tracker - ECG] MutationObserver started.');
 
     // Perform an initial scan when the script loads
     // Use a small delay to allow the page to potentially finish initial rendering

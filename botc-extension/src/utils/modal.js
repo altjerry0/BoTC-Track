@@ -199,9 +199,9 @@
         modalCloseButton.focus(); 
 
         if (duration && duration > 0) {
-            console.log(`[ModalManager] Setting timeout to close notification in ${duration}ms`);
+            // console.log(`[ModalManager] Setting timeout to close notification in ${duration}ms`);
             setTimeout(() => {
-                console.log('[ModalManager] Timeout fired, attempting to close notification modal.');
+                // console.log('[ModalManager] Timeout fired, attempting to close notification modal.');
                 // Check if the current modal is still the notification one before closing
                 // This is a bit tricky without more state, but for now, we'll assume it is.
                 // A more robust solution might involve an ID for the notification.

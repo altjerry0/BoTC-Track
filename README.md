@@ -1,4 +1,4 @@
-**Current Version (local):** `1.1.1(development)` | **Chrome Web Store Version:** `1.0.4` Pending `1.1.0`
+**Current Version (local):** `1.1.2` | **Chrome Web Store Version:** `1.1.0` Pending `1.1.2`
 ***
 
 # BotC Player Tracker Chrome Extension
@@ -59,6 +59,11 @@ This method allows you to install a specific version from GitHub, which might be
 ## Features
 
 *   **Session Tracking & Player Identification**: Fetches active `botc.app` game sessions and identifies players. Known players are highlighted within session details.
+*   **Enhanced Session Highlighting (Popup Interface)**:
+    *   **Current Tab Game**: Sessions matching the game currently open in your active `botc.app/play` tab are highlighted with a distinct blue glow. This helps quickly locate the session you're viewing or interacting with.
+    *   **User's Active Games**: Sessions where your logged-in user is a participant (based on backend data) are highlighted with an orange glow, making it easy to see your games. **These sessions are also sorted to appear at the very top of the list.**
+    *   **Combined Highlight**: If a session is both the current tab's game AND one you are participating in, it receives a combined visual cue (e.g., blue outer glow with an orange inner inset glow).
+    *   These highlights are theme-aware and adjust for dark mode.
 *   **Player Score Indicators**: Displays visual indicators (+ for scores 4-5, ● for score 3, - for scores 1-2) in each session header on the "Sessions" tab. These show an aggregate count of known players in that session categorized by their recorded scores, providing a quick summary of the perceived player quality in a game (e.g., "+2 ●1 -1").
 *   **Player Data Management**:
     *   **Rating & Notes**: Assign a 1-5 score and add private text notes to each player.

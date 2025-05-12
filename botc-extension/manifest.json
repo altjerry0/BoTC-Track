@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "BotC Tracker-ECG",
+  "name": "BotC Tracker",
   "version": "1.1.2",
   "description": "Track and rate players in Blood on the Clocktower games, with username history tracking and player analysis.",
   "permissions": [

@@ -291,7 +291,7 @@ function createPlayerCard(
  * @param {Function} createUsernameHistoryModal - Function to create the history modal.
  * @param {Function} updateOnlineFavoritesListFunc - Function to update the online favorites list UI.
  */
-function checkHistoryAndRender(
+async function checkHistoryAndRender(
     sessions,
     initialPlayerData,
     resultDiv,
@@ -300,25 +300,38 @@ function checkHistoryAndRender(
     createUsernameHistoryModalFunc,
     updateOnlineFavoritesListFunc
 ) {
-    console.log("[SM] checkHistoryAndRender called with sessions:", sessions, "and player data:", initialPlayerData);
-    console.log("[SM] Current window.liveGameInfo:", JSON.stringify(window.liveGameInfo, null, 2));
-    if (sessions && sessions.length > 0) {
-        console.log("[SM] Sessions available for rendering:");
-        sessions.forEach(s => {
-            const stId = (s.storytellers && s.storytellers.length > 0) ? s.storytellers[0].id : 'N/A';
-            console.log(`  - Session Name: ${s.name}, Storyteller ID: ${stId}`);
-        });
-    }
-
     let playerData = JSON.parse(JSON.stringify(initialPlayerData)); // Deep copy to avoid modifying the original
     let playerDataNeedsSave = false;
 
     // Update username and session history for known players
-    sessions.forEach(session => {
+    for (const session of sessions) {
         if (session.usersAll && Array.isArray(session.usersAll)) {
-            session.usersAll.forEach(userInSession => {
-                const userId = userInSession.id ? userInSession.id.toString() : null;
-                const userNameFromApi = userInSession.username ? userInSession.username.trim() : null;
+            for (const userInSession of session.usersAll) {
+                const userId = userInSession.id ? String(userInSession.id) : null;
+                let userNameFromApi = userInSession.username ? userInSession.username.trim() : null;
+
+                // --- Fallback: Fetch username if missing from session data ---
+                if (!userNameFromApi && userId) {
+                    console.warn(`[SM CheckHistory] Username missing for ID ${userId} in session '${session.name}'. Attempting API lookup.`);
+                    try {
+                        const lookupResponse = await window.sendMessagePromise({ 
+                            type: 'GET_USERNAME_BY_ID', 
+                            payload: { playerId: userId } 
+                        });
+
+                        if (lookupResponse && lookupResponse.username) {
+                            userNameFromApi = lookupResponse.username;
+                            console.log(`[SM CheckHistory] Successfully fetched username '${userNameFromApi}' for ID ${userId}.`);
+                        } else if (lookupResponse && lookupResponse.error) {
+                            console.error(`[SM CheckHistory] API lookup failed for ID ${userId}: ${lookupResponse.error}`);
+                        } else {
+                            console.error(`[SM CheckHistory] API lookup for ID ${userId} returned unexpected response:`, lookupResponse);
+                        }
+                    } catch (error) {
+                        console.error(`[SM CheckHistory] Error during sendMessagePromise for username lookup (ID: ${userId}):`, error);
+                    }
+                }
+                // --- End Fallback ---
 
                 if (userId && playerData[userId]) {
                     const player = playerData[userId];
@@ -351,37 +364,37 @@ function checkHistoryAndRender(
                         playerDataNeedsSave = true;
                     }
                 }
-            });
+            }
         }
-    });
+    }
 
-    // Sort sessions: current user's active game first, then by most recent
-    // Requires window.currentUserID to be set from popup.js
-    if (sessions && Array.isArray(sessions)) {
+    // Sort sessions: prioritize those where the current user is active
+    if (window.currentUserID) {
         sessions.sort((a, b) => {
-            // Highlight logic based on live game info from content script
-            const aIsActiveGame = window.liveGameInfo && 
-                                  window.liveGameInfo.playerIds && 
-                                  window.currentUserID &&
-                                  window.liveGameInfo.playerIds.includes(String(window.currentUserID)) &&
-                                  window.liveGameInfo.storytellerId && 
-                                  a.storytellers && 
-                                  a.storytellers.length > 0 &&
-                                  String(window.liveGameInfo.storytellerId) === String(a.storytellers[0].id);
+            const currentUserIdStr = String(window.currentUserID);
+            
+            // 1. Check if current user is a participant (using session.usersAll)
+            const aHasCurrentUser = a.usersAll && a.usersAll.some(user => String(user.id) === currentUserIdStr);
+            const bHasCurrentUser = b.usersAll && b.usersAll.some(user => String(user.id) === currentUserIdStr);
 
-            const bIsActiveGame = window.liveGameInfo && 
-                                  window.liveGameInfo.playerIds && 
-                                  window.currentUserID &&
-                                  window.liveGameInfo.playerIds.includes(String(window.currentUserID)) &&
-                                  window.liveGameInfo.storytellerId && 
-                                  b.storytellers && 
-                                  b.storytellers.length > 0 &&
-                                  String(window.liveGameInfo.storytellerId) === String(b.storytellers[0].id);
+            if (aHasCurrentUser && !bHasCurrentUser) return -1; // a comes first
+            if (!aHasCurrentUser && bHasCurrentUser) return 1;  // b comes first
 
-            if (aIsActiveGame && !bIsActiveGame) return -1;
-            if (!aIsActiveGame && bIsActiveGame) return 1;
+            // 2. If user participation is the same, check if it's the active tab's game (using liveGameInfo)
+            const aIsActiveTabGame = window.liveGameInfo && 
+                                      window.liveGameInfo.storytellerId && 
+                                      a.storytellers && a.storytellers.length > 0 && 
+                                      String(window.liveGameInfo.storytellerId) === String(a.storytellers[0].id);
 
-            // Fallback: Sort by creation timestamp (most recent first)
+            const bIsActiveTabGame = window.liveGameInfo && 
+                                      window.liveGameInfo.storytellerId && 
+                                      b.storytellers && b.storytellers.length > 0 && 
+                                      String(window.liveGameInfo.storytellerId) === String(b.storytellers[0].id);
+
+            if (aIsActiveTabGame && !bIsActiveTabGame) return -1; // a comes first
+            if (!aIsActiveTabGame && bIsActiveTabGame) return 1;  // b comes first
+
+            // 3. Fallback: Sort by creation timestamp (most recent first)
             const dateA = new Date(a.createdAt).getTime();
             const dateB = new Date(b.createdAt).getTime();
             return dateB - dateA; // Sort descending by time
@@ -407,8 +420,7 @@ function checkHistoryAndRender(
 
         // Now call the function from popup.js context if it exists
         if (typeof window.updateOnlineFavoritesListFunc === 'function') {
-            console.log('[SessionManager] onlinePlayersObject before passing:', onlinePlayersObject);
-            window.updateOnlineFavoritesListFunc(playerData, onlinePlayersObject);
+            updateOnlineFavoritesListFunc(playerData, onlinePlayersObject);
         } else {
             console.warn("updateOnlineFavoritesListFunc not found on window object. Is popup.js loaded and function exposed?");
         }
@@ -457,7 +469,6 @@ function renderSessions(
     addPlayerFunc,
     createUsernameHistoryModalFunc
 ) {
-    console.log("[SM] renderSessions called. Options:", options, "Player Data:", playerData, "Sessions:", sessions);
     resultDiv.innerHTML = ''; // Clear previous results
 
     if (!sessions || sessions.length === 0) {
@@ -665,7 +676,6 @@ async function fetchAndDisplaySessions(
     options = {},
     onCompleteCallback = null
 ) {
-    console.log('[SM] fetchAndDisplaySessions called. Options:', JSON.stringify(options));
     resultDiv.innerHTML = '<div class="loading-sessions"><div class="spinner"></div> Fetching sessions...</div>';
 
     // Fetch the latest liveGameInfo from background script
@@ -681,7 +691,7 @@ async function fetchAndDisplaySessions(
     // Directly use window.playerData which should be populated by popup.js
     // Ensure it defaults to an empty object if window.playerData is null or undefined
     const currentPlayerData = window.playerData || {};
-    console.log('[SM] Using window.playerData in fetchAndDisplaySessions. Player count:', Object.keys(currentPlayerData).length);
+    // console.log('[SM] Using window.playerData in fetchAndDisplaySessions. Player count:', Object.keys(currentPlayerData).length);
     if (Object.keys(currentPlayerData).length === 0) {
         console.warn('[SM] window.playerData is empty or not yet populated when fetchAndDisplaySessions is called.');
         // popup.js should ensure window.playerData is populated before calling this.
@@ -721,7 +731,7 @@ async function fetchAndDisplaySessions(
         }
 
         const backendSessions = response.sessions;
-        console.log('[SM] Received sessions from background:', backendSessions.length);
+        // console.log('[SM] Received sessions from background:', backendSessions.length);
 
         // --- Sort sessions by game phase ---
         backendSessions.sort((a, b) => {
@@ -746,7 +756,7 @@ async function fetchAndDisplaySessions(
         const totalUniquePlayers = uniquePlayerIds.size;
         let knownPlayerCount = 0;
 
-        console.log('[SM] Stats: currentPlayerData type:', typeof currentPlayerData, 'Is null?', currentPlayerData === null, 'Keys available:', Object.keys(currentPlayerData).length);
+        // console.log('[SM] Stats: currentPlayerData type:', typeof currentPlayerData, 'Is null?', currentPlayerData === null, 'Keys available:', Object.keys(currentPlayerData).length);
         if (typeof currentPlayerData !== 'object' || currentPlayerData === null) {
             console.error('[SM] CRITICAL: currentPlayerData is NOT a valid object for stats calculation!', currentPlayerData);
         } else {

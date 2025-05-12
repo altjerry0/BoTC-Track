@@ -1,41 +1,43 @@
 // --- Message Listener from Content Script or Popup ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log(`[BG Message] Received message:`, request, `from sender:`, sender);
+    // console.log(`[BG Message] Received message:`, request, `from sender:`, sender);
 
     if (request.type === 'GET_AUTH_TOKEN') {
-        console.log('[BG Auth] Received request for auth token.');
+        // console.log('[BG Auth] Received request for auth token.');
         chrome.storage.local.get(['authToken'], (result) => {
             if (chrome.runtime.lastError) {
                 console.error('[BG Auth] Error retrieving auth token:', chrome.runtime.lastError);
                 sendResponse({ token: null, error: chrome.runtime.lastError.message });
             } else {
                 const token = result.authToken || null;
-                console.log('[BG Auth] Sending auth token:', token ? '********' : 'null'); // Mask token in log
+                // console.log('[BG Auth] Sending auth token:', token ? '********' : 'null'); // Mask token in log
                 sendResponse({ token: token });
             }
         });
         return true; // Crucial: Indicate async response
 
     } else if (request.type === 'GET_PLAYER_DATA') {
-        console.log('[BG PlayerData] Received request for player data.');
+        // console.log('[BG PlayerData] Received request for player data.');
         chrome.storage.local.get('playerData', (result) => {
             if (chrome.runtime.lastError) {
                 console.error('[BG PlayerData] Error fetching player data:', chrome.runtime.lastError);
                 sendResponse({ playerData: {}, error: chrome.runtime.lastError.message });
             } else {
+                // console.log('[BG PlayerData] Sending player data:', result.playerData ? Object.keys(result.playerData).length + ' players' : '{}');
                 sendResponse({ playerData: result.playerData || {} });
             }
         });
         return true; // Crucial: Indicate async response
 
     } else if (request.type === 'SAVE_PLAYER_DATA') {
+        // console.log('[BG Save] Received request to save player data.');
         if (request.payload) {
             chrome.storage.local.set({ playerData: request.payload }, () => {
-                console.log("[BG Save] Player data saved via popup request (type: SAVE_PLAYER_DATA).");
                 if (chrome.runtime.lastError) {
-                    console.error("[BG Save] Error saving player data:", chrome.runtime.lastError);
+                    console.error('[BG Save] Error saving player data:', chrome.runtime.lastError);
                     sendResponse({ success: false, error: chrome.runtime.lastError.message });
                 } else {
+                    // console.log("[BG Save] Player data saved via popup request (type: SAVE_PLAYER_DATA).");
                     sendResponse({ success: true });
                 }
             });
@@ -46,8 +48,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
 
     } else if (request.type === 'CURRENT_GAME_INFO') { // Handler for info from content script
+        // console.log('[BG Game Info] Received game info from content script:', request.payload);
         liveGameInfo = request.payload; // Update the stored game info
-        console.log('[BG Game Info] Received game info from content script:', liveGameInfo);
         // Notify popup (if open) that live game info has been updated
         chrome.runtime.sendMessage({ type: 'LIVE_GAME_INFO_UPDATED', payload: liveGameInfo }, response => {
             if (chrome.runtime.lastError) {
@@ -59,9 +61,46 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true; // Indicate async response
 
     } else if (request.type === 'GET_CURRENT_GAME_INFO') { // Handler for requests from popup
-        console.log('[BG Game Info] Popup requested live game info. Sending:', liveGameInfo);
+        // console.log('[BG Game Info] Popup requested live game info. Sending:', liveGameInfo);
         sendResponse({ gameInfo: liveGameInfo });
         // This one is synchronous, no need to return true
+
+    } else if (request.type === 'GET_USERNAME_BY_ID') {
+        const playerIdToLookup = request.payload.playerId;
+        if (!playerIdToLookup) {
+            sendResponse({ error: 'Player ID missing' });
+        } else {
+            chrome.storage.local.get('authToken', (result) => {
+                const authToken = result.authToken;
+                if (!authToken) {
+                    sendResponse({ error: 'Auth token not found for username lookup.' });
+                } else {
+                    fetch(`https://botc.app/backend/user/${playerIdToLookup}`, {
+                        headers: { 'Authorization': authToken }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().catch(() => ({ message: response.statusText })).then(errorData => {
+                                throw new Error(`API error fetching username (${response.status}): ${errorData.message || response.statusText}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const username = data && data.user ? data.user.username : null;
+                        if (!username) {
+                            throw new Error(`Username not found in API response for ID ${playerIdToLookup}`);
+                        }
+                        sendResponse({ username: username });
+                    })
+                    .catch(error => {
+                        console.error(`[BG Lookup] Error fetching username for ID ${playerIdToLookup}:`, error);
+                        sendResponse({ error: error.message });
+                    });
+                }
+            });
+            return true; // Indicate async response
+        }
 
     } else if (request.action) { // Fallback to action-based handling for older messages or specific actions
         switch (request.action) {
@@ -112,7 +151,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             case "savePlayerData": // This is now handled by request.type === 'SAVE_PLAYER_DATA'
                 if (request.playerData) { // Note: older format used .playerData, new uses .payload
                     chrome.storage.local.set({ playerData: request.playerData }, () => {
-                        console.log("[BG Save] Player data saved via popup request (action: savePlayerData).");
+                        // console.log("[BG Save] Player data saved via popup request (action: savePlayerData).");
                         if (chrome.runtime.lastError) {
                             console.error("[BG Save] Error saving player data:", chrome.runtime.lastError);
                             sendResponse({ success: false, error: chrome.runtime.lastError.message });
@@ -138,6 +177,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ status: 'error', message: 'Unrecognized message format' });
     }
 });
+
+// Helper to get auth token as a promise
+function getAuthToken() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get('authToken', (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('[BG Auth Helper] Error getting auth token:', chrome.runtime.lastError.message);
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve(result.authToken);
+            }
+        });
+    });
+}
 
 // --- Alarms and Periodic Tasks ---
 chrome.runtime.onInstalled.addListener(() => {
@@ -330,7 +383,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
                 authToken = newAuthToken;
                 // Save to local storage for the alarm to use
                 chrome.storage.local.set({ authToken: authToken }, () => {
-                    console.log("Authorization token extracted and stored.");
+                    // console.log("Authorization token extracted and stored.");
                 });
             }
         }
