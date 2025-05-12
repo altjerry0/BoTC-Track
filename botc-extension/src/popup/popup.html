@@ -33,7 +33,14 @@
     <div id="content">
         <div class="header-controls">
             <h1>BotC Lobby and Player Tracker</h1>
-            <button id="open-in-tab-btn" title="Open full view in a new tab">↗️ Open in Tab</button>
+            <div>
+                <button id="open-in-tab-btn" title="Open full view in a new tab">↗️ Open in Tab</button>
+                <!-- Dark Mode Toggle directly in header -->
+                <label class="switch" title="Toggle Dark Mode" style="margin-left: 10px;"> <!-- Added some margin for spacing -->
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
         </div>
 
         <!-- Tab Navigation -->
@@ -52,10 +59,10 @@
                     <div class="filter-controls">
                         <label for="officialOnlyCheckbox">
                             <input type="checkbox" id="officialOnlyCheckbox">
-                            Official Only
+                            Official Games Only
                         </label>
-                        <span id="fetchStats" class="fetch-stats"></span> <!-- Added stats display area -->
                     </div>
+                    <span id="fetchStats" class="fetch-stats"></span> <!-- Ensure this is after the filter div -->
                 </div>
 
                 <!-- Online Favorites Section - Moved Here -->
@@ -81,6 +88,7 @@
                     <button id="import-players-button">Import Players (CSV)</button>
                     <input type="file" id="import-file-input" accept=".csv" style="display: none;" />
                     <div id="import-status" class="import-status-message" style="display: none; margin-left: 10px;"></div> <!-- For import feedback -->
+                    <button id="clear-all-player-data-button">Clear All Player Data</button> 
                 </div>
                 <div class="search-container">
                     <h2>Search Known Players</h2>
@@ -92,8 +100,24 @@
 
         </div> 
     </div>
+
     <script src="userManager.js"></script>
     <script src="sessionManager.js"></script>
+    <script src="csvManager.js"></script>
     <script src="popup.js"></script>
+    <script src="../utils/modal.js"></script>
+    <!-- Universal Modal Structure -->
+    <div id="universalModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close-button" id="modalCloseButton" title="Close">&times;</button>
+            <h2 id="modalTitle">Modal Title</h2>
+            <div id="modalBody">
+                <!-- Dynamic content will be injected here -->
+            </div>
+            <div id="modalActions" class="modal-actions">
+                <!-- Dynamic buttons will be injected here -->
+            </div>
+        </div>
+    </div>
 </body>
 </html>

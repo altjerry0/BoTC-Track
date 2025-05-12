@@ -1,4 +1,4 @@
-**Current Version (local):** `1.0.6` | **Chrome Web Store Version:** `1.0.1` Pending `1.0.4`
+**Current Version (local):** `1.1.4` | **Chrome Web Store Version:** `1.1.0` (Pending `1.1.3a` Review)
 ***
 
 # BotC Player Tracker Chrome Extension
@@ -11,7 +11,7 @@ Your player ratings, notes, and history are stored locally by this extension. If
 
 🛡️ **To keep your data safe or transfer it to another computer:**
 
-*   **ALWAYS use the "Export Players (CSV)" button** (found in the "Manage Users" tab) to save your data to a file **before** uninstalling or if you want a backup.
+*   **ALWAYS use the "Export Players (CSV)" button** (found in the "Manage Users" tab) to save your data to a file **before** uninstalling or if you want a backup. CSV filenames now include a datestamp and user count (e.g., `botc_player_data_YYYYMMDD_Xusers.csv`).
 *   You can use the "Import Players (CSV)" button to restore your data from a previously saved CSV file.
 
 Regularly exporting your data is a good habit!
@@ -19,48 +19,155 @@ Regularly exporting your data is a good habit!
 ## Table of Contents
 
 - [Installation](#installation)
-- [Usage Guidelines](#usage-guidelines)
 - [Features](#features)
+- [Usage Guidelines](#usage-guidelines)
+- [Project Structure](#project-structure)
+- [Developer Setup / Loading from Source](#developer-setup--loading-from-source)
+- [Release Workflow](#release-workflow)
 - [Screenshots](#screenshots)
 - [Future Improvements](#future-improvements)
 - [Known Issues](#current-status--known-issues)
 - [Contributing](#contributing)
-- [Project Structure](#project-structure)
-- [Developer Setup / Loading from Source](#developer-setup--loading-from-source)
-- [Release Workflow](#release-workflow)
 
 ## Installation
 
-The easiest way to install the BotC Player Tracker is by using the latest release ZIP file.
+**1. Install from the Chrome Web Store (Recommended)**
+
+*   The easiest way to install is directly from the Chrome Web Store:
+    *   **[BotC Player Tracker on Chrome Web Store](https://chromewebstore.google.com/detail/botc-tracker/ecmkmfkmljmneefknldphpdjlmgpdhkc?authuser=0&hl=en)**
+*   Click "Add to Chrome" and the extension will be installed automatically.
+*   Pin it to your toolbar for easy access.
+*   *Note: The version on the Chrome Web Store might occasionally be behind the latest version on GitHub due to Google's review process.* 
+
+**2. Install from GitHub Release (Manual Load)**
+
+This method allows you to install a specific version from GitHub, which might be newer than the one on the Chrome Web Store.
 
 1.  **Download the latest release:**
-    *   Go to the [Releases page](https://github.com/altjerry0/BoTC-Track/releases)
-    *   Download the `botc-tracker-vX.Y.Z.zip` file from the latest release.
-2.  **Unzip the file:** Extract the contents of the downloaded ZIP file to a folder on your computer. You should see a folder named `botc-extension` (or similar, containing `manifest.json`).
+    *   Go to the [Releases page](https://github.com/altjerry0/BoTC-Track/releases).
+    *   Download the `botc-tracker-vX.Y.Z.zip` file from the desired release.
+2.  **Unzip the file:** Extract the contents of the downloaded ZIP file to a folder on your computer. You should see a folder named `botc-extension` (or similar, containing `manifest.json` and an `src` folder).
 3.  **Load into Chrome:**
     *   Open Chrome and navigate to `chrome://extensions/`.
     *   Enable **Developer mode** by toggling the switch in the top right corner.
     *   Click on **Load unpacked**.
-    *   Select the folder you unzipped in step 2 (the one containing `manifest.json`).
-4.  The extension should now be loaded and ready to use! Pin it to your toolbar for easy access.
+    *   Select the `botc-extension` folder you unzipped in step 2 (the one containing `manifest.json`).
+4.  The extension should now be loaded. Pin it to your toolbar for easy access.
 
-(For developers looking to load from source, see the [Developer Setup / Loading from Source](#developer-setup--loading-from-source) section below.)
+(For developers looking to load directly from source code, see the [Developer Setup / Loading from Source](#developer-setup--loading-from-source) section below.)
 
 ## Features
 
-- **Session Tracking**: View active BotC game sessions and their details
-- **Player Rating**: Rate players on a 1-5 scale and add notes
-- **Username History**: Track username changes with timestamps
-- **Player Analysis**: See indicators of good/bad players in each session
-- **Player Search**: Search through current and historical usernames
-- **Game Info**: View game edition information (official/custom scripts)
-- **Storyteller Highlights**: Easily identify game storytellers
-- **Import/Export**: Save and load player data via CSV files.
-- **Online Favorites Display**: Lists favorite players who are currently active in any of the fetched game sessions, along with a count. (Recently fixed and improved)
-- **Improved Session Tracking**: Enhanced session tracking to use session names as unique identifiers and centralized history updates.
-- **General Bug Fixes**: Version 1.0.6 includes numerous fixes to improve stability, user experience, and data accuracy.
+*   **Session Tracking & Player Identification**: Fetches active `botc.app` game sessions and identifies players. Known players are highlighted within session details.
+*   **Enhanced Session Highlighting (Popup Interface)**:
+    *   **Current Tab Game**: Sessions matching the game currently open in your active `botc.app/play` tab are highlighted with a distinct blue glow. This helps quickly locate the session you're viewing or interacting with.
+    *   **User's Active Games**: Sessions where your logged-in user is a participant (based on backend data) are highlighted with an orange glow, making it easy to see your games. **These sessions are also sorted to appear at the very top of the list.**
+    *   **Combined Highlight**: If a session is both the current tab's game AND one you are participating in, it receives a combined visual cue (e.g., blue outer glow with an orange inner inset glow).
+    *   These highlights are theme-aware and adjust for dark mode.
+*   **Player Score Indicators**: Displays visual indicators (+ for scores 4-5, ● for score 3, - for scores 1-2) in each session header on the "Sessions" tab. These show an aggregate count of known players in that session categorized by their recorded scores, providing a quick summary of the perceived player quality in a game (e.g., "+2 ●1 -1").
+*   **Player Data Management**:
+    *   **Rating & Notes**: Assign a 1-5 score and add private text notes to each player.
+    *   **Favorite Players**: Mark players as favorites for quick identification.
+    *   **Manual Add/Edit**: Manually add new players or edit existing player details (score, notes).
+    *   **Refresh Player Name**: Update a player's name directly from `botc.app` via a button on their user card. Old names are saved to history.
+*   **Username History**: Tracks changes to player usernames over time, accessible via a history icon.
+*   **Comprehensive Online Status**: 
+    *   The "Manage Users" tab accurately indicates if a player (including storytellers and spectators) is 'online' by checking `session.usersAll` from fetched game data. Their current game session is also displayed.
+    *   For offline players, displays how long ago they were last active (e.g., "5 mins ago", "2 days ago").
+*   **Online Favorites Display**: The "Sessions" tab lists favorite players who are currently active in any fetched game sessions.
+*   **Background Data Synchronization**: 
+    *   Periodically fetches session data from `botc.app` (approx. every 2 minutes if an auth token is present).
+    *   Updates players' `lastSeenTimestamp`, `lastSeenSessionId`, and `sessionHistory`.
+    *   Detects and records player username changes during background syncs.
+*   **Data Import/Export (CSV)**: 
+    *   Save all player data (ID, name, score, notes, favorite status, histories) to a CSV file.
+    *   Exported filenames include a datestamp and user count (e.g., `botc_player_data_YYYYMMDD_Xusers.csv`).
+    *   Import player data from a previously saved CSV file.
+*   **Player Search**: Search players in the "Manage Users" tab by current/previous usernames, notes, or score.
+*   **Dark Mode**: A user-toggleable dark theme for the popup interface.
+
+## Usage Guidelines
+
+1.  **Initial Setup & Viewing Sessions**:
+    *   Navigate to `botc.app` and log in if necessary to ensure the extension can capture an auth token.
+    *   Click the extension icon to open the popup.
+    *   On the "Sessions" tab, click "Fetch Active Games". Active games will be listed.
+    *   Online favorite players will be summarized at the top of the "Sessions" tab.
+
+2.  **Managing Players ("Manage Users" Tab)**:
+    *   **View Players**: Lists all players encountered. Online players (from `usersAll` in any fetched session) are indicated.
+    *   **Search**: Use the search bar to filter players by name (current or historical), notes, userID, or score.
+    *   **Edit Player**: Click the pencil icon (✎) on a player card to modify their score or notes.
+    *   **Favorite Player**: Click the star icon (⭐) to toggle a player's favorite status.
+    *   **View Username History**: Click the clock icon (🕒) next to a player's name to see their username history.
+    *   **Refresh Player Name**: Click the refresh icon (🔄) on a player card to update their current username from `botc.app`.
+    *   **Delete Player**: Click the trash can icon (🗑️) to remove a player and their data (confirmation required).
+    *   **Add Player Manually**: Click the button with an add icon and "Add" text, then provide the Player ID, Name, Score (1-5), and Notes.
+
+3.  **Importing/Exporting Data ("Manage Users" Tab)**:
+    *   **Export**: Click the button with an outbox icon and "Export" text. A CSV file (e.g., `botc_player_data_YYYYMMDD_Xusers.csv`) will be downloaded.
+    *   **Import**: Click the button with an inbox icon and "Import" text, select your CSV file. Data will be merged/updated based on player IDs.
+
+## Project Structure
+
+```
+BoTC-Track (repository root)
+├── .github/
+│   └── workflows/
+│       └── release.yml      # GitHub Actions workflow for release packaging
+├── botc-extension/          # Contains the actual Chrome extension files
+│   ├── src/
+│   │   ├── background.js        # Background service worker (session fetching, alarms)
+│   │   ├── icons/               # Extension icons (icon16.png, icon32.png, etc.)
+│   │   └── popup/               # UI and logic for the popup
+│   │       ├── popup.html       # HTML structure
+│   │       ├── popup.js         # Main popup JavaScript (event handling, tab management)
+│   │       ├── popup.css        # Styles
+│   │       ├── userManager.js   # Module for player data CRUD, history, search
+│   │       ├── sessionManager.js# Module for fetching, processing, displaying session data
+│   │       └── csvManager.js    # Module for CSV import/export functionality
+│   ├── manifest.json            # Extension configuration and permissions
+│   └── rules.json               # DeclarativeNetRequest rules (if used for adblocking/modifying requests)
+├── .gitignore
+├── CHANGELOG.md
+├── README.md                # Main project README (this file)
+└── TODO.md
+```
+
+## Developer Setup / Loading from Source
+
+These instructions are for developers or users who want to load the extension directly from the source code.
+
+1.  **Clone the repository**: `git clone https://github.com/altjerry0/BoTC-Track.git`
+2.  Navigate to the project directory: `cd BoTC-Track`
+3.  **Open Chrome** and go to `chrome://extensions/`.
+4.  Enable **Developer mode** (top right toggle).
+5.  Click **Load unpacked**.
+6.  Select the `botc-extension` directory from the cloned project.
+7.  The extension should now be loaded. Pin it for easy access.
+
+## Release Workflow
+
+This project uses GitHub Actions to automate the creation of release ZIP files.
+
+1.  **Update Version**: Ensure the `"version"` in `botc-extension/manifest.json` is correct for the new release.
+2.  **Update CHANGELOG.md**: Finalize changes for the current version and set the release date.
+3.  **Commit Changes**: Commit the updated `manifest.json`, `CHANGELOG.md`, and any other code changes.
+    ```bash
+    git add botc-extension/manifest.json CHANGELOG.md
+    git commit -m "Prepare release vX.Y.Z"
+    git push
+    ```
+4.  **Tag the Release**: Create and push a Git tag matching the version (e.g., `vX.Y.Z`). This triggers the GitHub Action.
+    ```bash
+    git tag vX.Y.Z
+    git push origin vX.Y.Z
+    ```
+5.  The action will create a draft release on GitHub with the packaged `botc-tracker-vX.Y.Z.zip` file. Edit the release notes and publish.
 
 ## Screenshots
+
+*(Note: The following screenshots may be slightly outdated due to recent UI updates, particularly button styles. They will be updated in a future commit.)*
 
 Here's a glimpse of the extension in action:
 
@@ -73,122 +180,20 @@ Here's a glimpse of the extension in action:
 **Username History:**
 ![Username History](docs/botcrater-3.PNG)
 
-## Project Structure
-
-```
-botcraterdev
-├── .github
-│   └── workflows
-│       └── release.yml      # GitHub Actions workflow for release packaging
-├── botc-extension
-│   ├── src
-│   │   ├── background.js        # Background service worker
-│   │   └── popup
-│   │       ├── popup.html       # HTML structure for the popup interface
-│   │       ├── popup.js         # Main JavaScript logic for the popup
-│   │       ├── popup.css        # Styles for the popup interface
-│   │       ├── userManager.js   # Module for user data management (CRUD, history, search)
-│   │       └── sessionManager.js # Module for fetching and displaying session data
-│   ├── manifest.json            # Extension configuration
-│   ├── rules.json               # DeclarativeNetRequest rules
-│   ├── samplesessions.json      # Sample session data (for testing/dev)
-│   └── README.md                # This file (project documentation)
-├── .gitignore
-├── .gitattributes 
-└── README.md                # Main project README (this file)
-```
-
-## Code Organization
-
-The codebase is organized into modular components:
-
-- **User Management**: Handles player data, ratings, and username history tracking
-- **Session Management**: Processes session data and displays active games
-- **UI Components**: Creates dynamic interface elements for sessions and players
-
-## Usage Guidelines
-
-1. **View Active Sessions**:
-   - Navigate to botc.app
-   - Click the extension icon to open the popup
-   - Click "Fetch Active Games" on the "Sessions" tab.
-
-2. **Manage Players**:
-   - Click the "Manage Users" tab.
-   - View the list of known players.
-   - Use the search field to filter players by current/previous usernames, notes, or score.
-   - Click the edit icon (pencil) to update a player's score or notes.
-   - Click the delete icon (trash can) to remove a player.
-   - Click the star icon to toggle a player's favorite status.
-
-3. **Add/Update Players**:
-   - **From Session**: In the "Sessions" tab, expand a session's player list and click "Add Player".
-   - **Manually**: In the "Manage Users" tab, click "Add Player Manually" and provide ID, name, score, and notes.
-
-4. **View Username History**:
-   - In the "Manage Users" tab, click on the history icon (clock) next to a player's name (if available).
-
-5. **Import/Export Data**:
-   - In the "Manage Users" tab, use the "Export Players (CSV)" and "Import Players (CSV)" buttons.
-
 ## Future Improvements
 
-- **Security**: Better token storage and expiration handling
-- **Error Handling**: Improved retry logic and error boundaries
-- **Performance**: Replace polling with an event-based system
-- **Code Organization**: Further modularization and TypeScript integration
-- **UX Improvements**: Loading states and user feedback
-- **Testing**: Unit and integration tests
+- **Security**: Review and enhance token storage and handling if possible.
+- **Error Handling**: More robust error handling and user feedback for API issues or data corruption.
+- **Performance**: Optimize data processing, especially for users with very large player lists or session histories.
+- **Code Organization**: Continue to refine modularity. Consider TypeScript for improved type safety.
+- **UX Improvements**: Refine UI/UX for smoother navigation, clearer loading states, and more intuitive interactions.
+- **Testing**: Implement unit and integration tests for key functionalities.
 
 ## Current Status & Known Issues
 
-Several features are currently under development or require fixes:
-
-*   **Unique Session Tracking:** The logic to track the number of unique game sessions a player has participated in is incomplete and does not function correctly.
-*   **Favorite User Filtering:** The feature to filter the user list to show only favorited players needs to be implemented or fixed.
+*   **Unique Session Tracking**: The display or calculation of a player's unique session count might need review for accuracy under all conditions.
+*   **Data Sync on Multiple Devices**: Data is stored locally per browser. There's no automatic sync between different Chrome instances/profiles.
 
 ## Contributing
 
 Feel free to submit issues or pull requests for improvements or bug fixes.
-
-## Developer Setup / Loading from Source
-
-These instructions are for developers or users who want to load the extension directly from the source code instead of using a release ZIP.
-
-1. **Clone the repository** or download the project files.
-2. **Open Chrome** and navigate to `chrome://extensions/`.
-3. Enable **Developer mode** by toggling the switch in the top right corner.
-4. Click on **Load unpacked** and select the `botc-extension` directory (located inside the `botcraterdev` project root).
-5. The extension should now be loaded and ready for use.
-
-## Release Workflow
-
-This project uses GitHub Actions to automate the creation of release ZIP files.
-
-1.  **Update Version**: Before creating a release, update the `"version"` in `botc-extension/manifest.json`.
-2.  **Commit Changes**: Commit the updated `manifest.json` and any other code changes for the release.
-    ```bash
-    git add botc-extension/manifest.json
-    git commit -m "Prepare release vX.Y.Z"
-    git push
-    ```
-3.  **Tag the Release**: Create and push a Git tag matching the version (e.g., `vX.Y.Z`). This will trigger the GitHub Action.
-    ```bash
-    git tag vX.Y.Z
-    git push origin vX.Y.Z
-    ```
-session-tracking
-4.  **Download ZIP**: The workflow will create a GitHub Release and attach the packaged `botc-tracker-X.Y.Z.zip` file to it. This ZIP is ready for upload to the Chrome Web Store.
-
-### Recent Fixes & Improvements
-
-*   **Resolved `updateOnlineFavoritesList` Error**: Fixed a `ReferenceError` related to updating the display of online favorite players. The feature now correctly shows a list and count of favorited players active in fetched sessions within the 'Sessions' tab.
-*   **Session Tracking Logic**: Refined session tracking to use session names as unique identifiers and centralized history updates in `checkHistoryAndRender`.
-*   **Background `userId` Processing**: Enhanced `background.js` to update `lastSeenTimestamp`, `sessionHistory`, and `uniqueSessionCount` for known players identified via WebSocket messages, and to save these changes to storage.
-*   **No Message Handler for `fetchSessions`**: Resolved an error where the popup could not receive session data due to a missing message handler in `background.js`. The handler now correctly fetches data and uses `sendResponse` asynchronously.
-*   **Invalid OAuth2 Client ID in `getAuthToken`**: Modified `background.js` to prevent errors by removing a direct call to `chrome.identity.getAuthToken` when `oauth2` client details are not in `manifest.json`, relying instead on passively captured tokens.
-*   **Online Favorites List**: You can now easily see which of your favorite players are currently online and in what session, right from the 'Active Games' tab.
-*   **Session Tracking Reliability**: Fixed issues with `uniqueSessionCount` and `sessionHistory` to ensure they are accurately tracked and persist correctly across browser sessions.
-*   **UI & DOM Stability**: Resolved several bugs related to UI elements not being found or being inadvertently cleared, particularly around the session results and online favorites display.
-*   **Data Initialization**: Corrected errors in player data initialization, such as the `isFavorite` status and session history fields, preventing unexpected behavior when adding new players or processing existing ones.
-*   **Reduced Console Noise**: Removed many debug messages for a cleaner console.

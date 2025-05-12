@@ -3,7 +3,7 @@ name: Release Chrome Extension
 on:
   push:
     tags:
-      - 'v*.*.*' # Triggers on tags like v1.0.0, v1.0.1 etc.
+      - 'v[0-9]+.[0-9]+.[0-9]+[a-zA-Z0-9]*' # Triggers on tags like v1.0.0, v1.0.1a, v1.1.3b etc.
 
 jobs:
   build-and-release:
@@ -33,7 +33,7 @@ jobs:
               exit;
             }
             found_section { print; }
-          ' changelog.md > RELEASE_NOTES.md
+          ' CHANGELOG.md > RELEASE_NOTES.md
 
       - name: Package extension
         run: |

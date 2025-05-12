@@ -3,7 +3,6 @@
  * Handles all user-related functionality including:
  * - Storing and retrieving user data
  * - Username history tracking
- * - User search functionality
  * - User interface for managing players
  */
 
@@ -11,24 +10,42 @@
 let allPlayerData = {};
 
 /**
- * Load player data from Chrome storage
- * @param {Function} callback - Function to call with loaded data
+ * Load player data from Chrome storage.
+ * @returns {Promise<Object>} A promise that resolves with the player data object.
  */
-function loadPlayerData(callback) {
-    chrome.storage.local.get('playerData', (data) => {
-        allPlayerData = data.playerData || {};
-        callback(allPlayerData);
+async function loadPlayerData() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get('playerData', (data) => {
+            if (chrome.runtime.lastError) {
+                console.error("Error loading playerData from storage:", chrome.runtime.lastError.message);
+                // Resolve with an empty object in case of error to prevent breaking subsequent logic
+                allPlayerData = {};
+                resolve({});
+            } else {
+                allPlayerData = data.playerData || {};
+                resolve(allPlayerData);
+            }
+        });
     });
 }
 
 /**
- * Save player data to Chrome storage
- * @param {Object} playerData - Player data to save
- * @param {Function} callback - Function to call after saving
+ * Save player data to Chrome storage.
+ * @param {Object} playerData - Player data to save.
+ * @returns {Promise<void>} A promise that resolves when saving is complete.
  */
-function savePlayerData(playerData, callback) {
-    allPlayerData = playerData;
-    chrome.storage.local.set({ playerData }, callback);
+async function savePlayerData(playerData) {
+    return new Promise((resolve, reject) => {
+        allPlayerData = playerData; // Update local cache immediately
+        chrome.storage.local.set({ playerData }, () => {
+            if (chrome.runtime.lastError) {
+                console.error("Error saving playerData to storage:", chrome.runtime.lastError.message);
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve(); // Resolve promise on successful save
+            }
+        });
+    });
 }
 
 /**
@@ -42,51 +59,48 @@ function formatTimestamp(timestamp) {
 }
 
 /**
- * Update username history for a player
- * @param {string} id - Player ID
- * @param {string} username - Current username
- * @param {Object} playerData - Current player data
- * @returns {Object} Updated player data
+ * Formats a timestamp into a human-readable 'time ago' string.
+ * e.g., "5 minutes ago", "2 hours ago", "3 days ago".
+ * @param {number} timestamp - The Unix timestamp in milliseconds.
+ * @returns {string} A human-readable string representing the time since the timestamp, or "Not seen yet" if timestamp is invalid.
  */
-function updateUsernameHistory(id, username, playerData) {
-    if (!playerData[id]) {
-        playerData[id] = {
-            name: username,
-            usernameHistory: []
-        };
-        return playerData;
+function formatTimeSince(timestamp) {
+    if (!timestamp || isNaN(timestamp) || timestamp <= 0) {
+        return "Not seen yet";
     }
 
-    // Don't update if the name hasn't changed
-    if (playerData[id].name === username) {
-        return playerData;
+    const now = Date.now();
+    const seconds = Math.round((now - timestamp) / 1000);
+
+    if (seconds < 0) { // Timestamp is in the future
+        return "In the future"; // Or handle as an error/default
+    }
+    if (seconds < 60) {
+        return seconds + " sec ago";
     }
 
-    // Check if this name is already in history
-    const existingEntryIndex = (playerData[id].usernameHistory || []).findIndex(
-        entry => entry.name === username
-    );
-
-    if (existingEntryIndex >= 0) {
-        // Remove the existing entry so we can move it to the front
-        playerData[id].usernameHistory.splice(existingEntryIndex, 1);
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) {
+        return minutes + (minutes === 1 ? " min ago" : " mins ago");
     }
 
-    // Add the current name to history
-    if (!playerData[id].usernameHistory) {
-        playerData[id].usernameHistory = [];
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) {
+        return hours + (hours === 1 ? " hour ago" : " hours ago");
     }
 
-    // Add the old name to history
-    playerData[id].usernameHistory.unshift({
-        name: playerData[id].name,
-        timestamp: Date.now()
-    });
+    const days = Math.round(hours / 24);
+    if (days < 30) {
+        return days + (days === 1 ? " day ago" : " days ago");
+    }
 
-    // Update to the new name
-    playerData[id].name = username;
+    const months = Math.round(days / 30);
+    if (months < 12) {
+        return months + (months === 1 ? " month ago" : " months ago");
+    }
 
-    return playerData;
+    const years = Math.round(months / 12);
+    return years + (years === 1 ? " year ago" : " years ago");
 }
 
 /**
@@ -95,6 +109,12 @@ function updateUsernameHistory(id, username, playerData) {
  * @param {string} currentName - Current username
  */
 function createUsernameHistoryModal(history, currentName) {
+    // Remove any existing modal first to prevent duplicates
+    const existingModal = document.querySelector('.username-history-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
     const modal = document.createElement('div');
     modal.className = 'username-history-modal';
 
@@ -162,95 +182,100 @@ function createUsernameHistoryModal(history, currentName) {
 }
 
 /**
- * Search through player data
- * @param {string} query - Search query
- * @returns {Array} Array of search results
+ * Compares two players for sorting according to specific criteria:
+ * 1. Online Favorite players first (sorted by rating desc, then name asc).
+ * 2. Online Non-Favorite players next (sorted by rating desc, then name asc).
+ * 3. Offline players last (sorted by lastSeenTimestamp desc (recent first, no data last), then rating desc, then name asc).
+ * @param {Array} a - First player entry: [idString, playerObjectA]
+ * @param {Array} b - Second player entry: [idString, playerObjectB]
+ * @param {Set<string>} onlinePlayerIds - Set of IDs for players currently online.
+ * @returns {number} -1 if a < b, 1 if a > b, 0 if a === b.
  */
-function searchPlayers(query) {
-    if (!query) return [];
-    
-    query = query.toLowerCase();
-    const results = [];
+function comparePlayersForSorting(a, b, onlinePlayerIds) {
+    const idA = a[0];
+    const playerAData = a[1];
+    const idB = b[0];
+    const playerBData = b[1];
 
-    Object.entries(allPlayerData).forEach(([id, playerData]) => {
-        const currentName = playerData.name.toLowerCase();
-        if (currentName.includes(query)) {
-            results.push({
-                id,
-                ...playerData
-            });
-            return;
+    const isOnlineA = onlinePlayerIds.has(idA.toString());
+    const isOnlineB = onlinePlayerIds.has(idB.toString());
+
+    const isFavoriteA = playerAData.isFavorite || false;
+    const isFavoriteB = playerBData.isFavorite || false;
+
+    // Priority 1: Online AND Favorite
+    const aIsOnlineFav = isOnlineA && isFavoriteA;
+    const bIsOnlineFav = isOnlineB && isFavoriteB;
+
+    if (aIsOnlineFav !== bIsOnlineFav) {
+        return aIsOnlineFav ? -1 : 1; // OnlineFav (true) comes before not OnlineFav (false)
+    }
+    if (aIsOnlineFav && bIsOnlineFav) { // Both are Online + Favorite
+        // Sub-sort by rating (desc)
+        const scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
+        const scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
+        if (scoreA !== scoreB) {
+            return scoreB - scoreA; // Higher score first
         }
+        // Then by name (asc)
+        return (playerAData.name || '').localeCompare(playerBData.name || '');
+    }
 
-        // Check historical names
-        const history = playerData.usernameHistory || [];
-        for (const entry of history) {
-            if (entry.name.toLowerCase().includes(query)) {
-                results.push({
-                    id,
-                    ...playerData
-                });
-                return;
-            }
+    // Priority 2: Online (but not favorite, or only one is favorite - handled above)
+    if (isOnlineA !== isOnlineB) {
+        return isOnlineA ? -1 : 1; // Online (true) comes before offline (false)
+    }
+
+    if (isOnlineA) { // Both are Online (but not both Online+Favorite)
+        // Sort by rating (desc)
+        const scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
+        const scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
+        if (scoreA !== scoreB) {
+            return scoreB - scoreA;
         }
-    });
+        // Then by name (asc)
+        return (playerAData.name || '').localeCompare(playerBData.name || '');
+    }
 
-    return results;
+    // Priority 3: Both are Offline
+    // Sort by lastSeenTimestamp (desc - recent first)
+    // Treat null/undefined/0 as very old to push them to the bottom of offline players
+    const lastSeenA = playerAData.lastSeenTimestamp || 0;
+    const lastSeenB = playerBData.lastSeenTimestamp || 0;
+    if (lastSeenA !== lastSeenB) {
+        return lastSeenB - lastSeenA; // More recent (higher timestamp) first
+    }
+
+    // If lastSeen is same (or both unknown), sort by rating (desc)
+    const scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
+    const scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
+    if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+    }
+
+    // Finally, by name (asc)
+    return (playerAData.name || '').localeCompare(playerBData.name || '');
 }
 
 /**
- * Display search results
- * @param {Array} results - Search results to display
- * @param {HTMLElement} searchResults - Element to display results in
+ * Helper function to extract a Set of online player IDs from session data.
+ * @param {Array|Set|null} sessionData - Active session data or a Set of online IDs.
+ * @returns {Set<string>} A Set of player IDs that are currently online.
  */
-function displaySearchResults(results, searchResults) {
-    searchResults.innerHTML = '';
-    
-    if (results.length === 0) {
-        searchResults.style.display = 'none';
-        return;
-    }
-
-    results.forEach(result => {
-        const item = document.createElement('div');
-        item.className = 'search-result-item';
-
-        const info = document.createElement('div');
-        info.className = 'search-result-info';
-
-        const name = document.createElement('div');
-        name.className = 'search-result-name';
-        name.textContent = result.name;
-        info.appendChild(name);
-
-        if (result.usernameHistory && result.usernameHistory.length > 0) {
-            const aliases = document.createElement('div');
-            aliases.className = 'search-result-aliases';
-            const previousNames = result.usernameHistory.map(h => h.name);
-            aliases.textContent = `Also known as: ${previousNames.join(', ')}`;
-            info.appendChild(aliases);
-        }
-
-        const rating = document.createElement('div');
-        rating.className = `search-result-rating rating-${result.score || 'unknown'}`;
-        rating.textContent = result.score ? `Rating: ${result.score}` : 'Unrated';
-        info.appendChild(rating);
-
-        item.appendChild(info);
-
-        // View history button
-        const viewButton = document.createElement('button');
-        viewButton.textContent = 'View History';
-        viewButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            createUsernameHistoryModal(result.usernameHistory, result.name);
+function getOnlinePlayerIds(sessionData) {
+    const onlinePlayerIds = new Set();
+    if (sessionData && Array.isArray(sessionData)) { // If sessionData is an array of session objects
+        sessionData.forEach(session => {
+            if (session && session.usersAll && Array.isArray(session.usersAll)) {
+                session.usersAll.forEach(user => {
+                    if (user && user.id) onlinePlayerIds.add(user.id.toString());
+                });
+            }
         });
-
-        item.appendChild(viewButton);
-        searchResults.appendChild(item);
-    });
-
-    searchResults.style.display = 'block';
+    } else if (sessionData instanceof Set) { // If sessionData is already a Set of IDs
+        sessionData.forEach(id => onlinePlayerIds.add(id.toString()));
+    }
+    return onlinePlayerIds;
 }
 
 /**
@@ -258,54 +283,48 @@ function displaySearchResults(results, searchResults) {
  * @param {HTMLElement} container - The container element to display players in.
  * @param {string} [searchTerm=''] - Optional search term to filter players.
  * @param {Object} playerData - The player data object.
- * @param {Array|null} [sessionData=null] - Optional array of active sessions to determine online status.
+ * @param {Set<string>} onlinePlayerIds - A Set containing the IDs of currently online players.
  * @param {Function} createUsernameHistoryModalFunc - Function to create the history modal.
  * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
  */
-function displayKnownPlayers(container, searchTerm = '', playerData, sessionData = null, createUsernameHistoryModalFunc, refreshCallback) {
+async function displayKnownPlayers(container, searchTerm = '', playerData, onlinePlayerIds, createUsernameHistoryModalFunc, refreshCallback) {
+    const lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : ''; // Define lowerSearchTerm here
     container.innerHTML = ''; // Clear previous results
 
-    // Determine online players
-    const onlinePlayerIds = new Set();
-    if (sessionData) {
-        sessionData.forEach(session => {
-            if (session && Array.isArray(session.usersAll)) {
-                session.usersAll.forEach(user => {
-                    if (user && user.id) {
-                        onlinePlayerIds.add(String(user.id)); // Ensure string ID
-                    }
-                });
-            }
+    // Filter and then sort the player data
+    const filteredPlayersArray = Object.entries(playerData)
+        .filter(([id, player]) => {
+            const nameMatch = player.name && player.name.toLowerCase().includes(lowerSearchTerm);
+            const notesMatch = player.notes && player.notes.toLowerCase().includes(lowerSearchTerm);
+            const scoreMatch = player.score !== undefined && player.score.toString().toLowerCase().includes(lowerSearchTerm);
+            const idMatch = id.toLowerCase().includes(lowerSearchTerm);
+            return nameMatch || notesMatch || scoreMatch || idMatch;
         });
+
+    // Sort the filtered array using the new comparison function
+    const sortedPlayersArray = filteredPlayersArray.sort((a, b) => comparePlayersForSorting(a, b, onlinePlayerIds));
+
+    if (sortedPlayersArray.length === 0 && searchTerm) {
+        container.innerHTML = '<p>No players match your search.</p>';
+        return;
+    }
+    if (sortedPlayersArray.length === 0) {
+        container.innerHTML = '<p>No players known. Add some!</p>';
+        return;
     }
 
-    const sortedPlayerIds = Object.keys(playerData).sort((a, b) => {
-        const playerA = playerData[a];
-        const playerB = playerData[b];
-        const isOnlineA = onlinePlayerIds.has(a);
-        const isOnlineB = onlinePlayerIds.has(b);
-
-        // Sort logic: Online players first, then alphabetically by name
-        if (isOnlineA && !isOnlineB) return -1; // Online A comes before offline B
-        if (!isOnlineA && isOnlineB) return 1;  // Offline A comes after online B
-        
-        // If both are online or both are offline, sort by name
-        return (playerA.name || '').localeCompare(playerB.name || '');
-    });
-
-    sortedPlayerIds.forEach(id => {
-        const player = playerData[id];
-        const nameLower = (player.name || '').toLowerCase();
-        const notesLower = (player.notes || '').toLowerCase();
-        const isOnline = onlinePlayerIds.has(id);
-
-        // Filter logic
-        if (searchTerm && !nameLower.includes(searchTerm) && !notesLower.includes(searchTerm) && id !== searchTerm) {
-            return; // Skip if search term doesn't match name, notes, or ID
-        }
-
+    // For each player, create a card
+    sortedPlayersArray.forEach(([id, player]) => { // Corrected: Destructure id and player here
         const card = document.createElement('div');
-        card.className = `player-card known-player ${getRatingClass(player.score || 3)}`; // Add known-player class
+        card.className = 'player-card known-player';
+        card.dataset.playerId = id;
+
+        // Add rating class for styling
+        card.classList.add(getRatingClass(player.score));
+
+        const isOnline = onlinePlayerIds.has(id.toString()); // Correctly use destructured id
+        let hasMetaInfo = false; // Declare hasMetaInfo here for broader scope within the loop iteration
+
         if (isOnline) {
             card.classList.add('online');
         }
@@ -317,180 +336,172 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
         const infoContainer = document.createElement('div');
         infoContainer.className = 'player-info-container';
 
-        const nameElement = document.createElement('strong');
-        nameElement.textContent = player.name || 'Unknown Name';
-        infoContainer.appendChild(nameElement);
-
-        const idElement = document.createElement('small');
-        idElement.textContent = ` (ID: ${id})`;
-        idElement.style.color = 'var(--subtle-text-color)';
-        infoContainer.appendChild(idElement);
-
         if (isOnline) {
+            const nameElement = document.createElement('strong');
+            nameElement.textContent = player.name || `Player ${id}`;
+            infoContainer.appendChild(nameElement);
+
+            const idElement = document.createElement('small');
+            idElement.textContent = ` (ID: ${id})`;
+            idElement.style.color = 'var(--subtle-text-color)';
+            infoContainer.appendChild(idElement);
+
             let sessionName = null;
-            if (sessionData) {
-                for (const session of sessionData) {
-                    if (session && session.name && Array.isArray(session.usersAll)) {
-                        const userInSession = session.usersAll.some(user => {
-                            const isMatch = user && String(user.id) === id;
-                            return isMatch;
-                        });
-                        if (userInSession) {
-                            sessionName = session.name;
-                            break; // Found the session for this player
-                        }
-                    }
-                }
+            if (player.lastSeenSessionId) { 
+                sessionName = player.lastSeenSessionId;
             }
 
-            // Create and add the online badge
             const onlineBadge = document.createElement('span');
             onlineBadge.classList.add('online-badge');
             onlineBadge.title = 'Online';
             infoContainer.appendChild(onlineBadge);
 
-            // Create and add the session name indicator if found
             if (sessionName) {
-                const sessionNameSpan = document.createElement('span');
-                sessionNameSpan.classList.add('session-name-indicator');
+                const sessionNameSpan = document.createElement('small');
+                sessionNameSpan.style.color = 'var(--accent-color)';
+                sessionNameSpan.style.marginLeft = '5px';
                 sessionNameSpan.textContent = ` (in: ${sessionName})`;
                 infoContainer.appendChild(sessionNameSpan);
             }
+        } else {
+            // Offline player name and ID (similar to online, but no badge or current session name)
+            const nameElement = document.createElement('strong');
+            nameElement.textContent = player.name || `Player ${id}`;
+            infoContainer.appendChild(nameElement);
+    
+            const idElement = document.createElement('small');
+            idElement.textContent = ` (ID: ${id})`;
+            idElement.style.color = 'var(--subtle-text-color)';
+            infoContainer.appendChild(idElement);
         }
 
-        infoContainer.appendChild(document.createElement('br')); // Line break
+        // Create a container for meta info (Sessions, Last Seen) - applies to ALL players
+        const metaInfoContainer = document.createElement('div');
+        metaInfoContainer.className = 'player-meta-info';
 
+        let addedSessionInfo = false;
+        // Add session count information (for ALL players if available)
+        if (player.lastSeenSessionId) { 
+            const sessionInfoText = document.createElement('span');
+            sessionInfoText.textContent = `Sessions: ${player.uniqueSessionCount || 1}`;
+            sessionInfoText.style.color = 'var(--subtle-text-color)';
+            metaInfoContainer.appendChild(sessionInfoText);
+            hasMetaInfo = true;
+            addedSessionInfo = true;
+        }
+
+        // Handle offline player last seen time (ONLY for offline players)
+        if (!isOnline && player.lastSeenTimestamp) { 
+            if (addedSessionInfo) { // Add a separator if session info was already added
+                const separator = document.createElement('span');
+                separator.textContent = ' | ';
+                separator.style.color = 'var(--subtle-text-color)';
+                separator.style.marginLeft = '5px'; 
+                separator.style.marginRight = '5px';
+                metaInfoContainer.appendChild(separator);
+            }
+            const lastSeenTextContent = formatTimeSince(player.lastSeenTimestamp);
+            const lastSeenElement = document.createElement('span');
+            lastSeenElement.textContent = `Last seen: ${lastSeenTextContent}`;
+            lastSeenElement.className = 'last-seen-text'; 
+            lastSeenElement.style.color = 'var(--subtle-text-color)';
+            metaInfoContainer.appendChild(lastSeenElement);
+            hasMetaInfo = true;
+        }
+
+        if (hasMetaInfo) {
+            infoContainer.appendChild(metaInfoContainer);
+        }
+        
         const scoreElement = document.createElement('span');
         scoreElement.textContent = `Score: ${player.score !== undefined ? player.score : 'N/A'}/5`;
+        scoreElement.style.display = 'block'; // Make score take its own line after meta info
+        scoreElement.style.marginTop = hasMetaInfo ? '5px' : '0'; // Now hasMetaInfo should be defined
         infoContainer.appendChild(scoreElement);
 
         if (player.notes) {
             const notesElement = document.createElement('p');
             notesElement.textContent = `Notes: ${player.notes}`;
             notesElement.className = 'player-notes';
+            // Check if notes already contain session count to avoid duplication if logic is complex
+            // For now, assuming session count is primarily handled by the new metaInfoContainer
             infoContainer.appendChild(notesElement);
         }
 
-        if (player.lastSeenSessionId) {
-            const sessionInfo = document.createElement('small');
-            sessionInfo.textContent = ` | Sessions: ${player.uniqueSessionCount || 1}`; // Show count
-            sessionInfo.style.marginLeft = '10px';
-            infoContainer.appendChild(sessionInfo);
-        }
+        card.appendChild(infoContainer);
 
-        card.appendChild(infoContainer); // Add info part to card
-
-        // --- Button Container ---
+        // --- Player Actions (Buttons) ---
         const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'player-card-buttons';
-
-        // Edit Button
-        const editButton = document.createElement('button');
-        editButton.textContent = '📝'; // Use icon for compactness
-        editButton.className = 'edit-player-button player-card-button'; // Consistent class
-        editButton.title = 'Edit Player Details';
-        // Enable the button and add the click handler
-        editButton.onclick = (e) => {
-            e.stopPropagation();
-            // Prompt for updated details, pre-filling with existing data
-            const newName = prompt(`Enter new name for ${player.name} (ID: ${id}):`, player.name);
-            if (newName === null) return; // User cancelled name prompt
-
-            const newScoreStr = prompt(`Enter new score (1-5) for ${newName || player.name}:`, player.score !== undefined ? player.score : '3');
-            if (newScoreStr === null) return; // User cancelled score prompt
-
-            let newScore = parseInt(newScoreStr, 10);
-            if (isNaN(newScore) || newScore < 1 || newScore > 5) {
-                alert("Invalid score. Please enter a number between 1 and 5. Keeping original score.");
-                newScore = player.score; // Keep original score if input is invalid
-            }
-
-            const newNotes = prompt(`Enter new notes for ${newName || player.name}:`, player.notes || '');
-            if (newNotes === null) return; // User cancelled notes prompt
-
-            // Call the core addPlayer function (handles both add and update)
-            if (typeof window.addPlayer === 'function') {
-                window.addPlayer(id, newName, newScore, newNotes, player.isFavorite, (success, message) => {
-                    if (success) {
-                        console.log(`Player ${id} updated via prompt.`);
-                        if (typeof refreshCallback === 'function') {
-                            refreshCallback(); // Refresh the list
-                        }
-                    } else {
-                        alert(`Failed to update player: ${message}`);
-                        console.error(`Failed to update player ${id}: ${message}`);
-                    }
-                });
-            } else {
-                console.error('window.addPlayer function not found!');
-                alert('Update feature is unavailable.');
-            }
-        };
-        buttonContainer.appendChild(editButton);
-
-        // Delete Button
-        const deleteButton = document.createElement('button');
-        deleteButton.innerHTML = '🗑️'; // Trash can emoji for delete
-        deleteButton.title = 'Delete Player';
-        deleteButton.className = 'player-action-button delete-button'; // Add specific class if needed for styling
-        deleteButton.onclick = (e) => {
-            e.stopPropagation(); // Prevent card click
-            if (confirm(`Are you sure you want to delete player ${player.name} (${id})? This cannot be undone.`)) {
-                // Use the globally exposed deletePlayer function
-                window.deletePlayer(id, (success, deletedPlayerId, message) => {
-                    if (success) {
-                        console.log(`Player ${deletedPlayerId} deleted via button.`);
-                        if (card && card.parentNode) {
-                            card.remove(); // Use the 'card' variable from the outer scope
-                            console.log(`Removed card for player ${deletedPlayerId} from UI.`);
-                        } else {
-                            console.warn(`Card element reference or parentNode was missing for player ${deletedPlayerId}. Could not remove directly.`);
-                            // Optionally fall back to full refresh if direct removal fails
-                            // if (typeof refreshCallback === 'function') refreshCallback(); 
-                        }
-                    } else {
-                        alert(`Failed to delete player: ${message}`);
-                        console.error(`Failed to delete player ${id}: ${message}`);
-                    }
-                });
-            }
-        };
-        buttonContainer.appendChild(deleteButton);
-
-        // Username History Button (only if history exists)
-        if (player.usernameHistory && player.usernameHistory.length > 0) {
-            const historyButton = document.createElement('button');
-            historyButton.textContent = 'History';
-            historyButton.onclick = (e) => {
-                e.stopPropagation(); // Prevent triggering card click/other events
-                createUsernameHistoryModalFunc(player.usernameHistory, player.name);
-            };
-            buttonContainer.appendChild(historyButton);
-        }
+        buttonContainer.className = 'player-actions'; // Updated class for consistency
 
         // Favorite Button
         const favoriteButton = document.createElement('button');
-        favoriteButton.className = 'favorite-button player-card-button';
-        // --- Set initial state based on player.isFavorite ---
-        favoriteButton.textContent = player.isFavorite ? '★' : '☆'; // Set star based on saved status
-        favoriteButton.title = player.isFavorite ? 'Remove from favorites' : 'Add to favorites'; // Set title
-        
-        favoriteButton.onclick = (e) => {
-            e.stopPropagation(); // Prevent triggering card click/other events
-            toggleFavoriteStatus(id, favoriteButton); // Use the toggle function
-        };
+        favoriteButton.classList.add('player-action-button', 'favorite-button'); // Ensure player-action-button is present
+        favoriteButton.innerHTML = player.isFavorite ? '★' : '☆'; // Updated Star icons
+        favoriteButton.title = player.isFavorite ? 'Unfavorite Player' : 'Favorite Player';
+        favoriteButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleFavoriteStatus(id, favoriteButton, player); // Pass player object
+            // No need to call refreshCallback here if toggleFavoriteStatus handles UI update
+        });
         buttonContainer.appendChild(favoriteButton);
 
-        card.appendChild(buttonContainer); // Add button container to card
+        // Edit Button
+        const editButton = document.createElement('button');
+        editButton.classList.add('player-action-button');
+        editButton.innerHTML = `<img src="../icons/editbutton.svg" alt="Edit" class="button-icon">`;
+        editButton.title = 'Edit Player';
+        editButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editPlayerDetails(id);
+        });
+        buttonContainer.appendChild(editButton);
+
+        // History Button (if history exists)
+        if (player.usernameHistory && player.usernameHistory.length > 0) {
+            const historyButton = document.createElement('button');
+            historyButton.classList.add('player-action-button'); // Removed 'history-button' class
+            historyButton.innerHTML = `🕒`; // Updated Clock icon
+            historyButton.title = `View Username History (${player.usernameHistory.length} entries)`;
+            historyButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                createUsernameHistoryModalFunc(player.usernameHistory, player.name);
+            });
+            buttonContainer.appendChild(historyButton);
+        }
+
+        // Refresh Username Button (only if player has an ID, which they should)
+        const refreshUsernameButton = document.createElement('button');
+        refreshUsernameButton.classList.add('player-action-button'); // Removed 'refresh-username-button' class
+        refreshUsernameButton.innerHTML = '🔄'; // Updated Refresh icon
+        refreshUsernameButton.title = 'Refresh Username from Server';
+        refreshUsernameButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleRefreshUserName(id, refreshUsernameButton, refreshCallback);
+        });
+        buttonContainer.appendChild(refreshUsernameButton);
+
+        // Delete Button
+        const deleteButton = document.createElement('button');
+        deleteButton.classList.add('player-action-button');
+        deleteButton.innerHTML = `<img src="../icons/deletebutton.svg" alt="Delete" class="button-icon">`;
+        deleteButton.title = 'Delete Player';
+        deleteButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deletePlayer(id, () => { // Pass the refreshCallback to the version of deletePlayer that accepts it.
+                // console.log("Player deleted, attempting to refresh list after modal confirmation.");
+                if (typeof refreshCallback === 'function') {
+                    refreshCallback();
+                }
+            });
+        });
+        buttonContainer.appendChild(deleteButton);
+
+        card.appendChild(infoContainer);
+        card.appendChild(buttonContainer);
 
         container.appendChild(card);
     });
-
-    if (container.children.length === 0 && !searchTerm) {
-        container.textContent = 'No players saved yet. Players you interact with in sessions will appear here.';
-    } else if (container.children.length === 0 && searchTerm) {
-        container.textContent = 'No players found matching your search.';
-    }
 }
 
 /**
@@ -499,118 +510,74 @@ function displayKnownPlayers(container, searchTerm = '', playerData, sessionData
  * @param {string} name - Player name
  * @param {number} score - Player rating
  * @param {string} notes - Player notes
+ * @param {boolean} isFavorite - Player favorite status
  * @param {Function} [updateUICallback] - Optional callback to execute after saving, receives updated player data
  */
-function addPlayer(id, name, score, notes, isFavorite, updateUICallback) {
+async function addPlayer(id, name, score, notes, isFavorite, updateUICallback) {
     // Validate score input
     const parsedScore = parseInt(score, 10);
     const finalScore = !isNaN(parsedScore) && parsedScore >= -5 && parsedScore <= 5 ? parsedScore : null;
 
-    loadPlayerData((playerData) => {
-        if (!id) {
-            console.error('Attempted to add player with no ID.');
-            return; // Cannot add a player without an ID
-        }
+    const playerData = await loadPlayerData();
 
-        // Check if player exists for potential update
-        const isUpdate = !!playerData[id];
-        const oldPlayerData = isUpdate ? { ...playerData[id] } : null;
-
-        // Preserve or initialize username history
-        let usernameHistory = (isUpdate && playerData[id].usernameHistory) ? [...playerData[id].usernameHistory] : [];
-        // Preserve or initialize session history
-        let sessionHistoryArray = (isUpdate && Array.isArray(playerData[id].sessionHistory)) ? [...playerData[id].sessionHistory] : [];
-        let uniqueSessionCount = (isUpdate && typeof playerData[id].uniqueSessionCount === 'number') ? playerData[id].uniqueSessionCount : 0;
-        let lastSeenSessionId = (isUpdate && playerData[id].lastSeenSessionId) ? playerData[id].lastSeenSessionId : null;
-        let lastSeenTimestamp = (isUpdate && playerData[id].lastSeenTimestamp) ? playerData[id].lastSeenTimestamp : null;
-
-        // Determine the new favorite status
-        let newIsFavoriteValue;
-        if (isUpdate) {
-            // For updates, use the provided 'isFavorite' parameter if it's a boolean, otherwise keep the existing one.
-            newIsFavoriteValue = (typeof isFavorite === 'boolean') ? isFavorite : playerData[id].isFavorite;
-        } else {
-            // For new players, use the provided 'isFavorite' parameter if it's a boolean, otherwise default to false.
-            newIsFavoriteValue = (typeof isFavorite === 'boolean') ? isFavorite : false;
-        }
-
-        // If updating, check if name changed and update history
-        if (isUpdate && playerData[id].name !== name) {
-            console.log(`Updating name for ${id}: "${playerData[id].name}" -> "${name}"`);
-            usernameHistory.unshift({ username: playerData[id].name, timestamp: Date.now() });
-            // Limit history size if needed (e.g., keep last 10)
-            if (usernameHistory.length > 10) {
-                 usernameHistory = usernameHistory.slice(0, 10);
-            }
-        }
-
-        // Update or create player data
-        playerData[id] = {
-            id: id,
-            name: name,
-            score: finalScore,
-            notes: notes || (isUpdate ? playerData[id].notes : ''),
-            usernameHistory: usernameHistory,
-            sessionHistory: sessionHistoryArray, 
-            uniqueSessionCount: uniqueSessionCount,
-            lastSeenSessionId: lastSeenSessionId,
-            lastSeenTimestamp: lastSeenTimestamp,
-            isFavorite: newIsFavoriteValue 
-        };
-
-        savePlayerData(playerData, () => {
-            console.log('Player data saved:', playerData);
-            // Pass the updated data for this specific player to the callback
-            if (updateUICallback && typeof updateUICallback === 'function') {
-                // Ensure the callback receives the full updated player data, including isFavorite
-                updateUICallback(playerData[id]);
-            }
-        });
-    });
-}
-
-/**
- * Toggle username history display
- * @param {string} playerId - Player ID
- * @param {HTMLElement} container - Container element
- */
-function toggleUsernameHistory(playerId, container) {
-    const existingHistory = container.querySelector('.username-history');
-    if (existingHistory) {
-        existingHistory.remove();
-        return;
+    if (!id) {
+        console.error('Attempted to add player with no ID.');
+        return; // Cannot add a player without an ID
     }
 
-    const playerData = allPlayerData[playerId];
-    if (!playerData || !playerData.usernameHistory || playerData.usernameHistory.length === 0) {
-        return;
+    // Check if player exists for potential update
+    const isUpdate = !!playerData[id];
+    const oldPlayerData = isUpdate ? { ...playerData[id] } : null;
+
+    // Preserve or initialize username history
+    let usernameHistory = (isUpdate && playerData[id].usernameHistory) ? [...playerData[id].usernameHistory] : [];
+    // Preserve or initialize session history
+    let sessionHistoryArray = (isUpdate && Array.isArray(playerData[id].sessionHistory)) ? [...playerData[id].sessionHistory] : [];
+    let uniqueSessionCount = (isUpdate && typeof playerData[id].uniqueSessionCount === 'number') ? playerData[id].uniqueSessionCount : 0;
+    let lastSeenSessionId = (isUpdate && playerData[id].lastSeenSessionId) ? playerData[id].lastSeenSessionId : null;
+    let lastSeenTimestamp = (isUpdate && playerData[id].lastSeenTimestamp) ? playerData[id].lastSeenTimestamp : null;
+
+    // Determine the new favorite status
+    let newIsFavoriteValue;
+    if (isUpdate) {
+        // For updates, use the provided 'isFavorite' parameter if it's a boolean, otherwise keep the existing one.
+        newIsFavoriteValue = (typeof isFavorite === 'boolean') ? isFavorite : playerData[id].isFavorite;
+    } else {
+        // For new players, use the provided 'isFavorite' parameter if it's a boolean, otherwise default to false.
+        newIsFavoriteValue = (typeof isFavorite === 'boolean') ? isFavorite : false;
     }
 
-    const historyDiv = document.createElement('div');
-    historyDiv.className = 'username-history';
-
-    playerData.usernameHistory.forEach(entry => {
-        const historyItem = document.createElement('div');
-        historyItem.className = 'username-history-item';
-
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'username-history-name';
-        if (entry.oldName && entry.newName) {
-            nameSpan.innerHTML = `<span class="old-name">${entry.oldName}</span> &rarr; <span class="new-name">${entry.newName}</span>`;
-        } else {
-            nameSpan.textContent = entry.name || entry.username || 'Unknown Change';
+    // If updating, check if name changed and update history
+    if (isUpdate && playerData[id].name !== name) {
+        // console.log(`Updating name for ${id}: "${playerData[id].name}" -> "${name}"`);
+        usernameHistory.unshift({ username: playerData[id].name, timestamp: Date.now() });
+        // Limit history size if needed (e.g., keep last 10)
+        if (usernameHistory.length > 10) {
+             usernameHistory = usernameHistory.slice(0, 10);
         }
+    }
 
-        const dateSpan = document.createElement('span');
-        dateSpan.className = 'username-history-date';
-        dateSpan.textContent = formatTimestamp(entry.timestamp);
+    // Update or create player data
+    playerData[id] = {
+        id: id,
+        name: name,
+        score: finalScore,
+        notes: notes || (isUpdate ? playerData[id].notes : ''),
+        usernameHistory: usernameHistory,
+        sessionHistory: sessionHistoryArray, 
+        uniqueSessionCount: uniqueSessionCount,
+        lastSeenSessionId: lastSeenSessionId,
+        lastSeenTimestamp: lastSeenTimestamp,
+        isFavorite: newIsFavoriteValue 
+    };
 
-        historyItem.appendChild(nameSpan);
-        historyItem.appendChild(dateSpan);
-        historyDiv.appendChild(historyItem);
-    });
+    await savePlayerData(playerData);
 
-    container.appendChild(historyDiv);
+    // Pass the updated data for this specific player to the callback
+    if (updateUICallback && typeof updateUICallback === 'function') {
+        // Ensure the callback receives the full updated player data, including isFavorite
+        updateUICallback(playerData[id]);
+    }
 }
 
 /**
@@ -621,15 +588,14 @@ function toggleUsernameHistory(playerId, container) {
  * @param {Object} currentPlayerData - The currently loaded player data object.
  * @param {Function} callback - Callback function, receives (wasUpdated: boolean, updatedPlayerData: Object).
  */
-function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerData, callback) {
+async function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerData) {
     const player = currentPlayerData[userId];
     let updatedData = { ...currentPlayerData }; // Work on a copy
     let needsSave = false;
 
     // If player isn't known at all, we can't update history (should be added first)
     if (!player) {
-        callback(false, currentPlayerData); 
-        return;
+        return false;
     }
 
     // Initialize history if it doesn't exist
@@ -669,13 +635,10 @@ function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerDat
 
     // If any changes occurred that require saving
     if (needsSave) {
-        updatedData[userId] = player; // Put the modified player back into the copied data
-        // Save the entire updated player data object
-        savePlayerData(updatedData, () => {
-            callback(true, updatedData); // Update occurred
-        });
+        await savePlayerData(updatedData);
+        return true;
     } else {
-        callback(false, currentPlayerData); // No update occurred
+        return false;
     }
 }
 
@@ -687,16 +650,14 @@ function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPlayerDat
  * @param {Object} currentPlayerData - The currently loaded player data object.
  * @param {Function} callback - Callback function, receives (wasUpdated: boolean, updatedPlayerData: Object).
  */
-function updateSessionHistoryIfNeeded(userId, currentSessionId, currentPlayerData, callback) {
+async function updateSessionHistoryIfNeeded(userId, currentSessionId, currentPlayerData) {
     if (!userId || !currentSessionId) {
-        if (callback) callback(false, currentPlayerData); // No change
-        return;
+        return false;
     }
 
     let player = currentPlayerData[userId];
     if (!player) {
-        if (callback) callback(false, currentPlayerData); // No change, player not found
-        return;
+        return false;
     }
 
     let changed = false;
@@ -749,24 +710,25 @@ function updateSessionHistoryIfNeeded(userId, currentSessionId, currentPlayerDat
     }
 
     if (changed) {
-        savePlayerData({ ...currentPlayerData, [userId]: player }, () => {
-            if (callback) callback(true, { ...currentPlayerData, [userId]: player });
-        });
+        await savePlayerData({ ...currentPlayerData, [userId]: player });
+        return true;
     } else {
-        if (callback) callback(false, currentPlayerData);
+        return false;
     }
 }
 
 /**
- * Helper function to get rating class
- * @param {number} score - Player rating
- * @returns {string} Rating class
+ * Helper function to get CSS class based on player rating.
+ * Ensures rating is clamped between 1 and 5 for class generation.
+ * @param {number|string} rating - Player rating.
+ * @returns {string} CSS class name (e.g., 'rating-3', 'rating-unknown').
  */
-function getRatingClass(score) {
-    if (score === null || score === undefined) {
-        return 'rating-unknown';
-    }
-    return `rating-${score}`;
+function getRatingClass(rating) {
+    if (rating === null || rating === undefined || rating === '') return 'rating-unknown';
+    const numRating = parseInt(rating, 10);
+    if (isNaN(numRating)) return 'rating-unknown';
+    const validRating = Math.max(1, Math.min(5, numRating));
+    return `rating-${validRating}`;
 }
 
 /**
@@ -779,184 +741,17 @@ function getRatingClass(score) {
  */
 
 
-// -- START: Import/Export --
+// -- START: Data Management & Utility --
 
 /**
- * Helper function to escape CSV special characters (double quotes, commas, newlines).
- * If a field contains a comma, newline, or double quote, it should be enclosed in double quotes.
- * Existing double quotes within the field should be doubled.
- * @param {*} value The value to escape.
- * @returns {string} The escaped string suitable for CSV.
+ * Replaces all player data in memory and saves it to Chrome storage.
+ * @param {Object} newData - The new player data object to replace the current data.
+ * @param {Function} [callback] - Optional callback to execute after saving.
  */
-function escapeCsvValue(value) {
-    const strValue = String(value == null ? "" : value); // Handle null/undefined as empty string
-    if (strValue.includes('"') || strValue.includes(',') || strValue.includes('\n')) {
-        // Enclose in double quotes and double up existing double quotes
-        return `"${strValue.replace(/"/g, '""')}"`;
-    }
-    return strValue;
+async function replaceAllPlayerDataAndSave(newData) {
+    allPlayerData = newData; // Replace in-memory store
+    await savePlayerData(allPlayerData);
 }
-
-/**
- * Exports current player data to a CSV file.
- */
-function exportPlayerDataCSV() {
-    loadPlayerData(playerData => {
-        if (!playerData || Object.keys(playerData).length === 0) {
-            alert('No player data found to export.');
-            return;
-        }
-
-        const headers = ['id', 'name', 'score', 'notes', 'isFavorite']; // Changed 'rating' to 'score'
-        const csvRows = [headers.join(',')]; // Header row
-
-        // Convert player data object to rows
-        Object.keys(playerData).forEach(id => {
-            const player = playerData[id];
-            const row = [
-                escapeCsvValue(id),
-                escapeCsvValue(player.name || ''),
-                escapeCsvValue(player.score ?? ''), // Changed player.rating to player.score
-                escapeCsvValue(player.notes || ''),
-                escapeCsvValue(player.isFavorite ? 'true' : 'false')
-            ];
-            csvRows.push(row.join(','));
-        });
-
-        const csvString = csvRows.join('\n');
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-
-        // Create a link and trigger the download
-        const link = document.createElement('a');
-        if (link.download !== undefined) { // Feature detection
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            // Suggest a filename
-            const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-            link.setAttribute('download', `player_data_export_${timestamp}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url); // Clean up
-        } else {
-            alert('CSV export is not supported in this browser.');
-        }
-    });
-}
-
-/**
- * Imports player data from a CSV file content, merging with existing data.
- * @param {string} csvContent - The content of the CSV file.
- * @param {Function} callback - Function to call after import attempt (receives success: boolean, message: string).
- * @param {Function} refreshDisplayFunc - Function to refresh the user list display.
- */
-function importPlayerDataCSV(csvContent, callback, refreshDisplayFunc) {
-    if (!csvContent) {
-        callback(false, 'No file content provided.');
-        return;
-    }
-
-    const lines = csvContent.split(/\r\n|\n/); // Split into lines
-    if (lines.length < 2) {
-        callback(false, 'CSV file must have a header row and at least one data row.');
-        return;
-    }
-
-    // Very basic CSV header parsing (assumes no escaped commas in header)
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const expectedHeaders = ['id', 'name', 'score', 'notes', 'isfavorite']; // Changed 'rating' to 'score'
-    
-    // Check if all expected headers are present (order doesn't strictly matter for lookup, but ID must be there)
-    if (!headers.includes('id') || !headers.includes('name')) {
-         callback(false, 'CSV must contain at least \'id\' and \'name\' columns.');
-         return;
-    }
-    
-    // Find the index of each column we care about
-    const idIndex = headers.indexOf('id');
-    const nameIndex = headers.indexOf('name');
-    const scoreIndex = headers.indexOf('score'); // Changed ratingIndex to scoreIndex
-    const notesIndex = headers.indexOf('notes');
-    const favoriteIndex = headers.indexOf('isfavorite'); // Note the lowercase 'isfavorite'
-
-    loadPlayerData(existingPlayerData => {
-        let updatedPlayerData = { ...existingPlayerData }; // Start with existing data
-        let importedCount = 0;
-        let updatedCount = 0; // Keep this, although we won't update, for potential future use?
-        let skippedCount = 0; // Counter for duplicates
-        let errorCount = 0;
-        const errors = [];
-
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i];
-            if (!line.trim()) continue; // Skip empty lines
-
-            // Basic CSV value splitting (doesn't handle escaped quotes/commas within fields perfectly)
-            // For robust parsing, a library would be better, but this handles simple cases.
-            const values = line.split(','); // WARNING: This is naive CSV parsing
-
-            const id = values[idIndex]?.trim();
-            const name = values[nameIndex]?.trim();
-
-            if (!id || !name) {
-                console.warn(`[Import CSV] Skipping row ${i + 1}: Missing ID or Name.`);
-                errors.push(`Row ${i + 1}: Missing ID or Name.`);
-                errorCount++;
-                continue;
-            }
-
-            // Check if player already exists
-            if (updatedPlayerData[id]) {
-                // Player exists - SKIP instead of updating
-                console.log(`[Import CSV] Skipping duplicate player ID ${id} ('${name}'). Data already exists.`);
-                errors.push(`Row ${i + 1}: Skipped duplicate ID ${id} ('${name}')`);
-                skippedCount++; // Increment skipped counter
-                continue; // Move to the next line
-            }
-
-            // --- Player does not exist - Add New --- 
-            console.log(`[Import CSV] Adding new player ID ${id} ('${name}')`);
-
-            // Get optional values, providing defaults if missing or column doesn't exist
-            const score = (scoreIndex !== -1 ? values[scoreIndex]?.trim() : '') || ''; // Changed rating to score
-            const notes = (notesIndex !== -1 ? values[notesIndex]?.trim() : '') || '';   // Default to empty string
-            const isFavoriteStr = favoriteIndex !== -1 ? values[favoriteIndex]?.trim().toLowerCase() : undefined;
-            const isFavorite = isFavoriteStr === 'true'; // Default to false if column missing or not 'true'
-            
-            // Add using a structure similar to addPlayerManually
-            updatedPlayerData[id] = {
-                id: id,
-                name: name,
-                notes: notes,
-                score: score, // Changed rating to score
-                isFavorite: isFavorite,
-                // Initialize history and session tracking for the new player
-                usernameHistory: [{ username: name, timestamp: Date.now() }],
-                sessionHistory: [], // Initialize sessionHistory
-                uniqueSessionCount: 0, // Initialize uniqueSessionCount
-                lastSeenSessionId: null,
-                lastSeenTimestamp: null
-            };
-            importedCount++;
-        }
-
-        // Save the potentially modified data (only additions now)
-        savePlayerData(updatedPlayerData, () => {
-            let message = `Import complete. Added: ${importedCount}, Skipped (Duplicates): ${skippedCount}.`;
-            if (errorCount > 0) {
-                 message += ` Other Errors: ${errorCount}. First few errors: ${errors.filter(e => !e.includes('Skipped duplicate')).slice(0,3).join('; ')}`; // Show non-skip errors
-            }
-            console.log(`[Import CSV] ${message}`);
-            callback(true, message);
-            if (refreshDisplayFunc) {
-                refreshDisplayFunc(); // Refresh the UI
-            }
-        });
-    });
-}
-
-// -- END: Import/Export --
 
 // -- START: Initialization & Utility --
 
@@ -964,22 +759,35 @@ function importPlayerDataCSV(csvContent, callback, refreshDisplayFunc) {
  * Toggles the favorite status of a player and updates storage and UI.
  * @param {string} playerId - The ID of the player.
  * @param {HTMLElement} buttonElement - The button element to update.
+ * @param {Object} [playerObject] - Optional: The player object, to update its isFavorite status directly for immediate UI feedback.
  */
-function toggleFavoriteStatus(playerId, buttonElement) {
-    loadPlayerData(playerData => {
-        if (playerData && playerData[playerId]) {
-            playerData[playerId].isFavorite = !playerData[playerId].isFavorite; // Toggle status
+async function toggleFavoriteStatus(playerId, buttonElement, playerObject) {
+    const playerData = await loadPlayerData();
 
-            savePlayerData(playerData, () => {
-                console.log(`Player ${playerId} favorite status set to ${playerData[playerId].isFavorite}`);
-                // Update button appearance immediately
-                buttonElement.textContent = playerData[playerId].isFavorite ? '★' : '☆';
-                buttonElement.title = playerData[playerId].isFavorite ? 'Remove from favorites' : 'Add to favorites';
-            });
-        } else {
-            console.error(`Player ${playerId} not found for favorite toggle.`);
-        }
-    });
+    if (!playerData[playerId]) {
+        console.warn(`Player ${playerId} not found for toggling favorite.`);
+        ModalManager.showNotification(`Player ${playerId} not found.`, true, 3000);
+        return;
+    }
+
+    playerData[playerId].isFavorite = !playerData[playerId].isFavorite;
+    if (playerObject) { // Update the passed object for immediate UI consistency if provided
+        playerObject.isFavorite = playerData[playerId].isFavorite;
+    }
+
+    await savePlayerData(playerData);
+
+    // Update button text/appearance
+    if (buttonElement) {
+        buttonElement.textContent = playerData[playerId].isFavorite ? '★ Unfavorite' : '☆ Favorite';
+        buttonElement.classList.toggle('favorite-active', playerData[playerId].isFavorite);
+    }
+    // Trigger a refresh of the list or relevant UI part
+    // This needs to be handled by the caller or a passed-in refresh function
+    // For now, assume popup.js handles refresh via its own mechanisms after this callback if needed
+    // If a global refresh function is available, call it here:
+    // e.g., if (typeof refreshUserManagementTab === 'function') refreshUserManagementTab();
+    // Or, more robustly, the function that calls toggleFavoriteStatus should handle refresh.
 }
 
 /**
@@ -987,33 +795,355 @@ function toggleFavoriteStatus(playerId, buttonElement) {
  * @param {string} playerId - The ID of the player to delete.
  * @param {Function} callback - Function to call after deletion attempt (receives success: boolean, deletedPlayerId: string|null, message: string).
  */
-function deletePlayer(playerId, callback) {
-    loadPlayerData(playerData => {
-        if (!playerData[playerId]) {
-            console.warn(`[Delete Player] Player with ID ${playerId} not found.`);
-            if (callback) callback(false, null, "Player not found.");
-            return;
+async function deletePlayer(playerId, callback) {
+    ModalManager.showConfirm(
+        'Delete Player',
+        `Are you sure you want to delete player ${playerId}? This cannot be undone.`,
+        async () => { // onConfirm
+            const playerData = await loadPlayerData();
+
+            if (!playerData[playerId]) {
+                console.warn(`[Delete Player] Player with ID ${playerId} not found.`);
+                ModalManager.showNotification('Error', "Player not found.", 500);
+                if (callback) callback(false, null, "Player not found.");
+                return;
+            }
+
+            const deletedPlayerName = playerData[playerId].name || playerId;
+            delete playerData[playerId]; // Delete the player data
+
+            await savePlayerData(playerData);
+
+            ModalManager.showNotification('Success', `Player ${deletedPlayerName} deleted.`, 500);
+            if (callback) callback(true, playerId, "Player deleted."); 
+        },
+        () => { // onCancel
+            ModalManager.showNotification('Cancelled', 'Delete operation cancelled.', 500);
+            if (callback) callback(false, null, "Delete operation cancelled.");
         }
-
-        // Delete the player data
-        delete playerData[playerId];
-
-        // Save the updated data
-        savePlayerData(playerData, () => {
-            console.log(`[Delete Player] Player ${playerId} deleted successfully.`);
-            if (callback) callback(true, playerId, "Player deleted."); // Pass playerId back
-        });
-    });
+    );
 }
 
-window.loadPlayerData = loadPlayerData;
-window.addPlayer = addPlayer;
-window.displayKnownPlayers = displayKnownPlayers;
-window.createUsernameHistoryModal = createUsernameHistoryModal;
-window.savePlayerData = savePlayerData; // Assuming save might be needed directly sometimes
-window.exportPlayerDataCSV = exportPlayerDataCSV; // Expose export function
-window.importPlayerDataCSV = importPlayerDataCSV; // Expose import function
-window.toggleFavoriteStatus = toggleFavoriteStatus; // Ensure this is exposed
-window.deletePlayer = deletePlayer; // Expose the delete function
+/**
+ * Handles the process of refreshing a player's username from the API.
+ * @param {string} playerId - The ID of the player whose name to refresh.
+ * @param {HTMLElement} buttonElement - The refresh button element for UI feedback.
+ * @param {Function} refreshListCallback - Callback to refresh the user list display.
+ */
+async function handleRefreshUserName(playerId, buttonElement, refreshListCallback) {
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = '&#x21bb;'; // Loading/hourglass emoji
 
-// --- END: Initialization & Utility ---
+    try {
+        const authToken = await new Promise((resolve, reject) => {
+            chrome.storage.local.get('authToken', (result) => {
+                if (chrome.runtime.lastError) {
+                    return reject(chrome.runtime.lastError);
+                }
+                resolve(result.authToken);
+            });
+        });
+
+        if (!authToken) {
+            ModalManager.showAlert('Error', 'Authentication token not found. Please ensure you are logged in to botc.app.');
+            throw new Error('Auth token not found');
+        }
+
+        const response = await fetch(`https://botc.app/backend/user/${playerId}`, {
+            headers: { 'Authorization': authToken }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: response.statusText }));
+            ModalManager.showAlert('Error', `Error fetching user data: ${errorData.message || response.statusText}`);
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const newUsername = data && data.user ? data.user.username : null;
+
+        if (newUsername) {
+            const playerData = await loadPlayerData();
+
+            const player = playerData[playerId];
+            if (player && player.name !== newUsername) {
+                const oldUsername = player.name;
+                player.name = newUsername;
+                updateUsernameHistory(player, oldUsername); // Ensure this function is defined and works
+                await savePlayerData(playerData);
+                ModalManager.showAlert('Success', `Player ${playerId}'s name updated from "${oldUsername}" to "${newUsername}".`);
+                if (refreshListCallback) refreshListCallback();
+            } else if (player && player.name === newUsername) {
+                ModalManager.showAlert('Success', `Player ${playerId}'s name "${newUsername}" is already up-to-date.`);
+            } else {
+                ModalManager.showAlert('Error', `Player ${playerId} not found in local data. This shouldn't happen.`);
+            }
+        } else {
+            ModalManager.showAlert('Error', `Could not retrieve a valid username for player ${playerId}.`);
+        }
+    } catch (error) {
+        console.error('Error refreshing username:', error);
+        // ModalManager.showAlert('Error', 'Failed to refresh username. See console for details.'); // Already alerted specific errors
+    } finally {
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = '&#x21bb;'; // Reset to refresh icon
+    }
+}
+
+/**
+ * Updates the username history for a player if the new username is different.
+ * This function is adapted from background.js and should be available in userManager.js context.
+ * @param {Object} playerObject - The player object from playerData.
+ * @param {string} oldUsername - The username before the update.
+ */
+function updateUsernameHistory(playerObject, oldUsername) {
+    if (!playerObject) return false;
+
+    const newUsername = playerObject.name; // Assumes playerObject.name has been updated to the new name
+
+    if (oldUsername && newUsername && oldUsername.toLowerCase() !== newUsername.toLowerCase()) {
+        if (!playerObject.usernameHistory) {
+            playerObject.usernameHistory = [];
+        }
+
+        // Check if the old username is already the most recent entry (to avoid duplicates if rapidly changed)
+        const lastHistoryEntry = playerObject.usernameHistory.length > 0 ? playerObject.usernameHistory[0].username : null;
+        
+        // Add the *previous* name to history only if it's not already the latest entry
+        if (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase()) {
+            playerObject.usernameHistory.unshift({ username: oldUsername, timestamp: Date.now() });
+            // console.log(`[Username History] Added '${oldUsername}' to history for player ${playerObject.id}. New name: '${newUsername}'.`);
+            return true; // Indicates history was updated
+        }
+    }
+    return false; // No update to history needed
+}
+
+/**
+ * Function to allow editing of player details
+ * @param {string} playerId - The ID of the player to edit
+ */
+async function editPlayerDetails(playerId) {
+    const playerData = await loadPlayerData();
+
+    const player = playerData[playerId]; // Access player directly from the loaded data
+
+    if (!player) {
+        ModalManager.showAlert('Error', 'Player not found.');
+        return;
+    }
+
+    const modalTitle = `Edit Player: ${player.name || `ID: ${player.id}`}`;
+    const playerDataForForm = playerData[playerId]; // Get existing data
+
+    // Create modal body content using DOM manipulation
+    const modalBodyContent = document.createElement('div');
+    modalBodyContent.classList.add('modal-edit-player-form');
+
+    // Player ID (for Add New)
+    const idDiv = document.createElement('div');
+    const idLabel = document.createElement('label');
+    idLabel.htmlFor = 'modalEditPlayerId';
+    idLabel.textContent = 'Player ID:';
+    const idInput = document.createElement('input');
+    idInput.type = 'text';
+    idInput.id = 'modalEditPlayerId';
+    idInput.required = true;
+    idInput.value = playerId;
+    idInput.disabled = true;
+    idDiv.appendChild(idLabel);
+    idDiv.appendChild(idInput);
+    modalBodyContent.appendChild(idDiv);
+
+    // Player Name
+    const nameDiv = document.createElement('div');
+    const nameLabel = document.createElement('label');
+    nameLabel.htmlFor = 'modalEditPlayerName';
+    nameLabel.textContent = 'Player Name:';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.id = 'modalEditPlayerName';
+    nameInput.value = playerDataForForm.name || '';
+    nameDiv.appendChild(nameLabel);
+    nameDiv.appendChild(nameInput);
+    modalBodyContent.appendChild(nameDiv);
+
+    // Score
+    const scoreDiv = document.createElement('div');
+    const scoreLabel = document.createElement('label');
+    scoreLabel.htmlFor = 'modalEditPlayerScore';
+    scoreLabel.textContent = 'Score (1-5, optional):';
+    const scoreInput = document.createElement('input');
+    scoreInput.type = 'number';
+    scoreInput.id = 'modalEditPlayerScore';
+    scoreInput.value = playerDataForForm.score === null || playerDataForForm.score === undefined ? '' : playerDataForForm.score;
+    scoreInput.min = '1';
+    scoreInput.max = '5';
+    scoreDiv.appendChild(scoreLabel);
+    scoreDiv.appendChild(scoreInput);
+    modalBodyContent.appendChild(scoreDiv);
+
+    // Notes
+    const notesDiv = document.createElement('div');
+    const notesLabel = document.createElement('label');
+    notesLabel.htmlFor = 'modalEditPlayerNotes';
+    notesLabel.textContent = 'Notes (optional):';
+    const notesTextarea = document.createElement('textarea');
+    notesTextarea.id = 'modalEditPlayerNotes';
+    notesTextarea.rows = 3;
+    notesTextarea.textContent = playerDataForForm.notes || ''; // Use textContent for textarea
+    notesDiv.appendChild(notesLabel);
+    notesDiv.appendChild(notesTextarea);
+    modalBodyContent.appendChild(notesDiv);
+
+    // Define button configuration
+    const buttonsConfig = [
+        {
+            text: 'Cancel',
+            className: 'modal-button-secondary',
+            callback: () => ModalManager.closeModal(), // Simple close on cancel
+            closesModal: true
+        },
+        {
+            text: 'Save Changes',
+            className: 'modal-button-primary',
+            callback: async () => {
+                const newName = document.getElementById('modalEditPlayerName').value.trim();
+                const newScoreStr = document.getElementById('modalEditPlayerScore').value.trim();
+                const newNotes = document.getElementById('modalEditPlayerNotes').value.trim();
+
+                let newScore = null;
+                if (newScoreStr) {
+                    const parsedScore = parseInt(newScoreStr, 10);
+                    if (isNaN(parsedScore) || parsedScore < 1 || parsedScore > 5) {
+                        ModalManager.showAlert('Invalid Input', 'Invalid score. Must be a number between 1 and 5. Score will not be changed unless corrected.');
+                        return; // Keep modal open for correction
+                    } else {
+                        newScore = parsedScore;
+                    }
+                }
+
+                try {
+                    // Define the UI update callback for after player data is saved
+                    const uiUpdateCallback = (updatedPlayer) => {
+                        if (updatedPlayer) {
+                            ModalManager.showAlert('Success', `Player ${updatedPlayer.name || updatedPlayer.id} details updated.`);
+                            if (typeof window.renderKnownPlayers === 'function') {
+                                window.renderKnownPlayers(); // Refresh the list
+                            } else if (typeof renderKnownPlayers === 'function') {
+                                renderKnownPlayers(); // If called from within userManager.js context
+                            }
+                            ModalManager.closeModal();
+                        }
+                    };
+
+                    // Call addPlayer (which handles updates too)
+                    // Preserve existing isFavorite status if editing.
+                    const existingFavoriteStatus = playerData[playerId]?.isFavorite || false;
+                    await addPlayer(playerId, newName || `Player ${playerId}`, newScore, newNotes, existingFavoriteStatus, uiUpdateCallback);
+
+                } catch (error) {
+                    console.error(`Failed to update player:`, error);
+                    ModalManager.showAlert('Error', `Failed to update player: ${error.message}`);
+                }
+            },
+            closesModal: false // Handle close explicitly in callback after save/error
+        }
+    ];
+
+    // Call ModalManager with the created DOM element and button config
+    ModalManager.showModal(modalTitle, modalBodyContent, buttonsConfig);
+}
+
+/**
+ * Creates and displays a modal showing the username history for a given player.
+ * @param {Object} player - The player object containing the username history.
+ * @param {HTMLElement} [triggerElement=null] - The element that triggered the modal (optional, for positioning).
+ */
+function createUsernameHistoryModal(player, triggerElement = null) {
+    if (!player || !player.usernameHistory || player.usernameHistory.length === 0) {
+        // Handle case where player has no history
+        return;
+    }
+
+    // Rest of the function remains the same
+}
+
+/**
+ * Render the known players list, optionally filtering by search term.
+ * @param {HTMLElement} container - The container element to render into.
+ * @param {string} [searchTerm=''] - Optional search term to filter players.
+ */
+async function renderKnownPlayers(container, searchTerm = '') {
+    if (!container) {
+        console.error("Container element not provided for rendering known players.");
+        return;
+    }
+    // Load the latest player data directly from storage each time
+    const playerData = await loadPlayerData();
+    // Fetch the latest set of online player IDs
+    let onlinePlayerIds = new Set();
+    try {
+        // Ensure fetchOnlinePlayerIds is accessible, e.g., via window
+        if (typeof window.fetchOnlinePlayerIds === 'function') {
+            onlinePlayerIds = await window.fetchOnlinePlayerIds();
+        } else if (typeof fetchOnlinePlayerIds === 'function') {
+             onlinePlayerIds = await fetchOnlinePlayerIds(); // If defined globally/imported
+        } else {
+            console.warn("fetchOnlinePlayerIds function not found.");
+        }
+    } catch (error) {
+        console.error("Error fetching online player IDs in renderKnownPlayers:", error);
+    }
+
+    // Use the existing display function, passing the loaded data and necessary callbacks
+    // Pass the onlinePlayerIds Set instead of sessionData
+    await displayKnownPlayers(container, searchTerm, playerData, onlinePlayerIds, createUsernameHistoryModal, () => renderKnownPlayers(container, searchTerm));
+}
+
+/**
+ * Fetches and updates a player's name from the API.
+ * @param {string} playerId - The ID of the player to update.
+ * @param {Function} [refreshListCallback] - Optional callback to refresh the list after updating.
+ */
+async function fetchAndUpdatePlayerName(playerId, refreshListCallback) {
+    if (!playerId) return;
+
+    try {
+        const response = await fetch(`https://botc.app/api/user/${playerId}`);
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+        const data = await response.json();
+
+        const newUsername = data && data.user ? data.user.username : null;
+
+        if (newUsername) {
+            const playerData = await loadPlayerData();
+
+            const player = playerData[playerId];
+            if (player && player.name !== newUsername) {
+                const oldUsername = player.name;
+                player.name = newUsername;
+                // Ensure updateUsernameHistory handles the history array correctly
+                // updateUsernameHistory(player, oldUsername); 
+                // Assuming updateUsernameHistory is synchronous or integrated into addPlayer
+                // Let's call addPlayer to handle the update consistently, preserving other fields
+                await addPlayer(playerId, newUsername, player.score, player.notes, player.isFavorite);
+
+                ModalManager.showAlert('Success', `Player ${playerId}'s name updated from "${oldUsername}" to "${newUsername}".`);
+                if (refreshListCallback) refreshListCallback();
+            } else if (player && player.name === newUsername) {
+                ModalManager.showAlert('Success', `Player ${playerId}'s name "${newUsername}" is already up-to-date.`);
+            } else {
+                ModalManager.showAlert('Error', `Player ${playerId} not found in local data. Consider adding them.`);
+                // Optionally trigger add player flow here
+            }
+        } else {
+            ModalManager.showAlert('Error', `Could not retrieve a valid username for player ${playerId} from API.`);
+        }
+    } catch (error) {
+        console.error(`Error fetching or updating player ${playerId} name:`, error);
+        ModalManager.showAlert('Error', `Failed to fetch/update player name: ${error.message}`);
+    }
+}

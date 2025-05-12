@@ -1,31 +1,158 @@
 // This is the main script for the popup interface.
 // It orchestrates calls to functions defined in userManager.js and sessionManager.js
 
-document.addEventListener('DOMContentLoaded', function() {
+// Globally accessible filter options for the popup
+let currentFilterOptions = { officialOnly: false, hideCompleted: false };
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Assign core utility functions to window object IMMEDIATELY
+    // so they are available even if subsequent async operations fail.
+    window.sendMessagePromise = (message) => {
+        return new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage(message, (response) => {
+                if (chrome.runtime.lastError) {
+                    // Don't reject if the error is expected (like popup closed before response)
+                    // but log it as a warning.
+                    if (chrome.runtime.lastError.message.includes("Extension context invalidated") ||
+                        chrome.runtime.lastError.message.includes("Could not establish connection") || 
+                        chrome.runtime.lastError.message.includes("message port closed")) {
+                         console.warn(`sendMessagePromise: Ignoring expected error - ${chrome.runtime.lastError.message}`);
+                         // Resolve indicating potential issue but not a hard error
+                         resolve({ error: chrome.runtime.lastError.message, potentiallyClosed: true }); 
+                    } else {
+                        console.error("sendMessagePromise Runtime Error:", chrome.runtime.lastError.message);
+                        reject(chrome.runtime.lastError);
+                    }
+                } else {
+                    resolve(response);
+                }
+            });
+        });
+    };
+    window.parseJwt = parseJwt;
+
     // Button and Controls References
     const fetchButton = document.getElementById('fetchButton');
     const officialOnlyCheckbox = document.getElementById('officialOnlyCheckbox');
-    const searchInput = document.getElementById('userSearch'); // Corrected ID from HTML
+    const searchInput = document.getElementById('userSearch'); 
     const exportPlayersButton = document.getElementById('export-players-button');
     const importPlayersButton = document.getElementById('import-players-button');
     const importFileInput = document.getElementById('import-file-input');
     const importStatusDiv = document.getElementById('import-status');
+    const addPlayerButton = document.getElementById('add-player-button'); 
+    const clearAllPlayerDataButton = document.getElementById('clear-all-player-data-button'); 
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const sessionListDiv = document.getElementById('sessionList');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const knownPlayersDiv = document.getElementById('knownPlayers');
+    const onlineFavoritesListDiv = document.getElementById('onlineFavoritesList');
+    const onlineFavoritesCountSpan = document.getElementById('onlineFavoritesCount');
+    const openInTabButton = document.getElementById('open-in-tab-btn');
+    const fetchStatsSpan = document.getElementById('fetchStats');
 
     // Tab References
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
 
     // Content Area References
-    const sessionResultsDiv = document.getElementById('sessionResults'); // This is now just a container for loadingIndicator and sessionList
-    const sessionListDiv = document.getElementById('sessionList'); // Specific div for session cards
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    const knownPlayersDiv = document.getElementById('knownPlayers');
 
     // State
-    let latestSessionData = null; // Variable to store the latest session data
-    let lastFetchedSessions = []; // Store the last fetched sessions
-    let showOfficialOnly = false; // Store the filter state
+    let latestSessionData = null; 
+    let showOfficialOnly = false; 
     let searchTimeout = null;
+    // Global scope for popup lifecycle
+    window.currentUserID = null;
+    window.liveGameInfo = null; 
+    window.playerData = {}; // Initialize playerData
+
+    // Function to parse JWT and extract user ID
+    function parseJwt(token) {
+        if (!token) {
+            console.warn("Attempted to parse a null or empty token.");
+            return null;
+        }
+        try {
+            const base64Url = token.split('.')[1];
+            if (!base64Url) {
+                console.error("Invalid JWT: Missing payload.");
+                return null;
+            }
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            const decodedToken = JSON.parse(jsonPayload);
+            return decodedToken.id || null; 
+        } catch (error) {
+            console.error('Failed to parse JWT:', error);
+            return null;
+        }
+    }
+
+    // --- Dark Mode Functionality ---
+    function setDarkMode(isDark) {
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+        // Save preference
+        const themeToSave = isDark ? 'dark' : 'light';
+        chrome.storage.local.set({ theme: themeToSave }, function() {
+            if (chrome.runtime.lastError) {
+                console.error('Error saving theme preference:', chrome.runtime.lastError);
+            }
+        });
+    }
+
+    // --- Initial Async Setup --- 
+    try {
+        // Load theme preference first (synchronous parts + async storage)
+        const themeResult = await new Promise((resolve) => chrome.storage.local.get(['theme'], resolve));
+        if (themeResult && themeResult.theme === 'dark') {
+            setDarkMode(true);
+            if (darkModeToggle) darkModeToggle.checked = true;
+        } else {
+            setDarkMode(false); 
+            if (darkModeToggle) darkModeToggle.checked = false;
+        }
+
+        // Fetch Auth Token and parse User ID
+        // console.log('[Popup Init] Requesting Auth Token...');
+        const tokenResponse = await sendMessagePromise({ type: 'GET_AUTH_TOKEN' });
+        if (tokenResponse && tokenResponse.token) {
+            // console.log('[Popup Init] Auth Token received.');
+            window.currentUserID = parseJwt(tokenResponse.token);
+            // console.log('[Popup Init] Parsed User ID:', window.currentUserID);
+        } else {
+            console.warn('[Popup Init] No Auth Token received from background.');
+            window.currentUserID = null;
+        }
+
+        // Player data might be needed for other UI elements or checks
+        const playerDataResponse = await sendMessagePromise({ type: 'GET_PLAYER_DATA' });
+        window.playerData = (playerDataResponse && playerDataResponse.playerData) ? playerDataResponse.playerData : {};
+
+    } catch (error) {
+        console.error('[Popup Init] Error during initial async setup:', error);
+        // Ensure defaults are set in case of error
+        window.currentUserID = null;
+        window.liveGameInfo = null;
+        setDarkMode(false); 
+        if (darkModeToggle) darkModeToggle.checked = false;
+    }
+
+    // Dark Mode Toggle Logic (no longer needs to be conditional on settings modal elements)
+    if (darkModeToggle && typeof darkModeToggle.addEventListener === 'function') {
+        darkModeToggle.addEventListener('change', function() {
+            setDarkMode(this.checked);
+        });
+    } else {
+        console.error('darkModeToggle is NOT valid or addEventListener is missing after UI change. This should not happen.');
+        // Fallback or further error logging if needed, but the element should exist directly in the header now.
+    }
+
+    // --- Proceed with rest of initialization AFTER async setup ---
 
     // Function to show a specific tab
     function showTab(tabId) {
@@ -42,16 +169,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Load data if switching to user management tab
         if (tabId === 'userManagement') {
-            loadPlayerData(playerData => {
-                displayKnownPlayers(
-                    knownPlayersDiv, 
-                    searchInput.value.trim(), // Use trimmed search value
-                    playerData, 
-                    latestSessionData, 
-                    createUsernameHistoryModal,
-                    refreshUserManagementTab
-                );
-            });
+            // Call the async render function from userManager.js
+            // This function now handles loading data itself.
+            // No need to await if we don't need the result immediately.
+            renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
         }
     }
 
@@ -59,34 +180,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * Fetches the set of currently online player IDs from the backend.
-     * @param {function(Set<string>)} callback - Receives a Set of online player IDs.
+     * @returns {Promise<Set<string>>} A promise that resolves with a Set of online player IDs.
      */
-    function fetchOnlinePlayerIds(callback) {
-        chrome.runtime.sendMessage({ action: "fetchSessions" }, (response) => {
-            const onlineIds = new Set();
-            if (response && response.sessions && Array.isArray(response.sessions)) {
-                response.sessions.forEach(session => {
-                    if (session && session.players && Array.isArray(session.players)) {
-                        session.players.forEach(player => {
-                            if (player && player.id) {
-                                onlineIds.add(player.id.toString()); // Ensure ID is string
-                            }
-                        });
-                    }
-                });
-            } else {
-                console.warn("No sessions found or invalid format when fetching online IDs.", response);
-            }
-            callback(onlineIds);
+    async function fetchOnlinePlayerIds() {
+        return new Promise((resolve) => {
+            // Use sendMessagePromise for built-in error handling
+            sendMessagePromise({ action: "fetchSessions" }).then(response => {
+                const onlineIds = new Set();
+                if (response && response.sessions && Array.isArray(response.sessions)) {
+                    response.sessions.forEach(session => {
+                        if (session && session.usersAll && Array.isArray(session.usersAll)) {
+                            session.usersAll.forEach(user => {
+                                if (user && user.id) {
+                                    onlineIds.add(user.id.toString());
+                                }
+                            });
+                        }
+                    });
+                }
+                resolve(onlineIds); // Resolve with the Set
+            }).catch(error => {
+                console.error("Error fetching online player IDs:", error);
+                resolve(new Set()); // Resolve with an empty set on error
+            });
         });
     }
 
     /**
      * Updates the list of online favorite players in the UI.
      * @param {Object} playerData - The complete player data object.
-     * @param {Map<string, string>} onlinePlayersMap - Map of online player IDs to their session names.
+     * @param {Object} onlinePlayersMap - Object of online player IDs to their session names.
      */
     function updateOnlineFavoritesList(playerData, onlinePlayersMap) {
+        // console.log('[Popup] onlinePlayersMap received (should be object):', onlinePlayersMap, 'Is Map?', onlinePlayersMap instanceof Map); 
         const favoritesListDiv = document.getElementById('onlineFavoritesList');
         const favoritesCountSpan = document.getElementById('onlineFavoritesCount');
 
@@ -95,8 +221,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        favoritesListDiv.innerHTML = ''; // Clear previous list
-        favoritesCountSpan.textContent = '0'; // Reset count
+        favoritesListDiv.innerHTML = ''; 
+        favoritesCountSpan.textContent = '0'; 
 
         if (!playerData || Object.keys(playerData).length === 0) {
             favoritesListDiv.textContent = 'No player data available.';
@@ -105,11 +231,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const onlineFavorites = [];
         for (const playerId in playerData) {
-            if (playerData[playerId].isFavorite && onlinePlayersMap.has(playerId)) {
+            if (playerData[playerId].isFavorite && onlinePlayersMap.hasOwnProperty(playerId)) { 
                 onlineFavorites.push({
                     ...playerData[playerId],
-                    id: playerId, // Ensure player ID is part of the object
-                    sessionName: onlinePlayersMap.get(playerId) // Corrected to sessionName for clarity from onlinePlayersMap
+                    id: playerId, 
+                    sessionName: onlinePlayersMap[playerId] 
                 });
             }
         }
@@ -122,20 +248,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const ul = document.createElement('ul');
-        ul.classList.add('player-list'); // Add a class for potential styling
+        ul.classList.add('player-list'); 
         onlineFavorites.forEach(player => {
             const li = document.createElement('li');
-            li.classList.add('player-item'); // Add a class for potential styling
+            li.classList.add('player-item'); 
             li.innerHTML = `
                 <span class="player-name">${player.name}</span> 
                 <span class="player-rating">(Rating: ${player.score || 'N/A'})</span> - 
                 <span class="player-session">Online in: ${player.sessionName}</span>
             `;
-            // Add more details or styling as needed, e.g., link to session or player notes
             ul.appendChild(li);
         });
         favoritesListDiv.appendChild(ul);
     }
+
+    // Expose functions globally if needed by other scripts
+    window.updateOnlineFavoritesListFunc = updateOnlineFavoritesList;
+    window.refreshUserManagementTab = refreshUserManagementTab; 
+    window.fetchOnlinePlayerIds = fetchOnlinePlayerIds;
 
     /**
      * Refreshes the content of the User Management tab.
@@ -145,27 +275,65 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('User list container not found for refresh.');
             return;
         }
-        // Immediately clear the current list to show activity
-        knownPlayersDiv.innerHTML = '<p class="loading-message">Loading player data...</p>'; 
+        // Call the async render function from userManager.js
+        // This function now handles loading data and displaying.
+        // No need to await if we don't need the result immediately.
+        renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+    }
 
-        if (typeof window.loadPlayerData === 'function' && typeof window.displayKnownPlayers === 'function') {
-            // Need online players to pass to displayKnownPlayers for sorting
-            fetchOnlinePlayerIds(onlinePlayerIds => {
-                window.loadPlayerData((playerData) => {
-                    window.displayKnownPlayers(
-                        knownPlayersDiv,
-                        searchInput.value.trim(), // Pass current search term
-                        playerData,
-                        latestSessionData, 
-                        createUsernameHistoryModal, // Pass the modal creation function
-                        refreshUserManagementTab // Pass self for recursive refresh after actions
-                    );
-                });
-            });
-       
-        } else {
-            console.error('Required functions (loadPlayerData or displayKnownPlayers) not found on window.');
-            knownPlayersDiv.innerHTML = '<p class="error-message">Error loading player management functions.</p>';
+    // Function to refresh the session display
+    async function refreshDisplayedSessions() {
+        // console.log('[Popup] Refreshing displayed sessions...');
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        if (sessionListDiv) sessionListDiv.innerHTML = ''; // Clear previous sessions
+        if (fetchStatsSpan) fetchStatsSpan.textContent = ''; // Clear previous stats
+
+        // Update currentFilterOptions based on checkbox state
+        currentFilterOptions.officialOnly = officialOnlyCheckbox ? officialOnlyCheckbox.checked : false;
+        
+        // Ensure window.playerData is populated. It should be by the time this is called after initial setup.
+        // If called before initial setup, it might be empty, which sessionManager now handles with a warning.
+        if (!window.playerData) {
+            console.warn('[Popup] refreshDisplayedSessions called but window.playerData is not yet initialized.');
+            // Attempt to load it now as a fallback - ideally, popup.js structure ensures it's loaded prior.
+            try {
+                const playerDataResponse = await sendMessagePromise({ type: 'GET_PLAYER_DATA' });
+                window.playerData = (playerDataResponse && playerDataResponse.playerData) ? playerDataResponse.playerData : {};
+                // console.log('[Popup] Fallback playerData load completed during refresh.');
+            } catch (err) {
+                console.error('[Popup] Error during fallback playerData load:', err);
+                window.playerData = {}; // Ensure it's at least an empty object
+            }
+        }
+
+        try {
+            await window.fetchAndDisplaySessions(
+                // memoizedLoadPlayerData, // REMOVED - sessionManager.js uses window.playerData directly
+                window.addPlayer, 
+                window.createUsernameHistoryModal, 
+                window.updateOnlineFavoritesListFunc,
+                sessionListDiv,
+                currentFilterOptions,
+                (sessions, error) => { // onCompleteCallback
+                    if (loadingIndicator) loadingIndicator.style.display = 'none';
+                    if (error) {
+                        console.error("[Popup] Error reported by fetchAndDisplaySessions:", error);
+                        if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>Failed to display sessions: ${error}</p>`;
+                    } else {
+                        // console.log("[Popup] Sessions displayed/updated.");
+                        latestSessionData = sessions; // Store the latest session data
+                        // After sessions are rendered, update the user management tab if it's active
+                        // This ensures player statuses (e.g., online) are current
+                        if (document.getElementById('userManagement').classList.contains('active')) {
+                            refreshUserManagementTab();
+                        }
+                    }
+                }
+            );
+        } catch (error) {
+            console.error("[Popup] Critical error calling fetchAndDisplaySessions:", error);
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+            if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>A critical error occurred: ${error.message}</p>`;
         }
     }
 
@@ -179,204 +347,319 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    fetchButton.addEventListener('click', () => {
+    // Search Input Listener (User Management Tab)
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            // Clear the previous timeout if there is one
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            // Set a new timeout to call renderKnownPlayers after 300ms
+            searchTimeout = setTimeout(() => {
+                // Check if the user management tab is currently active before re-rendering
+                if (document.getElementById('userManagement').classList.contains('active')) {
+                    renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+                }
+            }, 300); // Debounce time: 300ms
+        });
+    } else {
+        console.warn('Search input element not found.');
+    }
+
+    fetchButton.addEventListener('click', async () => {
         if (sessionListDiv) {
             sessionListDiv.innerHTML = '<p class="loading-message">Fetching sessions...</p>';
         }
         if (loadingIndicator) loadingIndicator.style.display = 'block';
-        if (sessionListDiv) sessionListDiv.style.display = 'none'; // Hide list while loading
+        if (sessionListDiv) sessionListDiv.style.display = 'none'; 
 
-        fetchAndDisplaySessions(
-            loadPlayerData, 
-            addPlayer,      
-            createUsernameHistoryModal, 
-            updateOnlineFavoritesList, 
-            sessionListDiv, // Pass sessionListDiv as the target for session cards
+        await window.fetchAndDisplaySessions(
+            // memoizedLoadPlayerData, // REMOVED - sessionManager.js uses window.playerData directly
+            window.addPlayer,      
+            window.createUsernameHistoryModal, 
+            window.updateOnlineFavoritesListFunc,
+            sessionListDiv, 
             { officialOnly: showOfficialOnly }, 
-            (sessions, finalPlayerData) => { // Modified callback to receive final data
+            (sessions, finalPlayerData) => { 
                 latestSessionData = sessions; 
-                lastFetchedSessions = sessions; 
                 if (loadingIndicator) loadingIndicator.style.display = 'none';
-                if (sessionListDiv) sessionListDiv.style.display = 'block'; // Show list again
-                // updateOnlineFavoritesList is already called within checkHistoryAndRender
+                if (sessionListDiv) sessionListDiv.style.display = 'block'; 
             }
         );
     });
 
-    officialOnlyCheckbox.addEventListener('change', () => {
-        showOfficialOnly = officialOnlyCheckbox.checked;
+    // --- Filter Checkbox Listeners ---
+
+    // Helper function to re-render sessions with current filters
+    function applySessionFilters() {
+        if (!window.renderSessions) {
+            console.error('renderSessions function not found. Cannot re-render with filters.');
+            if (sessionListDiv) sessionListDiv.innerHTML = '<p class="error-message">Error applying filter.</p>';
+            return;
+        }
+        if (!latestSessionData) {
+             console.warn('No session data available to filter.');
+             // Optionally show a message or just do nothing
+             if (sessionListDiv) sessionListDiv.innerHTML = '<p>Fetch session data first to apply filters.</p>';
+             return;
+        }
+
+        // Update global filter options based on current checkbox states
+        currentFilterOptions.officialOnly = officialOnlyCheckbox ? officialOnlyCheckbox.checked : false;
+
+        // Display a temporary message while re-rendering
         if (sessionListDiv) {
             sessionListDiv.innerHTML = '<p class="loading-message">Applying filter...</p>';
-            sessionListDiv.style.display = 'block'; // Ensure it's visible if previously hidden
         }
-        if (loadingIndicator) loadingIndicator.style.display = 'none'; // Hide if it was somehow visible
-        
-        loadPlayerData(playerData => {
-            // Directly call renderSessions from sessionManager.js (assuming it's globally available or imported)
-            // This assumes renderSessions is exposed on the window object or properly imported if using modules.
-            if (window.renderSessions) {
-                window.renderSessions(lastFetchedSessions, playerData, sessionListDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal);
-            } else {
-                console.error('renderSessions function not found. Cannot re-render with filter.');
-                if (sessionListDiv) sessionListDiv.innerHTML = '<p class="error-message">Error applying filter.</p>';
-            }
-        });
-    });
 
-    searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        // Debounce
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            // Re-display players matching the search term, passing session data
-            loadPlayerData(playerData => {
-                displayKnownPlayers(
-                    knownPlayersDiv, 
-                    searchTerm, 
-                    playerData, 
-                    latestSessionData, 
-                    createUsernameHistoryModal, 
-                    refreshUserManagementTab
-                );
-            });
-        }, 300);
-    });
+        // Call renderSessions with existing data and updated filters
+        window.renderSessions(
+            latestSessionData, 
+            window.playerData, // Assumes playerData is up-to-date
+            sessionListDiv, 
+            currentFilterOptions, // Pass the updated filter object
+            window.addPlayer, // Pass necessary callbacks
+            window.createUsernameHistoryModal
+        );
+    }
+
+    // Listener for 'Official Games Only' checkbox
+    if (officialOnlyCheckbox) {
+        officialOnlyCheckbox.addEventListener('change', applySessionFilters);
+    } else {
+        console.warn("'officialOnlyCheckbox' not found.");
+    }
+
+    // --- End Filter Checkbox Listeners ---
+
 
     // Add Player Manually Button (Handles both Add and Update via window.addPlayer)
-    const addPlayerButton = document.getElementById('add-player-button');
     if (addPlayerButton) {
-        addPlayerButton.addEventListener('click', () => {
-            const playerId = prompt("Enter Player ID (required):");
-            if (!playerId || playerId.trim() === '') {
-                alert("Player ID cannot be empty.");
-                return; // Stop if no ID
-            }
-            const id = playerId.trim();
+        addPlayerButton.innerHTML = '<img src="../icons/addbutton.svg" alt="Add Player" class="button-icon" /> Add';
+        addPlayerButton.title = 'Add Player Manually'; 
 
-            const name = prompt(`Enter name for player ${id}:`, `Player ${id}`);
-            if (name === null) return; // Stop if cancelled
-
-            const scoreStr = prompt(`Enter score (1-5) for ${name || `Player ${id}`}:`, '3');
-            if (scoreStr === null) return; // Stop if cancelled
-
-            let score = parseInt(scoreStr, 10);
-            if (isNaN(score) || score < 1 || score > 5) {
-                alert("Invalid score. Must be 1-5. Setting to 3.");
-                score = 3;
+        addPlayerButton.addEventListener('click', async () => {
+            if (typeof window.addPlayer !== 'function') {
+                ModalManager.showAlert('Error', 'User management feature is unavailable. The addPlayer function is not loaded correctly.');
+                console.error('window.addPlayer is not defined or not a function.');
+                return;
             }
 
-            const notes = prompt(`Enter notes for ${name || `Player ${id}`}:`, '');
-            if (notes === null) return; // Stop if cancelled
+            const modalTitle = 'Add New Player Manually';
 
-            // Call the universal addPlayer function
-            if (typeof window.addPlayer === 'function') {
-                // Assume new players are not favorites by default
-                window.addPlayer(id, name, score, notes, false, (success, message) => {
-                    if (success) {
-                        refreshUserManagementTab(); // Refresh the list
-                    } else {
-                        alert(`Failed to add/update player: ${message}`);
-                        console.error(`Failed to add/update player ${id}: ${message}`);
-                    }
-                });
-            } else {
-                console.error('window.addPlayer function not found!');
-                alert('Add/Update feature is unavailable.');
-            }
+            // Create modal body using DOM manipulation
+            const modalBodyContent = document.createElement('div');
+            modalBodyContent.classList.add('modal-add-player-form');
+
+            // Player ID Input
+            const idDiv = document.createElement('div');
+            const idLabel = document.createElement('label');
+            idLabel.htmlFor = 'modalPlayerId';
+            idLabel.textContent = 'Player ID:';
+            const idInput = document.createElement('input');
+            idInput.type = 'text';
+            idInput.id = 'modalPlayerId';
+            idInput.name = 'modalPlayerId'; // Keep name for potential form handling
+            idInput.required = true;
+            idDiv.appendChild(idLabel);
+            idDiv.appendChild(idInput);
+            modalBodyContent.appendChild(idDiv);
+
+            // Player Name Input
+            const nameDiv = document.createElement('div');
+            const nameLabel = document.createElement('label');
+            nameLabel.htmlFor = 'modalPlayerName';
+            nameLabel.textContent = 'Name:';
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.id = 'modalPlayerName';
+            nameInput.name = 'modalPlayerName';
+            nameDiv.appendChild(nameLabel);
+            nameDiv.appendChild(nameInput);
+            modalBodyContent.appendChild(nameDiv);
+
+            // Score Input
+            const scoreDiv = document.createElement('div');
+            const scoreLabel = document.createElement('label');
+            scoreLabel.htmlFor = 'modalPlayerScore';
+            scoreLabel.textContent = 'Score (1-5, optional):';
+            const scoreInput = document.createElement('input');
+            scoreInput.type = 'number';
+            scoreInput.id = 'modalPlayerScore';
+            scoreInput.name = 'modalPlayerScore';
+            scoreInput.min = '1';
+            scoreInput.max = '5';
+            scoreDiv.appendChild(scoreLabel);
+            scoreDiv.appendChild(scoreInput);
+            modalBodyContent.appendChild(scoreDiv);
+
+            // Notes Input
+            const notesDiv = document.createElement('div');
+            const notesLabel = document.createElement('label');
+            notesLabel.htmlFor = 'modalPlayerNotes';
+            notesLabel.textContent = 'Notes (optional):';
+            const notesTextarea = document.createElement('textarea');
+            notesTextarea.id = 'modalPlayerNotes';
+            notesTextarea.name = 'modalPlayerNotes';
+            notesTextarea.rows = 3;
+            notesDiv.appendChild(notesLabel);
+            notesDiv.appendChild(notesTextarea);
+            modalBodyContent.appendChild(notesDiv);
+
+            // Show modal with the created DOM node
+            ModalManager.showModal(modalTitle, modalBodyContent, [
+                {
+                    text: 'Cancel',
+                    className: 'modal-button-secondary',
+                },
+                {
+                    text: 'Add Player',
+                    className: 'modal-button-primary',
+                    callback: async () => {
+                        const playerId = document.getElementById('modalPlayerId').value.trim();
+                        const name = document.getElementById('modalPlayerName').value.trim();
+                        const scoreStr = document.getElementById('modalPlayerScore').value.trim();
+                        const notes = document.getElementById('modalPlayerNotes').value.trim();
+
+                        if (!playerId) {
+                            ModalManager.showAlert('Error', 'Player ID cannot be empty.');
+                            return; 
+                        }
+
+                        const playerName = name || `Player ${playerId}`;
+                        let score = null;
+                        if (scoreStr) {
+                            const parsedScore = parseInt(scoreStr, 10);
+                            if (isNaN(parsedScore) || parsedScore < 1 || parsedScore > 5) {
+                                ModalManager.showAlert('Invalid Input', 'Invalid score. Must be a number between 1 and 5. Score will be ignored.');
+                            } else {
+                                score = parsedScore;
+                            }
+                        }
+
+                        try {
+                            const uiUpdateCallback = (updatedPlayer) => {
+                                ModalManager.showAlert('Success', `Player ${updatedPlayer.name} (ID: ${updatedPlayer.id}) ${score !== null ? 'with score ' + score : ''} has been added/updated successfully.`);
+                                if (typeof refreshUserManagementTab === 'function') {
+                                    refreshUserManagementTab(); 
+                                } else {
+                                    console.warn('refreshUserManagementTab function not found, UI may not update.');
+                                }
+                                ModalManager.closeModal(); 
+                            };
+                            await window.addPlayer(playerId, playerName, score, notes, false, uiUpdateCallback);
+                        } catch (error) {
+                            console.error('Failed to add/update player:', error);
+                            ModalManager.showAlert('Error', `Failed to add/update player: ${error.message}`);
+                        }
+                    },
+                    closesModal: false 
+                }
+            ]);
         });
     } else {
         console.warn('Add Player Manually button not found.');
     }
 
-    // Export Players Button
+    // --- Export/Import Buttons ---
     if (exportPlayersButton) {
         exportPlayersButton.addEventListener('click', () => {
-            if (typeof window.exportPlayerDataCSV === 'function') {
-                window.exportPlayerDataCSV();
+            if (typeof window.exportPlayerDataCSV === 'function') { 
+                // Assuming exportPlayerDataCSV uses window.playerData internally or we pass it
+                // Let's assume it uses window.playerData for now.
+                window.exportPlayerDataCSV(window.playerData); 
             } else {
-                console.error('window.exportPlayerDataCSV function not found.');
-                alert('Export function is unavailable. Check console.');
+                console.error('Export function (window.exportPlayerDataCSV) not found.'); 
+                ModalManager.showAlert('Error', 'Export functionality is currently unavailable.');
             }
         });
     } else {
-        console.warn('Export Players button not found.');
+        console.warn('Export players button not found.');
     }
 
-    // Import Players Button (triggers hidden file input)
     if (importPlayersButton && importFileInput) {
         importPlayersButton.addEventListener('click', () => {
-            importFileInput.click(); // Open file dialog
+            importFileInput.click(); // Trigger the hidden file input
         });
-    } else {
-        console.warn('Import Players button or file input not found.');
-    }
 
-    // File Input Change Listener (for import)
-    if (importFileInput && importStatusDiv) {
         importFileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
-            if (!file) {
-                return; // No file selected
+            if (file) {
+                // Make the successCallback async to use await inside
+                const successCallback = async (parsedData) => { 
+                    try {
+                        // Await the async function instead of passing a callback
+                        await window.replaceAllPlayerDataAndSave(parsedData); 
+                        
+                        // Code that was previously in the inner callback now runs after await
+                        importStatusDiv.textContent = 'Player data imported successfully! Reloading list...';
+                        refreshUserManagementTab(); 
+                        event.target.value = null; // Clear file input
+                    } catch (error) {
+                        console.error('Error processing imported data:', error);
+                        importStatusDiv.textContent = 'Error saving imported data. Check console.';
+                        importStatusDiv.className = 'import-status-message error';
+                        importStatusDiv.style.display = 'block';
+                    }
+                };
+                window.importPlayerDataCSV(file, successCallback, (message, isError) => {
+                    importStatusDiv.textContent = message;
+                    importStatusDiv.className = `import-status-message ${isError ? 'error' : 'success'}`;
+                    importStatusDiv.style.display = 'block';
+                }); 
+            } else {
+                importStatusDiv.textContent = 'No file selected.';
+                importStatusDiv.className = 'import-status-message error';
+                importStatusDiv.style.display = 'block';
             }
-
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-                const csvContent = e.target.result;
-                if (typeof window.importPlayerDataCSV === 'function') {
-                    importStatusDiv.textContent = 'Importing...';
-                    importStatusDiv.style.color = '#aaa'; // Reset color
-                    importStatusDiv.style.display = 'inline'; // Show status
-                    
-                    window.importPlayerDataCSV(csvContent, (success, message) => {
-                        // Update status message based on import result
-                        importStatusDiv.textContent = message;
-                        importStatusDiv.style.color = success ? 'lightgreen' : 'salmon';
-                        // Optionally hide message after a delay
-                        // setTimeout(() => { importStatusDiv.style.display = 'none'; }, 5000);
-                    }, refreshUserManagementTab); // Pass refresh function
-                } else {
-                    console.error('window.importPlayerDataCSV function not found.');
-                    alert('Import function is unavailable. Check console.');
-                     importStatusDiv.textContent = 'Import unavailable.';
-                     importStatusDiv.style.color = 'salmon';
-                     importStatusDiv.style.display = 'inline';
-                }
-                 // Clear the input value to allow importing the same file again
-                 event.target.value = null;
-            };
-
-            reader.onerror = (e) => {
-                console.error('Error reading file:', e);
-                alert('Error reading file. See console for details.');
-                importStatusDiv.textContent = 'File read error.';
-                importStatusDiv.style.color = 'salmon';
-                importStatusDiv.style.display = 'inline';
-                event.target.value = null; // Clear input value
-            };
-
-            reader.readAsText(file);
         });
     } else {
-        console.warn('Import file input or status div not found.');
+        console.warn('Import Players button, file input, or status div not found.');
     }
 
-    // Initial fetch on load, respecting checkbox state (which is initially false)
-    fetchAndDisplaySessions(
-        loadPlayerData, // Pass function
-        addPlayer,      // Pass function
-        createUsernameHistoryModal, // Pass function
-        updateOnlineFavoritesList, // Pass the new function
-        sessionListDiv, // Pass sessionListDiv as the target for session cards
-        { officialOnly: showOfficialOnly }, 
-        (sessions, finalPlayerData) => {
-        latestSessionData = sessions; // Store initially fetched sessions
-        lastFetchedSessions = sessions; // Store initially fetched sessions
-        // Load initial players for the hidden management tab
-        loadPlayerData(playerData => {
-            displayKnownPlayers(knownPlayersDiv, '', playerData, latestSessionData, createUsernameHistoryModal);
+    if (clearAllPlayerDataButton) {
+        clearAllPlayerDataButton.addEventListener('click', function() {
+            ModalManager.showConfirm(
+                'Confirm Clear Data',
+                'Are you sure you want to clear ALL player data? This action cannot be undone and is primarily for testing.',
+                () => { 
+                    chrome.storage.local.set({ playerData: {} }, function() {
+                        if (chrome.runtime.lastError) {
+                            console.error('Error clearing player data:', chrome.runtime.lastError);
+                            ModalManager.showAlert('Error', 'Error clearing player data. Please try again.');
+                        } else {
+                            console.log('All player data cleared.');
+                            ModalManager.showAlert('Success', 'All player data has been cleared.');
+                            
+                            if (typeof window.allPlayerData !== 'undefined') {
+                                 window.allPlayerData = {}; 
+                            } else if (typeof allPlayerData !== 'undefined') { 
+                                allPlayerData = {};
+                            }
+
+                            if (typeof refreshUserManagementTab === 'function') {
+                                refreshUserManagementTab();
+                            } else if (typeof userManager !== 'undefined' && typeof userManager.renderKnownPlayers === 'function') {
+                                userManager.renderKnownPlayers(); 
+                            } else {
+                                console.warn('Could not refresh user management tab after clearing data.');
+                            }
+                        }
+                    });
+                },
+                () => { 
+                    ModalManager.showAlert('Cancelled', 'Clear data operation was cancelled.');
+                }
+            );
         });
-    });
+    } else {
+        console.warn('Clear all player data button not found.');
+    }
+
+    // --- Initialization Sequence ---
+
+    // Initial setup
+    refreshDisplayedSessions();
 
     // Show the default tab (sessions)
     showTab('sessions'); 
@@ -390,4 +673,24 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error('Could not find the #open-in-tab-btn element.');
     }
+
+    // Add listener for live game info updates from background script
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        if (request.type === 'LIVE_GAME_INFO_UPDATED') {
+            // console.log('[Popup] Received LIVE_GAME_INFO_UPDATED:', JSON.stringify(request.payload, null, 2));
+            const oldLiveGameInfoString = JSON.stringify(window.liveGameInfo);
+            window.liveGameInfo = request.payload;
+            const newLiveGameInfoString = JSON.stringify(window.liveGameInfo);
+
+            if (newLiveGameInfoString !== oldLiveGameInfoString) {
+                console.log('[Popup] Live game info has changed. Refreshing session display.');
+                refreshDisplayedSessions();
+            } else {
+                console.log('[Popup] Live game info received, but no change detected. No refresh needed.');
+            }
+            // sendResponse({status: "Popup processed LIVE_GAME_INFO_UPDATED"}); // Optional: send response if needed
+            return true; // Keep channel open for potential async response, good practice
+        }
+        return false; // For synchronous messages or if not handling this specific message type
+    });
 });
