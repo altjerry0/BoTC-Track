@@ -20,7 +20,7 @@ function getEditionDisplay(edition) {
             case 'snv':
                 return 'Sects & Violets';
             case 'bmr':
-                return 'Blood Moon Rising';
+                return 'Bad Moon Rising';
             default:
                 return 'Official Script';
         }

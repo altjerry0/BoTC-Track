@@ -2,7 +2,7 @@
 // It orchestrates calls to functions defined in userManager.js and sessionManager.js
 
 // Globally accessible filter options for the popup
-let currentFilterOptions = { officialOnly: false };
+let currentFilterOptions = { officialOnly: false, hideCompleted: false };
 
 document.addEventListener('DOMContentLoaded', async function() {
     // Assign core utility functions to window object IMMEDIATELY
@@ -290,7 +290,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Update currentFilterOptions based on checkbox state
         currentFilterOptions.officialOnly = officialOnlyCheckbox ? officialOnlyCheckbox.checked : false;
-        currentFilterOptions.hideCompleted = document.getElementById('hide-completed-checkbox') ? document.getElementById('hide-completed-checkbox').checked : false;
+        const hideCompletedCheckbox = document.getElementById('hide-completed-checkbox');
+        currentFilterOptions.hideCompleted = hideCompletedCheckbox ? hideCompletedCheckbox.checked : false;
         
         // Ensure window.playerData is populated. It should be by the time this is called after initial setup.
         // If called before initial setup, it might be empty, which sessionManager now handles with a warning.
@@ -389,23 +390,60 @@ document.addEventListener('DOMContentLoaded', async function() {
         );
     });
 
-    officialOnlyCheckbox.addEventListener('change', () => {
-        showOfficialOnly = officialOnlyCheckbox.checked;
+    // --- Filter Checkbox Listeners ---
+
+    // Helper function to re-render sessions with current filters
+    function applySessionFilters() {
+        if (!window.renderSessions) {
+            console.error('renderSessions function not found. Cannot re-render with filters.');
+            if (sessionListDiv) sessionListDiv.innerHTML = '<p class="error-message">Error applying filter.</p>';
+            return;
+        }
+        if (!latestSessionData) {
+             console.warn('No session data available to filter.');
+             // Optionally show a message or just do nothing
+             if (sessionListDiv) sessionListDiv.innerHTML = '<p>Fetch session data first to apply filters.</p>';
+             return;
+        }
+
+        // Update global filter options based on current checkbox states
+        currentFilterOptions.officialOnly = officialOnlyCheckbox ? officialOnlyCheckbox.checked : false;
+        const hideCompletedCheckbox = document.getElementById('hide-completed-checkbox');
+        currentFilterOptions.hideCompleted = hideCompletedCheckbox ? hideCompletedCheckbox.checked : false;
+
+        // Display a temporary message while re-rendering
         if (sessionListDiv) {
             sessionListDiv.innerHTML = '<p class="loading-message">Applying filter...</p>';
-            sessionListDiv.style.display = 'block'; 
         }
-        if (loadingIndicator) loadingIndicator.style.display = 'none'; 
-        
-        loadPlayerData(playerData => {
-            if (window.renderSessions) {
-                window.renderSessions(latestSessionData, playerData, sessionListDiv, { officialOnly: showOfficialOnly }, addPlayer, createUsernameHistoryModal);
-            } else {
-                console.error('renderSessions function not found. Cannot re-render with filter.');
-                if (sessionListDiv) sessionListDiv.innerHTML = '<p class="error-message">Error applying filter.</p>';
-            }
-        });
-    });
+
+        // Call renderSessions with existing data and updated filters
+        window.renderSessions(
+            latestSessionData, 
+            window.playerData, // Assumes playerData is up-to-date
+            sessionListDiv, 
+            currentFilterOptions, // Pass the updated filter object
+            window.addPlayer, // Pass necessary callbacks
+            window.createUsernameHistoryModal
+        );
+    }
+
+    // Listener for 'Official Games Only' checkbox
+    if (officialOnlyCheckbox) {
+        officialOnlyCheckbox.addEventListener('change', applySessionFilters);
+    } else {
+        console.warn("'officialOnlyCheckbox' not found.");
+    }
+
+    // Listener for 'Hide Completed Games' checkbox
+    const hideCompletedCheckbox = document.getElementById('hide-completed-checkbox');
+    if (hideCompletedCheckbox) {
+        hideCompletedCheckbox.addEventListener('change', applySessionFilters);
+    } else {
+         console.warn("'hide-completed-checkbox' not found.");
+    }
+
+    // --- End Filter Checkbox Listeners ---
+
 
     // Add Player Manually Button (Handles both Add and Update via window.addPlayer)
     if (addPlayerButton) {

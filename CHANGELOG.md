@@ -13,6 +13,8 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 - Fixed a bug where the 'Manage Users' tab would appear blank after the async refactor due to incorrect function calls.
 - Restored the 'Online' status indicator for players in the 'Manage Users' tab, ensuring it correctly reflects players currently in active game sessions.
 - Fixed the search functionality within the 'Manage Users' tab.
+- Session list filters ('Official Only', 'Hide Completed') now update the displayed list dynamically without requiring a full data re-fetch.
+- Corrected the display name for the official script 'Bad Moon Rising' (was previously misspelled 'Blood Moon Rising').
 
 ## [v1.1.2] - 2025-05-12
 
