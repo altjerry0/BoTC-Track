@@ -290,8 +290,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Update currentFilterOptions based on checkbox state
         currentFilterOptions.officialOnly = officialOnlyCheckbox ? officialOnlyCheckbox.checked : false;
-        const hideCompletedCheckbox = document.getElementById('hide-completed-checkbox');
-        currentFilterOptions.hideCompleted = hideCompletedCheckbox ? hideCompletedCheckbox.checked : false;
         
         // Ensure window.playerData is populated. It should be by the time this is called after initial setup.
         // If called before initial setup, it might be empty, which sessionManager now handles with a warning.
@@ -408,8 +406,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Update global filter options based on current checkbox states
         currentFilterOptions.officialOnly = officialOnlyCheckbox ? officialOnlyCheckbox.checked : false;
-        const hideCompletedCheckbox = document.getElementById('hide-completed-checkbox');
-        currentFilterOptions.hideCompleted = hideCompletedCheckbox ? hideCompletedCheckbox.checked : false;
 
         // Display a temporary message while re-rendering
         if (sessionListDiv) {
@@ -432,14 +428,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         officialOnlyCheckbox.addEventListener('change', applySessionFilters);
     } else {
         console.warn("'officialOnlyCheckbox' not found.");
-    }
-
-    // Listener for 'Hide Completed Games' checkbox
-    const hideCompletedCheckbox = document.getElementById('hide-completed-checkbox');
-    if (hideCompletedCheckbox) {
-        hideCompletedCheckbox.addEventListener('change', applySessionFilters);
-    } else {
-         console.warn("'hide-completed-checkbox' not found.");
     }
 
     // --- End Filter Checkbox Listeners ---
@@ -573,55 +561,56 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.warn('Add Player Manually button not found.');
     }
 
-    // Export player data
+    // --- Export/Import Buttons ---
     if (exportPlayersButton) {
-        exportPlayersButton.innerHTML = '<span class="button-icon">📤</span> Export'; 
-        exportPlayersButton.title = 'Export Players (CSV)'; 
-
         exportPlayersButton.addEventListener('click', () => {
-            if (typeof window.loadPlayerData === 'function' && typeof window.exportPlayerDataCSV === 'function') {
-                window.loadPlayerData(playerData => {
-                    if (Object.keys(playerData).length === 0) {
-                        ModalManager.showAlert('Export Notice', "No player data to export.");
-                        return;
-                    }
-                    window.exportPlayerDataCSV(playerData);
-                });
+            if (typeof window.exportPlayerDataCSV === 'function') { 
+                // Assuming exportPlayerDataCSV uses window.playerData internally or we pass it
+                // Let's assume it uses window.playerData for now.
+                window.exportPlayerDataCSV(window.playerData); 
             } else {
-                ModalManager.showAlert('Error', 'Export feature is unavailable.');
-                console.error('loadPlayerData or exportPlayerDataCSV not found on window.');
+                console.error('Export function (window.exportPlayerDataCSV) not found.'); 
+                ModalManager.showAlert('Error', 'Export functionality is currently unavailable.');
             }
         });
     } else {
-        console.warn('Export Players button not found.');
+        console.warn('Export players button not found.');
     }
 
-    // Import player data
-    if (importPlayersButton && importFileInput && importStatusDiv) {
-        importPlayersButton.innerHTML = '<span class="button-icon">📥</span> Import'; 
-        importPlayersButton.title = 'Import Players (CSV)'; 
-
-        importPlayersButton.addEventListener('click', () => importFileInput.click());
+    if (importPlayersButton && importFileInput) {
+        importPlayersButton.addEventListener('click', () => {
+            importFileInput.click(); // Trigger the hidden file input
+        });
 
         importFileInput.addEventListener('change', (event) => {
-            const statusCallback = (message, isError) => {
-                importStatusDiv.textContent = message;
-                importStatusDiv.className = `import-status-message ${isError ? 'error' : 'success'}`;
-                importStatusDiv.style.display = 'block';
-            };
-
             const file = event.target.files[0];
             if (file) {
-                const successCallback = (parsedData) => {
-                    window.replaceAllPlayerDataAndSave(parsedData, () => { 
-                        statusCallback('Player data imported successfully! Reloading list...', false);
+                // Make the successCallback async to use await inside
+                const successCallback = async (parsedData) => { 
+                    try {
+                        // Await the async function instead of passing a callback
+                        await window.replaceAllPlayerDataAndSave(parsedData); 
+                        
+                        // Code that was previously in the inner callback now runs after await
+                        importStatusDiv.textContent = 'Player data imported successfully! Reloading list...';
                         refreshUserManagementTab(); 
-                        event.target.value = null; 
-                    });
+                        event.target.value = null; // Clear file input
+                    } catch (error) {
+                        console.error('Error processing imported data:', error);
+                        importStatusDiv.textContent = 'Error saving imported data. Check console.';
+                        importStatusDiv.className = 'import-status-message error';
+                        importStatusDiv.style.display = 'block';
+                    }
                 };
-                window.importPlayerDataCSV(file, successCallback, statusCallback); 
+                window.importPlayerDataCSV(file, successCallback, (message, isError) => {
+                    importStatusDiv.textContent = message;
+                    importStatusDiv.className = `import-status-message ${isError ? 'error' : 'success'}`;
+                    importStatusDiv.style.display = 'block';
+                }); 
             } else {
-                statusCallback('No file selected.', true);
+                importStatusDiv.textContent = 'No file selected.';
+                importStatusDiv.className = 'import-status-message error';
+                importStatusDiv.style.display = 'block';
             }
         });
     } else {
@@ -664,8 +653,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             );
         });
     } else {
-        console.warn('Clear All Player Data button not found.');
+        console.warn('Clear all player data button not found.');
     }
+
+    // --- Initialization Sequence ---
 
     // Initial setup
     refreshDisplayedSessions();

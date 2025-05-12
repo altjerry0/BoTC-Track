@@ -4,8 +4,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 
 # BotC Player Tracker Extension - Changelog
 ---
-
-## [v1.1.3] - 2025-05-12
+## [v1.1.3a] - 2025-05-12
 
 ### Fixed
 - Corrected an issue where editing a player's details in the 'Manage Users' tab would incorrectly mark them as a favorite.
@@ -15,6 +14,8 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 - Fixed the search functionality within the 'Manage Users' tab.
 - Session list filters ('Official Only', 'Hide Completed') now update the displayed list dynamically without requiring a full data re-fetch.
 - Corrected the display name for the official script 'Bad Moon Rising' (was previously misspelled 'Blood Moon Rising').
+- Fixed the 'Export Players (CSV)' button functionality by correcting the function name called in its event listener.
+- Fixed the 'Import Players (CSV)' functionality by correctly handling the asynchronous nature of saving imported data, ensuring the UI updates after the import is complete.
 
 ## [v1.1.2] - 2025-05-12
 

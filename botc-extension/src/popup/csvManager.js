@@ -110,9 +110,11 @@ function exportPlayerDataCSV(playerDataToExport) {
  * @param {Function} statusCallback - Called with status messages. function(message, isError)
  */
 function importPlayerDataCSV(file, successCallback, statusCallback) {
+    console.log('[Importer] importPlayerDataCSV started for file:', file ? file.name : 'No file'); // Debug
     const reader = new FileReader();
 
     reader.onload = function (e) {
+        console.log('[Importer] reader.onload triggered.'); // Debug
         const csvContent = e.target.result;
         const newPlayerData = {};
         const rows = csvContent.split('\n');
@@ -191,13 +193,16 @@ function importPlayerDataCSV(file, successCallback, statusCallback) {
             return;
         }
         
+        console.log('[Importer] Parsed players:', playersImportedCount, 'Calling successCallback.'); // Debug
         successCallback(newPlayerData);
     };
 
     reader.onerror = function () {
+        console.error('[Importer] reader.onerror triggered.'); // Debug
         statusCallback('Failed to read the file.', true);
     };
 
+    console.log('[Importer] Calling reader.readAsText...'); // Debug
     reader.readAsText(file);
 }
 
