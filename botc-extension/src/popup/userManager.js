@@ -1055,19 +1055,7 @@ async function editPlayerDetails(playerId) {
     ModalManager.showModal(modalTitle, modalBodyContent, buttonsConfig);
 }
 
-/**
- * Creates and displays a modal showing the username history for a given player.
- * @param {Object} player - The player object containing the username history.
- * @param {HTMLElement} [triggerElement=null] - The element that triggered the modal (optional, for positioning).
- */
-function createUsernameHistoryModal(player, triggerElement = null) {
-    if (!player || !player.usernameHistory || player.usernameHistory.length === 0) {
-        // Handle case where player has no history
-        return;
-    }
 
-    // Rest of the function remains the same
-}
 
 /**
  * Render the known players list, optionally filtering by search term.

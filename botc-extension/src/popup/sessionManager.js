@@ -265,36 +265,43 @@ function createPlayerCard(
                         }
                     }
 
-                    // Define the UI update callback for after player data is saved
-                    const uiUpdateCallback = (updatedPlayer) => {
-                        if (updatedPlayer) {
-                            // Re-render this specific player card or the whole list if simpler
-                            // For now, let's assume a full list refresh might be handled by a broader mechanism
-                            // or that renderSessions might be called again.
-                            // We could also update the card directly if we have its reference.
-                            console.log(`Player ${updatedPlayer.id} updated from session card interaction.`);
-                            ModalManager.showAlert('Success', `Player ${user.name || user.id} details saved.`);
-                            // Potentially refresh the session list or just this card
-                            if (typeof window.fetchAndDisplaySessions === 'function') {
-                                // This might be too broad, ideally just re-render the known players list if it's visible
-                                // and update this specific card's display.
-                                // For now, just log and show success.
-                            }
-                            renderKnownPlayers(); // Re-render the user management tab if it's the active one
-                        }
-                    };
+                    // Retrieve current player data to preserve favorite status
+                    const currentPlayerDetails = playerData[user.id];
+                    const isCurrentlyFavorite = currentPlayerDetails ? currentPlayerDetails.isFavorite : false;
 
+                    // Call addPlayerFunc to save the data
                     try {
-                        // addPlayerFunc is userManager.addOrUpdatePlayer
-                        // It needs: id, name, score, notes, isFavorite (preserve if known), usernameHistory (preserve if known)
-                        const isFavorite = knownPlayer ? knownPlayer.isFavorite : false;
-                        const usernameHistory = knownPlayer ? knownPlayer.usernameHistory : [];
-                        await addPlayerFunc(user.id, user.name, score, notes, isFavorite, usernameHistory, uiUpdateCallback);
-                        ModalManager.closeModal(); // Close after successful save
+                        await addPlayerFunc(
+                            user.id,
+                            user.username, // Use user.username from session context
+                            score, 
+                            notes,
+                            isCurrentlyFavorite, // Preserve favorite status
+                            (updatedPlayer) => {
+                                if (updatedPlayer) {
+                                    // Re-render this specific player card or the whole list if simpler
+                                    // For now, let's assume a full list refresh might be handled by a broader mechanism
+                                    // or that renderSessions might be called again.
+                                    // We could also update the card directly if we have its reference.
+                                    console.log(`Player ${updatedPlayer.id} updated from session card interaction.`);
+                                    ModalManager.showAlert('Success', `Player ${user.name || user.id} details saved.`);
+                                    // Potentially refresh the session list or just this card
+                                    if (typeof window.fetchAndDisplaySessions === 'function') {
+                                        // This might be too broad, ideally just re-render the known players list if it's visible
+                                        // and update this specific card's display.
+                                        // For now, just log and show success.
+                                    }
+                                    renderKnownPlayers(); // Re-render the user management tab if it's the active one
+                                }
+                            } // Pass the existing UI update callback
+                        );
                     } catch (error) {
-                        console.error('Failed to save player details from session card:', error);
-                        ModalManager.showAlert('Error', `Failed to save player details: ${error.message}`);
+                        console.error('Error saving player details from session modal:', error);
+                        ModalManager.showAlert('Error', 'Could not save player details. Please try again.');
+                        return; // Do not proceed to success message if save failed
                     }
+
+                    ModalManager.closeModal(); // Close after successful save
                 },
                 closesModal: false // Handle close explicitly
             }
@@ -313,7 +320,7 @@ function createPlayerCard(
  * @param {HTMLElement} resultDiv - Container for results.
  * @param {Object} options - Display options.
  * @param {Function} addPlayer - Function to add a player.
- * @param {Function} createUsernameHistoryModal - Function to create the history modal.
+ * @param {Function} createUsernameHistoryModal - Function to create the username history modal.
  * @param {Function} updateOnlineFavoritesListFunc - Function to update the online favorites list UI.
  */
 async function checkHistoryAndRender(

@@ -1,10 +1,10 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-09.
+This CHANGELOG.md was last updated by Cascade on 2025-05-13.
 -->
 
 # BotC Player Tracker Extension - Changelog
 ---
-## [v1.1.4] - YYYY-MM-DD
+## [v1.1.4] - 2025-05-13
 
 ### Added
 
@@ -16,7 +16,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-09.
 
 ### Fixed
 
-- 
+- Corrected an issue where updating a player's score or notes from the session list modal (in 'Active Games' tab) would cause their name to be lost and replaced with a generic "Player [id]" format. The modal's save action in `sessionManager.js` now correctly calls `userManager.addPlayer` with the player's current username, preserving their name and favorite status.
 
 ## [v1.1.3a] - 2025-05-12
 
