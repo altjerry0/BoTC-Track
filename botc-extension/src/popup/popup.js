@@ -93,6 +93,166 @@ document.addEventListener('DOMContentLoaded', async function() {
     return new Set();
 };
 
+    // Function to update the online favorites list UI
+    window.updateOnlineFavoritesListFunc = function(playerData, onlinePlayersObject) {
+        console.log('[updateOnlineFavoritesListFunc] called');
+        
+        // CRITICAL DEBUG - Log the entire player data structure
+        console.log('[updateOnlineFavoritesListFunc] playerData FULL:', JSON.stringify(playerData, null, 2));
+        console.log('[updateOnlineFavoritesListFunc] onlinePlayersObject FULL:', JSON.stringify(onlinePlayersObject, null, 2));
+        
+        const onlineFavoritesListDiv = document.getElementById('onlineFavoritesList');
+        const onlineFavoritesCountSpan = document.getElementById('onlineFavoritesCount');
+        
+        if (!onlineFavoritesListDiv || !onlineFavoritesCountSpan) {
+            console.warn('[updateOnlineFavoritesListFunc] Required DOM elements not found');
+            return;
+        }
+        
+        // Clear existing list
+        onlineFavoritesListDiv.innerHTML = '';
+        
+        // Get favorite players who are currently online
+        let onlineFavorites = [];
+        let favoriteCount = 0;
+        let onlineCount = 0;
+        let onlinePlayersByNumericId = {};
+        
+        // Check if playerData is valid
+        if (!playerData || typeof playerData !== 'object') {
+            console.error('[updateOnlineFavoritesListFunc] playerData is invalid:', playerData);
+            onlineFavoritesListDiv.innerHTML = '<p>Error: Player data unavailable</p>';
+            return;
+        }
+        
+        // First, restructure the onlinePlayersObject for easier matching
+        // Create a lookup by numeric-only IDs
+        if (onlinePlayersObject && typeof onlinePlayersObject === 'object') {
+            for (const onlinePlayerId in onlinePlayersObject) {
+                // Store both the original ID format and a numeric-only version
+                const numericId = onlinePlayerId.replace(/\D/g, '');
+                onlinePlayersByNumericId[numericId] = onlinePlayersObject[onlinePlayerId];
+                onlineCount++;
+            }
+        } else {
+            console.warn('[updateOnlineFavoritesListFunc] onlinePlayersObject is invalid or empty');
+        }
+        
+        console.log(`[updateOnlineFavoritesListFunc] Restructured ${onlineCount} online players into ${Object.keys(onlinePlayersByNumericId).length} numeric IDs`);
+        
+        // DEBUG: Print sample of the first few player entries
+        console.log('[updateOnlineFavoritesListFunc] First 3 player records:');
+        let count = 0;
+        for (const playerId in playerData) {
+            if (count < 3) {
+                console.log(`Player ID: ${playerId}, Data:`, playerData[playerId]);
+                // Check explicitly for the isFavorite property
+                console.log(`  Has .isFavorite property: ${playerData[playerId].hasOwnProperty('isFavorite')}`);
+                console.log(`  Value of .isFavorite: ${playerData[playerId].isFavorite}`);
+                count++;
+            } else {
+                break;
+            }
+        }
+        
+        // Find all favorite players
+        for (const playerId in playerData) {
+            // Extra safety check
+            if (!playerData[playerId]) continue;
+            
+            // Check if player is marked as favorite
+            const isFavorite = playerData[playerId].isFavorite === true;
+            
+            if (isFavorite) {
+                favoriteCount++;
+                console.log(`[updateOnlineFavoritesListFunc] Found FAVORITE player: ${playerData[playerId].name || playerId} (ID: ${playerId})`);
+                
+                // Get the numeric version of the player ID
+                const numericPlayerId = playerId.replace(/\D/g, '');
+                
+                // Check if the player is online using both original and numeric formats
+                const isOnlineExact = !!onlinePlayersObject[playerId];
+                const isOnlineNumeric = !!onlinePlayersByNumericId[numericPlayerId];
+                const isOnline = isOnlineExact || isOnlineNumeric;
+                
+                // Get session name from whichever match worked
+                let sessionName = null;
+                if (isOnlineExact) {
+                    sessionName = onlinePlayersObject[playerId];
+                } else if (isOnlineNumeric) {
+                    sessionName = onlinePlayersByNumericId[numericPlayerId];
+                }
+                
+                console.log(`  Online check - exact match: ${isOnlineExact}, numeric match: ${isOnlineNumeric}`);
+                
+                if (isOnline) {
+                    console.log(`  ✅ MATCH! This favorite player is ONLINE: ${playerData[playerId].name || playerId} in session: ${sessionName}`);
+                    onlineFavorites.push({
+                        id: playerId,
+                        name: playerData[playerId].name || playerId,
+                        sessionName: sessionName === true ? "Unknown Session" : sessionName,
+                        ...playerData[playerId]
+                    });
+                }
+            }
+        }
+        
+        console.log(`[updateOnlineFavoritesListFunc] Stats: ${favoriteCount} favorites, ${onlineCount} online, ${onlineFavorites.length} online favorites`);
+        
+        // Update count display
+        onlineFavoritesCountSpan.textContent = onlineFavorites.length;
+        
+        // Populate the list
+        if (onlineFavorites.length > 0) {
+            // Clear previous content
+            onlineFavoritesListDiv.innerHTML = '';
+            
+            // Create simple list of online favorite players
+            onlineFavorites.forEach(player => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'online-favorite-item';
+                
+                // Create main player name span
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'favorite-player-name';
+                nameSpan.textContent = player.name;
+                
+                // Create session name span
+                const sessionSpan = document.createElement('span');
+                sessionSpan.className = 'favorite-player-session';
+                sessionSpan.textContent = player.sessionName ? ` (${player.sessionName})` : '';
+                sessionSpan.style.fontSize = '0.9em';
+                sessionSpan.style.color = 'var(--text-secondary-color, #777)';
+                sessionSpan.style.fontStyle = 'italic';
+                
+                // Add name and session to the player item
+                playerItem.appendChild(nameSpan);
+                playerItem.appendChild(sessionSpan);
+                playerItem.style.cursor = 'pointer'; // Show it's clickable
+                
+                // Add click handler to navigate to the session when clicked
+                playerItem.addEventListener('click', function() {
+                    let url;
+                    // If session name is available and not just 'true' or 'Unknown Session'
+                    if (player.sessionName && player.sessionName !== true && player.sessionName !== 'Unknown Session') {
+                        // Convert the session name to a URL-friendly format and join by session name
+                        const encodedSessionName = encodeURIComponent(player.sessionName.toLowerCase());
+                        url = `https://botc.app/join/${encodedSessionName}`;
+                    } else {
+                        // URL = Nothing
+                        url = ``;
+                    }
+                    window.open(url, '_blank');
+                });
+                
+                onlineFavoritesListDiv.appendChild(playerItem);
+            });
+        } else {
+            onlineFavoritesListDiv.innerHTML = '<p>No favorite players currently online.</p>';
+        }
+        console.log('[updateOnlineFavoritesListFunc] Updated favorites list with', onlineFavorites.length, 'players');
+    };
+
     // Global scope for popup lifecycle
     window.currentUserID = null;
     window.liveGameInfo = null; 
@@ -254,11 +414,23 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // --- Dynamic loader for Account Tab ---
+    let accountTabLoaded = false;
     function loadAccountTabScript(callback) {
+        // Check if already loaded to prevent duplicate loading
+        if (accountTabLoaded || document.querySelector('script[src="accountTab.js"]')) {
+            console.log("accountTab.js already loaded, skipping duplicate load");
+            accountTabLoaded = true;
+            if (callback) callback();
+            return;
+        }
+        
         console.log("Loading accountTab.js dynamically");
         const script = document.createElement('script');
         script.src = 'accountTab.js';
-        script.onload = callback;
+        script.onload = () => {
+            accountTabLoaded = true;
+            if (callback) callback();
+        };
         document.head.appendChild(script);
     }
 
@@ -357,8 +529,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                         latestSessionData = sessions; // Store the latest session data
                         // After sessions are rendered, update the user management tab if it's active
                         // This ensures player statuses (e.g., online) are current
-                        if (document.getElementById('userManagement').classList.contains('active')) {
-                            refreshUserManagementTab();
+                        if (document.getElementById('userManagement').classList.contains('active') && 
+                            window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                            // Use the existing renderKnownPlayers function instead of undefined refreshUserManagementTab
+                            window.userManager.renderKnownPlayers(knownPlayersDiv, userSearchInput ? userSearchInput.value : '');
                         }
                     }
                 }
@@ -556,34 +730,43 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (clearAllPlayerDataButton) {
         clearAllPlayerDataButton.addEventListener('click', function() {
+            console.log('Clear all player data button clicked');
+            
+            // Define confirm and cancel handlers first
+            const handleConfirm = () => {
+                console.log('Clear data confirmed by user');
+                if (window.userManager && typeof window.userManager.replaceAllPlayerDataAndSave === 'function') {
+                    console.log('Calling replaceAllPlayerDataAndSave');
+                    window.userManager.replaceAllPlayerDataAndSave({}, (success) => {
+                        if (success) {
+                            console.log('All player data cleared successfully.');
+                            ModalManager.showNotification("Success", "All player data has been cleared.", 2000);
+                            if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                                window.userManager.renderKnownPlayers(knownPlayersDiv, ''); // Re-render with empty search
+                            } else {
+                                console.error("window.userManager.renderKnownPlayers is not available for callback after clearing data.");
+                            }
+                            refreshDisplayedSessions(); // Refresh session display as well
+                        } else {
+                            ModalManager.showNotification("Error", "Failed to clear player data.", 3000);
+                        }
+                    });
+                } else {
+                    console.error("window.userManager.replaceAllPlayerDataAndSave is not available.");
+                    ModalManager.showNotification("Critical Error", "Clear data function not found. Please reload the extension.", 3000);
+                }
+            };
+            
+            const handleCancel = () => {
+                console.log('Clear data cancelled by user');
+            };
+
+            // Call the confirm modal with our properly defined handlers
             ModalManager.showConfirm(
                 "Clear Player Data",
                 "Are you sure you want to delete ALL player data? This action cannot be undone.", 
-                (confirmed) => {
-                    if (confirmed) {
-                        if (window.userManager && typeof window.userManager.replaceAllPlayerDataAndSave === 'function') {
-                            window.userManager.replaceAllPlayerDataAndSave({}, (success) => {
-                                if (success) {
-                                    // console.log('All player data cleared successfully.');
-                                    ModalManager.showNotification("All player data has been cleared.", false, 2000);
-                                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                                        window.userManager.renderKnownPlayers(knownPlayersDiv, ''); // Re-render with empty search
-                                    } else {
-                                        console.error("window.userManager.renderKnownPlayers is not available for callback after clearing data.");
-                                    }
-                                    refreshDisplayedSessions(); // Refresh session display as well
-                                } else {
-                                    ModalManager.showNotification("Error clearing player data.", true, 3000);
-                                }
-                            });
-                        } else {
-                            console.error("window.userManager.replaceAllPlayerDataAndSave is not available.");
-                            ModalManager.showNotification("Critical error: Clear data function not found.", true, 3000);
-                        }
-                    }
-                }, 
-                {
-                }
+                handleConfirm, 
+                handleCancel
             );
         });
     } else {

@@ -1,14 +1,14 @@
-**Current Version (local):** `1.2.0` | **Chrome Web Store Version:** `1.1.0` (Pending `1.1.3a` Review)
+**Current Version (local):** `1.1.5` | **Chrome Web Store Version:** `1.1.0` (Pending `1.1.3a` Review)
 ***
 
 # BotC Player Tracker Chrome Extension
 
 This Chrome extension tracks and rates players in Blood on the Clocktower (BotC) games, helping you recognize familiar players across sessions and track username changes.
 
-> **Coming soon (v1.1.5+):**
-> - Google Sign-In for secure cloud sync of your player data across devices.
-> - Cloud storage powered by Firebase Firestore.
-> - All Firebase modules are bundled for Chrome Manifest V3 compatibility.
+> **Now Available (v1.1.5):**
+> - Firebase and Webpack bundling for Manifest V3 compatibility
+> - Improved user management with enhanced player validation
+> - Rate limiting for database operations to prevent API abuse
 
 ⚠️ **Important: Back Up Your Player Data!** ⚠️
 
@@ -141,6 +141,22 @@ BoTC-Track (repository root)
 ```
 
 ## Developer Setup / Loading from Source
+
+### Setting up the Development Environment
+
+1. **Install Node.js and npm** (if not already installed)
+   - Download and install from [nodejs.org](https://nodejs.org/)
+   - Verify installation with `node -v` and `npm -v`
+
+2. **Install Project Dependencies**
+   - Navigate to the project root directory in your terminal
+   - Run `npm install` to install all dependencies defined in package.json
+   - This will install Firebase, Webpack, and other required packages
+
+3. **Build the Extension**
+   - Run `npx webpack --mode=production` to bundle the JavaScript files
+   - This will create bundled files in the `dist/` directory, particularly `background.bundle.js`
+   - *Note: You must rebuild with this command whenever you make changes to files that are part of the Webpack build*
 
 - v1.1.5+ uses Firebase and Firestore for cloud sync. All Firebase modules are bundled using Webpack for Manifest V3 compatibility. See TODO.md for setup steps and requirements.
 

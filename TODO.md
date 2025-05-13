@@ -13,35 +13,57 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 
 ---
 
-## v1.1.5 – Firebase/Firestore/Google Sign-In & Cloud Sync Groundwork
+## v1.2.0 – Firebase/Firestore/Google Sign-In & Cloud Sync (Completed)
 
-- [ ] **Bundle Firebase SDK with Webpack**
-    - Install `firebase` and configure Webpack to bundle all required Firebase modules for Manifest V3 compatibility.
-    - Ensure background, popup, and any content scripts that need Firebase import from the bundle.
-- [ ] **Google Sign-In Integration**
-    - Add Google authentication flow using Firebase Auth (Google provider).
-    - Expose a UI element for login/logout in the extension popup.
-    - Store the Firebase user ID upon login for use in Firestore document paths.
-- [ ] **Firestore Cloud Sync**
-    - Implement upload (push) and download (pull) of `playerData` to/from Firestore under `/userPlayerData/{firebaseUid}`.
-    - Add a `lastUpdatedLocal` timestamp field to all local player data changes.
-    - Fetch and display the `lastUpdatedLocal` and Firestore `lastUpdatedRemote` for comparison in the UI.
-    - Add a manual "Sync Now"/"Check Cloud Status" button to the popup for users to compare and trigger sync.
-- [ ] **Conflict Handling & Merge Strategy**
-    - Define and document rules for resolving conflicts (e.g., always prefer the most recent, or prompt the user).
-- [ ] **Manifest & CSP Updates**
-    - Update `manifest.json` to point to bundled scripts.
-    - Update CSP to allow Firebase and Google Auth endpoints.
-- [ ] **Testing**
-    - Test login, logout, sync, and error handling flows.
-    - Test extension on both dark and light modes.
-- [ ] **Documentation**
-    - Update `README.md` with cloud sync and Google login instructions.
-    - Add developer setup steps for Firebase/Firestore integration.
-- [ ] **Release**
-    - Prepare for v1.1.5 release with all above features.
+- [x] **Bundle Firebase SDK with Webpack**
+    - Installed `firebase` and configured Webpack to bundle all required Firebase modules for Manifest V3 compatibility.
+    - Background script now properly imports from the bundle via `background.bundle.js`.
+- [x] **Google Sign-In Integration**
+    - Added Google authentication flow using Chrome's Identity API and Firebase Auth.
+    - Implemented dedicated Account tab with login/logout UI elements.
+    - Successfully storing the Firebase user ID upon login for use in Firestore document paths.
+- [x] **Firestore Cloud Sync**
+    - Implemented upload (push) and download (pull) of `playerData` to/from Firestore under `/userPlayerData/{firebaseUid}`.
+    - Added timestamp tracking for sync operations with visual indicators.
+    - Created manual "Push Local Data to Cloud" and "Fetch Latest Data from Cloud" buttons in the Account tab.
+    - Implemented proper error handling and rate limiting to prevent API abuse.
+- [x] **Conflict Handling & Merge Strategy**
+    - Defined strategy where explicit user actions (push/pull) determine direction of sync.
+    - User has full control over when to push local changes or pull cloud changes.
+- [x] **Manifest & CSP Updates**
+    - Updated `manifest.json` to point to bundled scripts.
+    - Updated Content Security Policy to allow Firebase and Google Auth endpoints.
+- [x] **Testing**
+    - Tested login, logout, sync, and error handling flows in both light and dark modes.
+- [x] **Documentation**
+    - Updated `README.md` with cloud sync and Google login instructions.
+    - Added developer setup steps for npm, Webpack, and Firebase integration.
+- [x] **Release**
+    - Prepared v1.2.0 release with all above features.
+
+## v1.2.1 – Cloud Sync Refinements & Future Roadmap
+
+- [ ] **Enhanced Conflict Resolution**
+    - Implement more intelligent merging of cloud and local data when conflicts occur.
+    - Add option to preview differences before committing to sync.
+- [ ] **Automatic Background Sync**
+    - Add an optional setting for automatic background sync at configurable intervals.
+    - Implement bandwidth-saving delta updates.
+- [ ] **Multi-device Consistency**
+    - Improve handling of data synchronized across multiple devices.
+    - Add last-device-used indicator in the UI.
+- [ ] **Offline Support**
+    - Enhance offline functionality with pending changes queue.
+    - Add visual indicators for pending uploads.
+- [ ] **Sync Analytics**
+    - Add usage statistics for sync operations (optional and privacy-focused).
+    - Track sync success/failure rates for quality monitoring.
 
 ---
+
+## Fixes & Improvements Completed
+
+- [x] **Fix Add Player Functionality**: Fixed the "Add Player" button in User Management tab which was showing "Player not found" error. Enhanced with improved validation, proper error messages, and guidance on ID format requirements.
 
 ## Other Potential Enhancements
 
@@ -49,9 +71,7 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 
 ## Future Enhancements / Ideas
 
-- [ ] **Display Current Game Players via WebSocket Interception (Phase 2 - UI/UX)**
-  - Goal: If WebSocket method is pursued, define how these players integrate into the popup.
-  - Current State: Feature was on `current-game-sockets` branch, removed for MVP. Logic for this is distinct from historical session fetching.
+
 - [x] **Advanced Player Search/Filtering in 'Manage Users' Tab**
   - [x] Sort by name, rating, last seen, unique sessions.
 - [ ] **UI/UX Refinements**

@@ -1,49 +1,37 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-14.
+This CHANGELOG.md was last updated by Cascade on 2025-05-13.
 -->
 
 # BotC Player Tracker Extension - Changelog
 ---
 
-## [v1.2.0] - 2025-05-14
+## [v1.1.5] - 2025-05-13
 
 ### Added
-- **Firebase Authentication and Cloud Sync Implementation:**
-  - Added Google Sign-In functionality using Chrome's Identity API for better service worker compatibility.
-  - Implemented dedicated authentication page (`auth.html` and `auth.js`) for secure login flow.
-  - Added Firestore integration for cross-device synchronization of player data.
-  - Created a new Account tab with manual cloud sync controls:
-    - "Push Local Data to Cloud" button to send your current player data to Firestore.
-    - "Fetch Latest Data from Cloud" button to retrieve the most recent data from Firestore.
-    - Visual status indicators and timestamps for sync operations.
-  - User data is securely stored in Firestore with appropriate security rules to ensure privacy.
-
-### Changed
-- **Cloud Sync Approach:**
-  - Implemented on-demand manual synchronization instead of automatic syncing to minimize unnecessary Firestore requests.
-  - User has complete control over when data is pushed to or pulled from the cloud.
-  - Added last sync time indicator to help users track their sync status.
-
-### Technical
-- Utilized Firebase Compatibility version for service worker support in Manifest V3.
-- Added bundling support for Firebase SDK using Webpack.
-- Implemented secure message passing between the authentication page and the background script.
-
-## [v1.1.4] - 2025-05-13
-
-
-### Added
-
-- 
-
-### Changed
-
-- 
+- **Firebase and Cloud Sync Infrastructure:**
+  - Added npm and Webpack build system for proper module bundling
+  - Integrated Firebase SDK (v9 modular format) for cloud services
+  - Set up Firestore database structure for player data storage
+  - Created build pipeline for Manifest V3 compatibility
 
 ### Fixed
-- Resolved critical player data persistence issues: 
-    - Newly added players now correctly remain visible in the 'User Management' tab and in session lists after refreshing or reopening the popup.
-    - Player details (name, score, notes, favorite status, history) are now reliably saved and loaded.
+- **User Management Functionality:**
+  - Fixed "Add Player" button on the User Management page which previously displayed "Player not found" error
+  - Enhanced player ID validation for new players with clear guidance on proper format
+  - Improved error messages for invalid inputs when adding or editing players
+
+### Changed
+- **Development Workflow:**
+  - Updated build process to use `npx webpack --mode=production`
+  - Improved documentation for developer setup and first-time build
+  - Added bundling support to ensure proper code organization
+
+### Technical
+- Updated project structure to support modern JavaScript bundling
+- Added Firebase configuration for anonymous authentication
+- Implemented Firestore database connectivity for future sync features
+- Added rate limiting for database operations to prevent API abuse
+- Enhanced sync status messaging with clear visual feedback
 
 ### Changed
 - **Major Refactoring of Player Data Management:**
