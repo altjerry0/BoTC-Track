@@ -1,5 +1,7 @@
 const path = require('path');
 
+const CopyPlugin = require('copy-webpack-plugin');
+
 module.exports = {
   entry: {
     background: './src/background.js',
@@ -34,4 +36,11 @@ module.exports = {
   optimization: {
     minimize: false // For easier debugging in development
   },
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        { from: 'src/popup/accountTab.js', to: 'popup/accountTab.js' }
+      ],
+    }),
+  ],
 };

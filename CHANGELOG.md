@@ -1,16 +1,33 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-13.
+This CHANGELOG.md was last updated by Cascade on 2025-05-14.
 -->
 
 # BotC Player Tracker Extension - Changelog
 ---
 
-## [v1.1.5] - 2025-05-13
+## [v1.2.0] - 2025-05-14
 
 ### Added
-- Began groundwork for Firebase/Firestore integration and Google Sign-In for cloud player data sync.
-- Will bundle Firebase SDK using Webpack for Manifest V3 compatibility and improved CSP.
-- See TODO.md for full breakdown of planned tasks for v1.1.5 (cloud sync, Google login, last update tracking, sync UI, and conflict handling).
+- **Firebase Authentication and Cloud Sync Implementation:**
+  - Added Google Sign-In functionality using Chrome's Identity API for better service worker compatibility.
+  - Implemented dedicated authentication page (`auth.html` and `auth.js`) for secure login flow.
+  - Added Firestore integration for cross-device synchronization of player data.
+  - Created a new Account tab with manual cloud sync controls:
+    - "Push Local Data to Cloud" button to send your current player data to Firestore.
+    - "Fetch Latest Data from Cloud" button to retrieve the most recent data from Firestore.
+    - Visual status indicators and timestamps for sync operations.
+  - User data is securely stored in Firestore with appropriate security rules to ensure privacy.
+
+### Changed
+- **Cloud Sync Approach:**
+  - Implemented on-demand manual synchronization instead of automatic syncing to minimize unnecessary Firestore requests.
+  - User has complete control over when data is pushed to or pulled from the cloud.
+  - Added last sync time indicator to help users track their sync status.
+
+### Technical
+- Utilized Firebase Compatibility version for service worker support in Manifest V3.
+- Added bundling support for Firebase SDK using Webpack.
+- Implemented secure message passing between the authentication page and the background script.
 
 ## [v1.1.4] - 2025-05-13
 

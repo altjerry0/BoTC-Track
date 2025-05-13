@@ -8,6 +8,7 @@
   },
   "author": "",
   "license": "MIT",
-  "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "copy-webpack-plugin": "^13.0.0"
+  }
 }

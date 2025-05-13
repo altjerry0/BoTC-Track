@@ -421,6 +421,8 @@ async function checkHistoryAndRender(
             if (session.usersAll && Array.isArray(session.usersAll)) {
                 session.usersAll.forEach(user => {
                     if (user.id) { 
+                        // Mark the user as online for the getOnlinePlayerIds function
+                        user.isOnline = true;
                         // Storing session name can be useful, or just true if presence is enough
                         onlinePlayersMap.set(user.id.toString(), session.name || true);
                     }

@@ -319,15 +319,17 @@ function comparePlayersForSorting(a, b, onlinePlayerIds) {
  */
 function getOnlinePlayerIds(sessionData) {
     const onlinePlayerIds = new Set();
-    if (sessionData && Array.isArray(sessionData)) { // If sessionData is an array of session objects
+    if (sessionData && Array.isArray(sessionData)) {
         sessionData.forEach(session => {
             if (session && session.usersAll && Array.isArray(session.usersAll)) {
                 session.usersAll.forEach(user => {
-                    if (user && user.id) onlinePlayerIds.add(user.id.toString());
+                    if (user && user.id && user.isOnline) {
+                        onlinePlayerIds.add(user.id.toString());
+                    }
                 });
             }
         });
-    } else if (sessionData instanceof Set) { // If sessionData is already a Set of IDs
+    } else if (sessionData instanceof Set) {
         sessionData.forEach(id => onlinePlayerIds.add(id.toString()));
     }
     return onlinePlayerIds;
@@ -343,6 +345,7 @@ function getOnlinePlayerIds(sessionData) {
  * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
  */
 async function displayKnownPlayers(container, searchTerm = '', playerData, onlinePlayerIds, createUsernameHistoryModalFunc, refreshCallback) {
+    console.log('[displayKnownPlayers] onlinePlayerIds:', onlinePlayerIds);
     const lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : ''; // Define lowerSearchTerm here
     container.innerHTML = ''; // Clear previous results
 
@@ -407,7 +410,7 @@ async function displayKnownPlayers(container, searchTerm = '', playerData, onlin
             }
 
             const onlineBadge = document.createElement('span');
-            onlineBadge.classList.add('online-badge');
+            onlineBadge.classList.add('online-indicator');
             onlineBadge.title = 'Online';
             infoContainer.appendChild(onlineBadge);
 
@@ -1115,8 +1118,13 @@ async function editPlayerDetails(playerId) {
  * @param {string} [searchTerm=''] - Optional search term to filter players.
  */
 async function renderKnownPlayers(container, searchTerm = '') {
+    console.log('[renderKnownPlayers] called. SessionData:', window.latestSessionData);
     if (!container) {
         console.error("Container element not provided for rendering known players.");
+        return;
+    }
+    if (!window.latestSessionData) {
+        console.warn('[renderKnownPlayers] Not rendering: session data not available.');
         return;
     }
     // Load the latest player data directly from storage each time
@@ -1124,13 +1132,13 @@ async function renderKnownPlayers(container, searchTerm = '') {
     // Fetch the latest set of online player IDs
     let onlinePlayerIds = new Set();
     try {
-        // Ensure fetchOnlinePlayerIds is accessible, e.g., via window
+        // Always use window.fetchOnlinePlayerIds for consistency
         if (typeof window.fetchOnlinePlayerIds === 'function') {
+            console.log('[renderKnownPlayers] window.fetchOnlinePlayerIds:', window.fetchOnlinePlayerIds);
+            console.log('[renderKnownPlayers] calling fetchOnlinePlayerIds...');
             onlinePlayerIds = await window.fetchOnlinePlayerIds();
-        } else if (typeof fetchOnlinePlayerIds === 'function') {
-             onlinePlayerIds = await fetchOnlinePlayerIds(); // If defined globally/imported
         } else {
-            console.warn("fetchOnlinePlayerIds function not found.");
+            console.warn("window.fetchOnlinePlayerIds function not found.");
         }
     } catch (error) {
         console.error("Error fetching online player IDs in renderKnownPlayers:", error);
@@ -1230,7 +1238,8 @@ window.userManager = {
     handleRefreshUserName,
     fetchAndUpdatePlayerName,
     renderKnownPlayers, // To allow popup.js to trigger re-renders of the user management tab
-    createUsernameHistoryModal // Expose for sessionManager
+    createUsernameHistoryModal, // Expose for sessionManager
+    getOnlinePlayerIds // Add this function for online player detection
 };
 
 // Make getRatingClass globally available as other modules might use it directly

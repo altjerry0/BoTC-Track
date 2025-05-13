@@ -1,6 +1,5 @@
 // This is the main script for the popup interface.
 // It orchestrates calls to functions defined in userManager.js and sessionManager.js
-
 // Globally accessible filter options for the popup
 let currentFilterOptions = { officialOnly: false, hideCompleted: false };
 
@@ -29,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
     };
+
     window.parseJwt = parseJwt;
 
     // Button and Controls References
@@ -60,6 +60,39 @@ document.addEventListener('DOMContentLoaded', async function() {
     let latestSessionData = null; 
     let showOfficialOnly = false; 
     let searchTimeout = null;
+
+    // Utility to keep both variables in sync
+    function setLatestSessionData(sessions) {
+        latestSessionData = sessions;
+        window.latestSessionData = sessions;
+        console.log('[setLatestSessionData] latestSessionData set:', sessions);
+    }
+    window.setLatestSessionData = setLatestSessionData;
+
+    // Expose latestSessionData globally for online player detection
+    window.latestSessionData = latestSessionData;
+    // Expose fetchOnlinePlayerIds globally for userManager.js
+    window.fetchOnlinePlayerIds = async function() {
+    console.log('[fetchOnlinePlayerIds] function called');
+    console.log('[fetchOnlinePlayerIds] window.latestSessionData:', window.latestSessionData);
+    if (!window.latestSessionData) {
+        if (!window._fetchOnlinePlayerIdsWarned) {
+            console.warn('[fetchOnlinePlayerIds] Not available: session data is not present.');
+            window._fetchOnlinePlayerIdsWarned = true;
+        }
+        return new Set();
+    }
+    console.log('[fetchOnlinePlayerIds] window.userManager:', window.userManager);
+    console.log('[fetchOnlinePlayerIds] window.userManager.getOnlinePlayerIds:', window.userManager ? window.userManager.getOnlinePlayerIds : undefined);
+    if (window.userManager && typeof window.userManager.getOnlinePlayerIds === 'function') {
+        const ids = window.userManager.getOnlinePlayerIds(window.latestSessionData);
+        console.log('[fetchOnlinePlayerIds] latestSessionData:', window.latestSessionData);
+        console.log('[fetchOnlinePlayerIds] online IDs:', Array.from(ids));
+        return ids;
+    }
+    return new Set();
+};
+
     // Global scope for popup lifecycle
     window.currentUserID = null;
     window.liveGameInfo = null; 
@@ -105,8 +138,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // Helper to wait for userManager to be ready before rendering known players
+    function waitForUserManagerAndRenderKnownPlayers(container, searchTerm, maxRetries = 20, delay = 50) {
+        if (
+            window.userManager &&
+            typeof window.userManager.renderKnownPlayers === 'function' &&
+            typeof window.userManager.getOnlinePlayerIds === 'function'
+        ) {
+            window.userManager.renderKnownPlayers(container, searchTerm);
+        } else if (maxRetries > 0) {
+            setTimeout(() => {
+                waitForUserManagerAndRenderKnownPlayers(container, searchTerm, maxRetries - 1, delay);
+            }, delay);
+        } else {
+            console.error('window.userManager.getOnlinePlayerIds is not available after waiting.');
+        }
+    }
+
+    // --- Search Input Listener (User Management Tab) ---
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            searchTimeout = setTimeout(() => {
+                if (document.getElementById('userManagement').classList.contains('active')) {
+                    waitForUserManagerAndRenderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+                }
+            }, 300);
+        });
+    } else {
+        console.warn('Search input element not found.');
+    }
+
     // --- Initial Async Setup --- 
     try {
+
         // Load theme preference first (synchronous parts + async storage)
         const themeResult = await new Promise((resolve) => chrome.storage.local.get(['theme'], resolve));
         if (themeResult && themeResult.theme === 'dark') {
@@ -165,139 +232,77 @@ document.addEventListener('DOMContentLoaded', async function() {
     // --- Proceed with rest of initialization AFTER async setup ---
 
     // Function to show a specific tab
-    function showTab(tabId) {
-        // Deactivate all tabs
-        tabButtons.forEach(button => button.classList.remove('active'));
-        tabContents.forEach(content => content.classList.remove('active'));
-
-        // Activate the selected tab
-        const selectedTabButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
-        const selectedTabContent = document.getElementById(tabId);
-
-        if (selectedTabButton) selectedTabButton.classList.add('active');
-        if (selectedTabContent) selectedTabContent.classList.add('active');
-
-        // Load data if switching to user management tab
-        if (tabId === 'userManagement') {
-            // Call the async render function from userManager.js
-            // This function now handles loading data itself.
-            // No need to await if we don't need the result immediately.
-            if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+    function showTab(tabName) {
+        console.log(`Switching to tab: ${tabName}`);
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            if (tab.id === tabName || (tabName === 'account' && tab.id === 'accountTab')) {
+                tab.style.display = 'block';
+                tab.classList.add('active');
             } else {
-                console.error("window.userManager.renderKnownPlayers is not available.");
+                tab.style.display = 'none';
+                tab.classList.remove('active');
             }
-        }
-    }
+        });
 
-    // --- Helper Functions (Defined Early) ---
-
-    /**
-     * Fetches the set of currently online player IDs from the backend.
-     * @returns {Promise<Set<string>>} A promise that resolves with a Set of online player IDs.
-     */
-    async function fetchOnlinePlayerIds() {
-        return new Promise((resolve) => {
-            // Use sendMessagePromise for built-in error handling
-            sendMessagePromise({ action: "fetchSessions" }).then(response => {
-                const onlineIds = new Set();
-                if (response && response.sessions && Array.isArray(response.sessions)) {
-                    response.sessions.forEach(session => {
-                        if (session && session.usersAll && Array.isArray(session.usersAll)) {
-                            session.usersAll.forEach(user => {
-                                if (user && user.id) {
-                                    onlineIds.add(user.id.toString());
-                                }
-                            });
-                        }
-                    });
-                }
-                resolve(onlineIds); // Resolve with the Set
-            }).catch(error => {
-                console.error("Error fetching online player IDs:", error);
-                resolve(new Set()); // Resolve with an empty set on error
+        if (tabName === 'account') {
+            console.log("Switching to Account tab");
+            loadAccountTabScript(() => {
+                console.log("Calling window.initAccountTab");
+                if (window.initAccountTab) window.initAccountTab();
             });
-        });
+        }
     }
 
-    /**
-     * Updates the list of online favorite players in the UI.
-     * @param {Object} playerData - The complete player data object.
-     * @param {Object} onlinePlayersMap - Object of online player IDs to their session names.
-     */
-    function updateOnlineFavoritesList(playerData, onlinePlayersMap) {
-        // console.log('[Popup] onlinePlayersMap received (should be object):', onlinePlayersMap, 'Is Map?', onlinePlayersMap instanceof Map); 
-        const favoritesListDiv = document.getElementById('onlineFavoritesList');
-        const favoritesCountSpan = document.getElementById('onlineFavoritesCount');
+    // --- Dynamic loader for Account Tab ---
+    function loadAccountTabScript(callback) {
+        console.log("Loading accountTab.js dynamically");
+        const script = document.createElement('script');
+        script.src = 'accountTab.js';
+        script.onload = callback;
+        document.head.appendChild(script);
+    }
 
-        if (!favoritesListDiv || !favoritesCountSpan) {
-            console.warn('onlineFavoritesList DIV or onlineFavoritesCount SPAN not found in popup.html.');
-            return;
-        }
-
-        favoritesListDiv.innerHTML = ''; 
-        favoritesCountSpan.textContent = '0'; 
-
-        if (!playerData || Object.keys(playerData).length === 0) {
-            favoritesListDiv.textContent = 'No player data available.';
-            return;
-        }
-
-        const onlineFavorites = [];
-        for (const playerId in playerData) {
-            if (playerData[playerId].isFavorite && onlinePlayersMap.hasOwnProperty(playerId)) { 
-                onlineFavorites.push({
-                    ...playerData[playerId],
-                    id: playerId, 
-                    sessionName: onlinePlayersMap[playerId] 
-                });
+    // Tab Button Listeners
+    tabButtons.forEach(button => {
+        button.addEventListener('click', async () => {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const tabName = button.dataset.tab;
+            showTab(tabName);
+            // Render known players when switching to userManagement tab
+            if (tabName === 'userManagement') {
+                console.log('Switching to userManagement tab');
+                if (!window.latestSessionData) {
+                    console.log('[TabSwitch] No session data, fetching sessions before rendering known players...');
+                    await window.fetchAndDisplaySessions(
+                        window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : (id, name, score, notes, isFavorite, callback) => {
+                            console.error("userManager.addPlayer is not available. Add operation failed.");
+                            if (callback) callback(false);
+                        },
+                        window.userManager && window.userManager.createUsernameHistoryModal ? window.userManager.createUsernameHistoryModal : (player, currentPlayerData) => {
+                            console.error("userManager.createUsernameHistoryModal is not available.");
+                            return document.createElement('div');
+                        },
+                        window.updateOnlineFavoritesListFunc,
+                        sessionListDiv,
+                        { officialOnly: showOfficialOnly },
+                        (sessions, finalPlayerData) => {
+                            latestSessionData = sessions;
+                            window.latestSessionData = sessions;
+                            if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                                window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                            }
+                        }
+                    );
+                } else {
+                    console.log('Rendering known players (session data already available)');
+                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                    }
+                }
             }
-        }
-
-        favoritesCountSpan.textContent = onlineFavorites.length.toString();
-
-        if (onlineFavorites.length === 0) {
-            favoritesListDiv.textContent = 'No favorite players are currently online in fetched sessions.';
-            return;
-        }
-
-        const ul = document.createElement('ul');
-        ul.classList.add('player-list'); 
-        onlineFavorites.forEach(player => {
-            const li = document.createElement('li');
-            li.classList.add('player-item'); 
-            li.innerHTML = `
-                <span class="player-name">${player.name}</span> 
-                <span class="player-rating">(Rating: ${player.score || 'N/A'})</span> - 
-                <span class="player-session">Online in: ${player.sessionName}</span>
-            `;
-            ul.appendChild(li);
         });
-        favoritesListDiv.appendChild(ul);
-    }
-
-    // Expose functions globally if needed by other scripts
-    window.updateOnlineFavoritesListFunc = updateOnlineFavoritesList;
-    window.refreshUserManagementTab = refreshUserManagementTab; 
-    window.fetchOnlinePlayerIds = fetchOnlinePlayerIds;
-
-    /**
-     * Refreshes the content of the User Management tab.
-     */
-    function refreshUserManagementTab() {
-        if (!knownPlayersDiv) {
-            console.error('User list container not found for refresh.');
-            return;
-        }
-        // Call the async render function from userManager.js
-        // This function now handles loading data and displaying.
-        // No need to await if we don't need the result immediately.
-        if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-            window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
-        } else {
-            console.error("window.userManager.renderKnownPlayers is not available.");
-        }
-    }
+    });
 
     // Function to refresh the session display
     async function refreshDisplayedSessions() {
@@ -367,14 +372,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // --- Initialize Event Listeners ---
 
-    // Tab Button Listeners
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const tabId = button.getAttribute('data-tab');
-            showTab(tabId);
-        });
-    });
-
     // Search Input Listener (User Management Tab)
     if (searchInput) {
         searchInput.addEventListener('input', () => {
@@ -382,20 +379,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
             }
-            // Set a new timeout to call renderKnownPlayers after 300ms
             searchTimeout = setTimeout(() => {
-                // Check if the user management tab is currently active before re-rendering
                 if (document.getElementById('userManagement').classList.contains('active')) {
-                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
-                    } else {
-                        console.error("window.userManager.renderKnownPlayers is not available.");
-                    }
+                    waitForUserManagerAndRenderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
                 }
-            }, 300); // Debounce time: 300ms
+            }, 300);
         });
-    } else {
-        console.warn('Search input element not found.');
     }
 
     fetchButton.addEventListener('click', async () => {
@@ -419,9 +408,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             sessionListDiv, 
             { officialOnly: showOfficialOnly }, 
             (sessions, finalPlayerData) => { 
-                latestSessionData = sessions; 
+                setLatestSessionData(sessions);
                 if (loadingIndicator) loadingIndicator.style.display = 'none';
                 if (sessionListDiv) sessionListDiv.style.display = 'block'; 
+                // --- Force re-render of User Management tab if active ---
+                const userManagementTab = document.getElementById('userManagement');
+                if (userManagementTab && userManagementTab.classList.contains('active')) {
+                    waitForUserManagerAndRenderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                }
             }
         );
     });
@@ -562,7 +556,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (clearAllPlayerDataButton) {
         clearAllPlayerDataButton.addEventListener('click', function() {
-            ModalManager.showConfirmation(
+            ModalManager.showConfirm(
+                "Clear Player Data",
                 "Are you sure you want to delete ALL player data? This action cannot be undone.", 
                 (confirmed) => {
                     if (confirmed) {

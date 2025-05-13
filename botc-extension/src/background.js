@@ -1,5 +1,401 @@
+// --- Firebase Initialization (v1.1.5 Cloud Sync Groundwork) ---
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, signOut, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+
+// TODO: Replace with your actual Firebase config
+// Google OAuth Web Client ID for Chrome Extension (used for Google Sign-In)
+const GOOGLE_OAUTH_WEB_CLIENT_ID = "234038964353-fmvng5skv7bamhgl2f5142pdvclj4du4.apps.googleusercontent.com";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDVk_kuvYQ_JH700jKXrdSpOtcd3DFC9Rs",
+    authDomain: "botctracker.firebaseapp.com",
+    projectId: "botctracker",
+    storageBucket: "botctracker.firebasestorage.app",
+    messagingSenderId: "234038964353",
+    appId: "1:234038964353:web:94c42aa23b68e003fd9d80",
+    measurementId: "G-C4FLY32JKZ"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Firestore sync functions
+
+/**
+ * Ensures the user document exists in Firestore
+ * @param {string} userId - The authenticated user ID
+ * @param {Object} userData - Basic user profile data
+ * @returns {Promise<void>}
+ */
+async function ensureUserDocumentExists(userId, userData) {
+    if (!userId) {
+        console.error('[Firestore] Cannot create user document: No user ID provided');
+        return;
+    }
+    
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists()) {
+            // Create the user document if it doesn't exist
+            await setDoc(userDocRef, {
+                profile: {
+                    email: userData.email || null,
+                    displayName: userData.displayName || null,
+                    lastSyncTimestamp: serverTimestamp()
+                },
+                // Initialize with empty player data
+                playerData: {
+                    version: 1,
+                    lastUpdated: Date.now(),
+                    data: {}
+                }
+            });
+            console.log('[Firestore] Created new user document for:', userId);
+        } else {
+            console.log('[Firestore] User document already exists for:', userId);
+        }
+    } catch (error) {
+        console.error('[Firestore] Error ensuring user document exists:', error);
+    }
+}
+
+/**
+ * Saves player data to Firestore
+ * @param {string} userId - The authenticated user ID
+ * @param {Object} playerData - The player data to save
+ * @returns {Promise<boolean>} - Whether the save was successful
+ */
+async function savePlayerDataToFirestore(userId, playerData) {
+    if (!userId) {
+        console.error('[Firestore] Cannot save player data: No user ID provided');
+        return false;
+    }
+    
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        
+        // Update only the playerData field
+        await setDoc(userDocRef, {
+            playerData: {
+                version: 1,
+                lastUpdated: Date.now(),
+                data: playerData || {}
+            }
+        }, { merge: true });
+        
+        console.log('[Firestore] Player data saved to Firestore for user:', userId);
+        return true;
+    } catch (error) {
+        console.error('[Firestore] Error saving player data to Firestore:', error);
+        return false;
+    }
+}
+
+/**
+ * Loads player data from Firestore
+ * @param {string} userId - The authenticated user ID
+ * @returns {Promise<Object>} - The loaded player data or null if not found
+ */
+async function loadPlayerDataFromFirestore(userId) {
+    if (!userId) {
+        console.error('[Firestore] Cannot load player data: No user ID provided');
+        return null;
+    }
+    
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists()) {
+            console.log('[Firestore] No user document found for:', userId);
+            return null;
+        }
+        
+        const userData = userDoc.data();
+        if (!userData.playerData || !userData.playerData.data) {
+            console.log('[Firestore] User has no player data stored yet');
+            return {};
+        }
+        
+        console.log('[Firestore] Loaded player data from Firestore for user:', userId);
+        return userData.playerData.data;
+    } catch (error) {
+        console.error('[Firestore] Error loading player data from Firestore:', error);
+        return null;
+    }
+}
+
+/**
+ * Synchronizes player data between local storage and Firestore
+ * @param {string} userId - The authenticated user ID
+ * @returns {Promise<Object>} - The synchronized player data
+ */
+async function syncPlayerData(userId) {
+    if (!userId) {
+        console.error('[Firestore] Cannot sync player data: No user ID provided');
+        return null;
+    }
+    
+    try {
+        // Get local player data
+        const localData = await new Promise(resolve => {
+            chrome.storage.local.get('playerData', (result) => {
+                resolve(result.playerData || {});
+            });
+        });
+        
+        // Get remote player data
+        const remoteData = await loadPlayerDataFromFirestore(userId);
+        
+        if (!remoteData) {
+            // No remote data exists, upload local data
+            if (Object.keys(localData).length > 0) {
+                await savePlayerDataToFirestore(userId, localData);
+                console.log('[Firestore] Uploaded local player data to Firestore');
+            }
+            return localData;
+        }
+        
+        // Merge local and remote data (simple strategy: prefer remote data)
+        // In a more sophisticated version, you might want to do a field-by-field comparison
+        // based on timestamps or implement a more complex conflict resolution strategy
+        const mergedData = { ...localData, ...remoteData };
+        
+        // Save merged data locally
+        await new Promise(resolve => {
+            chrome.storage.local.set({ playerData: mergedData }, resolve);
+        });
+        
+        // Save merged data remotely
+        await savePlayerDataToFirestore(userId, mergedData);
+        
+        console.log('[Firestore] Player data synchronized successfully');
+        return mergedData;
+    } catch (error) {
+        console.error('[Firestore] Error syncing player data:', error);
+        return null;
+    }
+}
+
+// Listen for auth state changes and handle Firestore initialization
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log("[Firebase] User signed in:", user.uid, user.email);
+    
+    // Ensure user document exists in Firestore
+    ensureUserDocumentExists(user.uid, {
+        email: user.email,
+        displayName: user.displayName
+    });
+    
+    // No automatic sync - will be done on demand
+  } else {
+    console.log("[Firebase] User signed out");
+  }
+});
+
+/**
+ * Pushes local player data to Firestore
+ * @returns {Promise<Object>} - Result of the operation
+ */
+async function pushLocalDataToCloud() {
+  try {
+    // Get the current user
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: 'User not signed in' };
+    }
+    
+    // Get local player data
+    const localData = await new Promise(resolve => {
+      chrome.storage.local.get('playerData', (result) => {
+        resolve(result.playerData || {});
+      });
+    });
+    
+    // Validate local data
+    if (!localData || Object.keys(localData).length === 0) {
+      return { success: false, error: 'No local player data to push' };
+    }
+    
+    // Save to Firestore
+    const success = await savePlayerDataToFirestore(user.uid, localData);
+    
+    return { 
+      success, 
+      updated: success,
+      error: success ? null : 'Failed to save data to Firestore'
+    };
+  } catch (error) {
+    console.error('[Firestore] Error pushing local data to cloud:', error);
+    return { success: false, error: error.message || 'Unknown error occurred' };
+  }
+}
+
+/**
+ * Fetches player data from Firestore and updates local storage
+ * @returns {Promise<Object>} - Result of the operation
+ */
+async function fetchCloudDataToLocal() {
+  try {
+    // Get the current user
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: 'User not signed in' };
+    }
+    
+    // Get remote player data
+    const remoteData = await loadPlayerDataFromFirestore(user.uid);
+    
+    // Validate remote data
+    if (!remoteData) {
+      return { success: false, error: 'No data found in the cloud' };
+    }
+    
+    // Check if we have data to update
+    if (Object.keys(remoteData).length === 0) {
+      return { success: true, updated: false, message: 'No cloud data to update' };
+    }
+    
+    // Save to local storage
+    await new Promise(resolve => {
+      chrome.storage.local.set({ playerData: remoteData }, resolve);
+    });
+    
+    return { success: true, updated: true };
+  } catch (error) {
+    console.error('[Firestore] Error fetching cloud data to local:', error);
+    return { success: false, error: error.message || 'Unknown error occurred' };
+  }
+}
+
 // --- Message Listener from Content Script or Popup ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    // Firebase Auth: Handle login/logout requests from popup
+    if (request.type === 'LOGIN_WITH_GOOGLE') {
+        console.log('[BG Auth] Login with Google requested');
+        // This route is kept for backward compatibility
+        // But we'll redirect to the new AUTH_TAB approach
+        sendResponse({ 
+            success: false, 
+            error: 'Please use the auth tab for login', 
+            redirect: true 
+        });
+        return true; // async
+    }
+    
+    if (request.type === 'AUTH_TAB_LOGIN') {
+        console.log('[BG Auth] Login requested from auth tab');
+        
+        // Use Chrome's identity API directly instead of Firebase popup
+        // This uses the OAuth flow defined in the manifest.json
+        chrome.identity.getAuthToken({ interactive: true }, function(token) {
+            if (chrome.runtime.lastError) {
+                console.error('[BG Auth] Chrome identity error:', chrome.runtime.lastError);
+                sendResponse({ 
+                    success: false, 
+                    error: chrome.runtime.lastError.message 
+                });
+                return;
+            }
+            
+            // Get user info using the token
+            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user info: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(userInfo => {
+                console.log('[BG Auth] Got user info:', userInfo);
+                
+                // Create a credential from the access token
+                const credential = GoogleAuthProvider.credential(null, token);
+                
+                // Sign in to Firebase with the credential
+                return signInWithCredential(auth, credential).then(result => {
+                    console.log('[Firebase] Successfully signed in with credential:', result.user.uid);
+                    
+                    // Create a user object including Firebase UID
+                    const userData = {
+                        uid: result.user.uid,
+                        email: userInfo.email,
+                        displayName: userInfo.name,
+                        photoURL: userInfo.picture
+                    };
+                    
+                    // Store the token for later use
+                    return chrome.storage.local.set({ 
+                        googleAuthToken: token,
+                        authUser: userData
+                    }).then(() => {
+                        // Ensure user document exists in Firestore
+                        return ensureUserDocumentExists(result.user.uid, {
+                            email: userInfo.email,
+                            displayName: userInfo.name
+                        }).then(() => {
+                            sendResponse({ 
+                                success: true, 
+                                user: userData
+                            });
+                        });
+                    });
+                });
+
+            })
+            .catch(error => {
+                console.error('[BG Auth] Error getting user info:', error);
+                sendResponse({ 
+                    success: false, 
+                    error: error.message 
+                });
+            });
+        });
+        
+        return true; // async
+    }
+    if (request.type === 'LOGOUT') {
+        // Get the current token and revoke it
+        chrome.storage.local.get('googleAuthToken', (result) => {
+            const token = result.googleAuthToken;
+            if (token) {
+                // Revoke the token with Google
+                chrome.identity.removeCachedAuthToken({ token }, () => {
+                    console.log('[BG Auth] Auth token cache cleared');
+                });
+                
+                // Optional: Call Google's revocation endpoint
+                fetch(`https://accounts.google.com/o/oauth2/revoke?token=${token}`, {
+                    method: 'GET'
+                }).catch(error => {
+                    console.warn('[BG Auth] Error revoking token with Google:', error);
+                    // Continue with logout even if revocation fails
+                });
+            }
+            
+            // Remove auth data from storage
+            chrome.storage.local.remove(['authUser', 'googleAuthToken'], () => {
+                if (chrome.runtime.lastError) {
+                    console.error('[BG Auth] Error removing auth data from storage:', chrome.runtime.lastError);
+                    sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                    return;
+                }
+                console.log('[BG Auth] User signed out (auth data removed from storage)');
+                sendResponse({ success: true });
+            });
+        });
+        return true; // async
+    }
+
     // console.log(`[BG Message] Received message:`, request, `from sender:`, sender);
 
     if (request.type === 'GET_AUTH_TOKEN') {
@@ -36,17 +432,86 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (chrome.runtime.lastError) {
                     console.error('[BG Save] Error saving player data:', chrome.runtime.lastError);
                     sendResponse({ success: false, error: chrome.runtime.lastError.message });
-                } else {
-                    // console.log("[BG Save] Player data saved via popup request (type: SAVE_PLAYER_DATA).");
-                    sendResponse({ success: true });
+                    return;
                 }
+                
+                // Only save locally, no automatic Firestore sync
+                console.log('[BG Save] Player data saved to local storage');
+                sendResponse({ success: true });
             });
             return true; // Indicate asynchronous response for storage set
         } else {
             console.error("[BG Save] Received SAVE_PLAYER_DATA request without payload.");
             sendResponse({ success: false, error: "Missing payload" });
         }
+    } else if (request.type === 'PUSH_TO_CLOUD') {
+        // Manual push of local data to Firestore
+        chrome.storage.local.get(['authUser', 'playerData'], async (result) => {
+            const authUser = result.authUser;
+            const playerData = result.playerData || {};
+            
+            if (!authUser || !authUser.uid) {
+                sendResponse({ success: false, error: 'User not authenticated' });
+                return;
+            }
+            
+            try {
+                await savePlayerDataToFirestore(authUser.uid, playerData);
+                console.log('[BG Push] Player data pushed to Firestore');
+                sendResponse({ success: true });
+            } catch (error) {
+                console.error('[BG Push] Error pushing to Firestore:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+        });
+        return true; // Indicate asynchronous response
+    } else if (request.type === 'FETCH_FROM_CLOUD') {
+        // Manual fetch of remote data from Firestore
+        chrome.storage.local.get('authUser', async (result) => {
+            const authUser = result.authUser;
+            if (!authUser || !authUser.uid) {
+                sendResponse({ success: false, error: 'User not authenticated' });
+                return;
+            }
+            
+            try {
+                const remoteData = await loadPlayerDataFromFirestore(authUser.uid);
+                if (remoteData) {
+                    // Save to local storage
+                    chrome.storage.local.set({ playerData: remoteData }, () => {
+                        console.log('[BG Fetch] Player data fetched from Firestore and saved locally');
+                        sendResponse({ success: true, data: remoteData });
+                    });
+                } else {
+                    sendResponse({ success: false, error: 'No data found in cloud' });
+                }
+            } catch (error) {
+                console.error('[BG Fetch] Error fetching from Firestore:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+        });
+        return true; // Indicate asynchronous response
 
+    } else if (request.type === 'PUSH_TO_CLOUD') {
+        console.log('[BG Sync] Pushing local data to cloud');
+        pushLocalDataToCloud().then(result => {
+            console.log('[BG Sync] Push result:', result);
+            sendResponse(result);
+        }).catch(error => {
+            console.error('[BG Sync] Push error:', error);
+            sendResponse({ success: false, error: error.message || 'Unknown error occurred' });
+        });
+        return true; // async
+    } else if (request.type === 'FETCH_FROM_CLOUD') {
+        console.log('[BG Sync] Fetching cloud data to local');
+        fetchCloudDataToLocal().then(result => {
+            console.log('[BG Sync] Fetch result:', result);
+            sendResponse(result);
+        }).catch(error => {
+            console.error('[BG Sync] Fetch error:', error);
+            sendResponse({ success: false, error: error.message || 'Unknown error occurred' });
+        });
+        return true; // async
     } else if (request.type === 'CURRENT_GAME_INFO') { // Handler for info from content script
         // console.log('[BG Game Info] Received game info from content script:', request.payload);
         liveGameInfo = request.payload; // Update the stored game info
@@ -58,6 +523,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
         });
         sendResponse({ status: "Live game info received by background." });
+        return true; // Indicate async response
+
+    } else if (request.type === 'GET_AUTH_STATE') { // Handler for account tab auth state requests
+        console.log('[BG Auth] Received request for auth state.');
+        // Check for auth user in Chrome storage instead of direct Firebase access
+        chrome.storage.local.get('authUser', (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('[BG Auth] Error getting auth user from storage:', chrome.runtime.lastError);
+                sendResponse({ user: null, error: chrome.runtime.lastError.message });
+                return;
+            }
+            
+            if (result && result.authUser) {
+                sendResponse({ user: result.authUser });
+            } else {
+                sendResponse({ user: null });
+            }
+        });
         return true; // Indicate async response
 
     } else if (request.type === 'GET_CURRENT_GAME_INFO') { // Handler for requests from popup

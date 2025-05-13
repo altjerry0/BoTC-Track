@@ -47,10 +47,37 @@
         <div class="tab-navigation">
             <button class="tab-button active" data-tab="sessions">Sessions</button>
             <button class="tab-button" data-tab="userManagement">Manage Users</button>
+            <button class="tab-button" data-tab="account">Account</button>
         </div>
 
         <!-- Tab Content Area -->
         <div class="tab-content-area">
+
+            <!-- Account Tab Content -->
+            <div class="tab-content" id="accountTab" style="display:none;">
+                <h2>Account / Cloud Sync</h2>
+                <div id="accountStatus">Checking sign-in status...</div>
+                <button id="signInBtn">Sign in with Google</button>
+                <button id="signOutBtn" style="display:none;">Sign out</button>
+                
+                <!-- Cloud Sync Controls (visible only when signed in) -->
+                <div id="cloudSyncControls" style="display:none; margin-top: 20px;">
+                    <h3>Data Synchronization</h3>
+                    <p class="sync-description">Manually control when your player data is synchronized with the cloud.</p>
+                    
+                    <div class="sync-actions">
+                        <button id="pushToCloudBtn" class="sync-button">
+                            <span class="sync-icon">⬆️</span> Push Local Data to Cloud
+                        </button>
+                        <button id="fetchFromCloudBtn" class="sync-button">
+                            <span class="sync-icon">⬇️</span> Fetch Latest Data from Cloud
+                        </button>
+                    </div>
+                    
+                    <div id="syncStatus" class="sync-status"></div>
+                    <p class="sync-last-updated" id="lastSyncTime">Last synchronized: Never</p>
+                </div>
+            </div>
 
             <!-- Sessions Tab Content -->
             <div class="tab-content active" id="sessions">

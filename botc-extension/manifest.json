@@ -6,13 +6,15 @@
   "permissions": [
     "webRequest",
     "storage",
-    "alarms"
+    "alarms",
+    "identity",
+    "tabs"
   ],
   "host_permissions": [
     "*://botc.app/*"
   ],
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "dist/background.bundle.js"
   },
   "action": {
     "default_popup": "src/popup/popup.html",
@@ -35,5 +37,18 @@
       "js": ["src/content/play_page_observer.js"],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/auth/*", "src/icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "oauth2": {
+    "client_id": "234038964353-fmvng5skv7bamhgl2f5142pdvclj4du4.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  }
 }
