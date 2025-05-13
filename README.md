@@ -5,6 +5,11 @@
 
 This Chrome extension tracks and rates players in Blood on the Clocktower (BotC) games, helping you recognize familiar players across sessions and track username changes.
 
+> **Coming soon (v1.1.5+):**
+> - Google Sign-In for secure cloud sync of your player data across devices.
+> - Cloud storage powered by Firebase Firestore.
+> - All Firebase modules are bundled for Chrome Manifest V3 compatibility.
+
 ⚠️ **Important: Back Up Your Player Data!** ⚠️
 
 Your player ratings, notes, and history are stored locally by this extension. If you uninstall the extension, this data will be **permanently deleted** by Chrome.
@@ -59,6 +64,7 @@ This method allows you to install a specific version from GitHub, which might be
 ## Features
 
 *   **Session Tracking & Player Identification**: Fetches active `botc.app` game sessions and identifies players. Known players are highlighted within session details.
+*   **Cloud Sync (Coming v1.1.5+)**: Sync your player data securely to the cloud and across devices with Google Sign-In (Firebase Firestore backend).
 *   **Enhanced Session Highlighting (Popup Interface)**:
     *   **Current Tab Game**: Sessions matching the game currently open in your active `botc.app/play` tab are highlighted with a distinct blue glow. This helps quickly locate the session you're viewing or interacting with.
     *   **User's Active Games**: Sessions where your logged-in user is a participant (based on backend data) are highlighted with an orange glow, making it easy to see your games. **These sessions are also sorted to appear at the very top of the list.**
@@ -135,6 +141,8 @@ BoTC-Track (repository root)
 ```
 
 ## Developer Setup / Loading from Source
+
+- v1.1.5+ uses Firebase and Firestore for cloud sync. All Firebase modules are bundled using Webpack for Manifest V3 compatibility. See TODO.md for setup steps and requirements.
 
 These instructions are for developers or users who want to load the extension directly from the source code.
 

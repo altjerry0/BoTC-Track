@@ -5,6 +5,13 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-13.
 # BotC Player Tracker Extension - Changelog
 ---
 
+## [v1.1.5] - 2025-05-13
+
+### Added
+- Began groundwork for Firebase/Firestore integration and Google Sign-In for cloud player data sync.
+- Will bundle Firebase SDK using Webpack for Manifest V3 compatibility and improved CSP.
+- See TODO.md for full breakdown of planned tasks for v1.1.5 (cloud sync, Google login, last update tracking, sync UI, and conflict handling).
+
 ## [v1.1.4] - 2025-05-13
 
 

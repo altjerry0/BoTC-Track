@@ -11,6 +11,38 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 - [x] **Replace `prompt()`** pop-ups in player management (add/edit) with a user-friendly modal dialog.
 - [x] **Player Data Persistence and Refactoring**: Completed in v1.2.0, including resolving player names not persisting correctly, addressing potential race conditions, and refactoring `sessionManager.js` to utilize `userManager` functions.
 
+---
+
+## v1.1.5 – Firebase/Firestore/Google Sign-In & Cloud Sync Groundwork
+
+- [ ] **Bundle Firebase SDK with Webpack**
+    - Install `firebase` and configure Webpack to bundle all required Firebase modules for Manifest V3 compatibility.
+    - Ensure background, popup, and any content scripts that need Firebase import from the bundle.
+- [ ] **Google Sign-In Integration**
+    - Add Google authentication flow using Firebase Auth (Google provider).
+    - Expose a UI element for login/logout in the extension popup.
+    - Store the Firebase user ID upon login for use in Firestore document paths.
+- [ ] **Firestore Cloud Sync**
+    - Implement upload (push) and download (pull) of `playerData` to/from Firestore under `/userPlayerData/{firebaseUid}`.
+    - Add a `lastUpdatedLocal` timestamp field to all local player data changes.
+    - Fetch and display the `lastUpdatedLocal` and Firestore `lastUpdatedRemote` for comparison in the UI.
+    - Add a manual "Sync Now"/"Check Cloud Status" button to the popup for users to compare and trigger sync.
+- [ ] **Conflict Handling & Merge Strategy**
+    - Define and document rules for resolving conflicts (e.g., always prefer the most recent, or prompt the user).
+- [ ] **Manifest & CSP Updates**
+    - Update `manifest.json` to point to bundled scripts.
+    - Update CSP to allow Firebase and Google Auth endpoints.
+- [ ] **Testing**
+    - Test login, logout, sync, and error handling flows.
+    - Test extension on both dark and light modes.
+- [ ] **Documentation**
+    - Update `README.md` with cloud sync and Google login instructions.
+    - Add developer setup steps for Firebase/Firestore integration.
+- [ ] **Release**
+    - Prepare for v1.1.5 release with all above features.
+
+---
+
 ## Other Potential Enhancements
 
 - [ ] Ensure uniform row height in the session list by handling long game names (e.g., truncation with tooltip or ellipsis).
