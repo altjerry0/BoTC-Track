@@ -7,7 +7,62 @@
  */
 
 // Store reference to player data
-let allPlayerData = {};
+let allPlayerData = null;
+
+/**
+ * Load player data from Chrome storage.
+ * Initializes the in-memory cache (allPlayerData) if it's null.
+ * @returns {Promise<Object>} A deep copy of the player data object.
+ */
+async function loadPlayerData() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get('playerData', (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('[User Manager] Error loading player data:', chrome.runtime.lastError.message);
+                return reject(chrome.runtime.lastError);
+            }
+            const data = result.playerData || {};
+            if (allPlayerData === null) { // Initialize cache on first load
+                allPlayerData = JSON.parse(JSON.stringify(data)); // Deep copy for cache initialization
+            }
+            // Always return a deep copy to prevent external modification of the cache
+            resolve(JSON.parse(JSON.stringify(allPlayerData || data))); 
+        });
+    });
+}
+
+/**
+ * Saves player data to both the in-memory cache and chrome.storage.local.
+ * @param {Object} playerDataToSave - The player data object to save.
+ * @returns {Promise<void>}
+ */
+async function savePlayerData(playerDataToSave) {
+    return new Promise((resolve, reject) => {
+        allPlayerData = JSON.parse(JSON.stringify(playerDataToSave)); // Update the in-memory cache with a deep copy
+        chrome.storage.local.set({ playerData: allPlayerData }, () => {
+            if (chrome.runtime.lastError) {
+                console.error('[User Manager] Error saving player data:', chrome.runtime.lastError.message);
+                // Optionally: Display a user-friendly error message here
+                // ModalManager.showNotification("Error saving player data. Changes might not persist.", true, 5000);
+                return reject(chrome.runtime.lastError);
+            }
+            // console.log('[User Manager] Player data saved successfully to storage and cache updated.');
+            resolve();
+        });
+    });
+}
+
+/**
+ * Retrieves a deep copy of all player data from the in-memory cache.
+ * Loads it from storage if the cache is not yet initialized.
+ * @returns {Promise<Object>} A deep copy of the player data.
+ */
+async function getAllPlayerData() {
+    if (allPlayerData === null) {
+        await loadPlayerData(); // Ensure cache is initialized
+    }
+    return JSON.parse(JSON.stringify(allPlayerData || {})); // Return deep copy of cache or empty object
+}
 
 /**
  * Load player data from Chrome storage.
@@ -615,11 +670,8 @@ async function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPla
         // Add the *previous* name to history only if it's not already the latest entry
         if (!latestHistoryEntry || latestHistoryEntry.username !== currentStoredName) {
             history.push({ username: currentStoredName, timestamp: Date.now() });
-            // Trim history if it exceeds max length (e.g., 10 entries)
-            if (history.length > 10) {
-                 history.shift(); // Remove the oldest entry
-            }
-             needsSave = true;
+            // console.log(`[Username History] Added '${currentStoredName}' to history for player ${player.id}. New name: '${sessionUsername}'.`);
+            needsSave = true;
         }
 
         // Update the player's current name to the new one from the session
@@ -1098,40 +1150,91 @@ async function fetchAndUpdatePlayerName(playerId, refreshListCallback) {
     if (!playerId) return;
 
     try {
-        const response = await fetch(`https://botc.app/api/user/${playerId}`);
+        // Use the authToken from storage, similar to handleRefreshUserName
+        const authToken = await new Promise((resolve, reject) => {
+            chrome.storage.local.get('authToken', (result) => {
+                if (chrome.runtime.lastError) {
+                    return reject(chrome.runtime.lastError);
+                }
+                resolve(result.authToken);
+            });
+        });
+
+        if (!authToken) {
+            ModalManager.showAlert('Error', 'Authentication token not found for API call. Please log in.');
+            throw new Error('Auth token not found for API call');
+        }
+
+        const response = await fetch(`https://botc.app/backend/user/${playerId}`, {
+            headers: { 'Authorization': authToken }
+        });
+
         if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}`);
+            const errorData = await response.json().catch(() => ({ message: response.statusText }));
+            throw new Error(`API request failed: ${errorData.message || response.statusText}`);
         }
         const data = await response.json();
 
         const newUsername = data && data.user ? data.user.username : null;
 
         if (newUsername) {
-            const playerData = await loadPlayerData();
+            const currentPlayerData = await loadPlayerData(); // Load current data
 
-            const player = playerData[playerId];
-            if (player && player.name !== newUsername) {
+            const player = currentPlayerData[playerId];
+            if (player) {
                 const oldUsername = player.name;
-                player.name = newUsername;
-                // Ensure updateUsernameHistory handles the history array correctly
-                // updateUsernameHistory(player, oldUsername); 
-                // Assuming updateUsernameHistory is synchronous or integrated into addPlayer
-                // Let's call addPlayer to handle the update consistently, preserving other fields
-                await addPlayer(playerId, newUsername, player.score, player.notes, player.isFavorite);
-
-                ModalManager.showAlert('Success', `Player ${playerId}'s name updated from "${oldUsername}" to "${newUsername}".`);
-                if (refreshListCallback) refreshListCallback();
-            } else if (player && player.name === newUsername) {
-                ModalManager.showAlert('Success', `Player ${playerId}'s name "${newUsername}" is already up-to-date.`);
+                if (player.name !== newUsername) {
+                    player.name = newUsername;
+                    // Update username history internally before saving through addPlayer
+                    // This logic is now encapsulated within addPlayer if name changes
+                    // For standalone name updates, ensure history is managed here or within addPlayer
+                    updateUsernameHistory(player, oldUsername); // Pass the player object and old name
+                    
+                    // Use addPlayer to ensure all fields are handled correctly and consistently
+                    // This will also trigger savePlayerData internally
+                    await addPlayer(playerId, newUsername, player.score, player.notes, player.isFavorite, (updatedPlayer) => {
+                         if (updatedPlayer) {
+                            ModalManager.showAlert('Success', `Player ${playerId}'s name updated from "${oldUsername}" to "${newUsername}".`);
+                            if (refreshListCallback) refreshListCallback();
+                         }
+                    });
+                } else {
+                    ModalManager.showAlert('Info', `Player ${playerId}'s name "${newUsername}" is already up-to-date.`);
+                }
             } else {
-                ModalManager.showAlert('Error', `Player ${playerId} not found in local data. Consider adding them.`);
-                // Optionally trigger add player flow here
+                 ModalManager.showAlert('Notice', `Player ${playerId} not found in local data. You may add them if desired.`);
+                // Optionally trigger add player flow here if it's desired behavior
             }
         } else {
-            ModalManager.showAlert('Error', `Could not retrieve a valid username for player ${playerId} from API.`);
+            ModalManager.showAlert('Warning', `Could not retrieve a valid username for player ${playerId} from API.`);
         }
     } catch (error) {
         console.error(`Error fetching or updating player ${playerId} name:`, error);
         ModalManager.showAlert('Error', `Failed to fetch/update player name: ${error.message}`);
     }
+}
+
+// Expose functions to the window object for use by other modules
+window.userManager = {
+    loadPlayerData, // Primarily for internal use or specific scenarios
+    savePlayerData, // For direct save if needed, though addPlayer handles its own saves
+    getAllPlayerData, // Preferred method for external modules to get a safe copy of data
+    addPlayer,
+    replaceAllPlayerDataAndSave,
+    updateUsernameHistoryIfNeeded,
+    updateSessionHistoryIfNeeded,
+    getRatingClass, // Already on window, but good for namespacing
+    deletePlayer,
+    toggleFavoriteStatus,
+    editPlayerDetails,
+    handleRefreshUserName,
+    fetchAndUpdatePlayerName,
+    renderKnownPlayers, // To allow popup.js to trigger re-renders of the user management tab
+    createUsernameHistoryModal // Expose for sessionManager
+};
+
+// Make getRatingClass globally available as other modules might use it directly
+// and it's a pure utility function.
+if (typeof window.getRatingClass === 'undefined') {
+    window.getRatingClass = getRatingClass;
 }

@@ -129,9 +129,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.currentUserID = null;
         }
 
-        // Player data might be needed for other UI elements or checks
-        const playerDataResponse = await sendMessagePromise({ type: 'GET_PLAYER_DATA' });
-        window.playerData = (playerDataResponse && playerDataResponse.playerData) ? playerDataResponse.playerData : {};
+        // Fetch initial player data using userManager
+        try {
+            if (window.userManager && typeof window.userManager.getAllPlayerData === 'function') {
+                window.playerData = await window.userManager.getAllPlayerData();
+                // console.log('[Popup Init] Player data loaded via userManager.getAllPlayerData(). Count:', Object.keys(window.playerData).length);
+            } else {
+                console.error('[Popup Init] window.userManager.getAllPlayerData is not available. Initializing window.playerData to empty object.');
+                window.playerData = {};
+            }
+        } catch (error) {
+            console.error('[Popup Init] Error loading player data via userManager:', error);
+            window.playerData = {}; // Ensure playerData is an empty object on error
+        }
 
     } catch (error) {
         console.error('[Popup Init] Error during initial async setup:', error);
@@ -172,7 +182,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Call the async render function from userManager.js
             // This function now handles loading data itself.
             // No need to await if we don't need the result immediately.
-            renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+            if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+            } else {
+                console.error("window.userManager.renderKnownPlayers is not available.");
+            }
         }
     }
 
@@ -278,7 +292,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Call the async render function from userManager.js
         // This function now handles loading data and displaying.
         // No need to await if we don't need the result immediately.
-        renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+        if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+            window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+        } else {
+            console.error("window.userManager.renderKnownPlayers is not available.");
+        }
     }
 
     // Function to refresh the session display
@@ -307,10 +325,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         try {
+            const addPlayerFunction = window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : (id, name, score, notes, isFavorite, callback) => {
+                console.error("userManager.addPlayer is not available. Add operation failed.");
+                if (callback) callback(false);
+            };
+
+            const createUsernameHistoryModalFunction = window.userManager && window.userManager.createUsernameHistoryModal ? window.userManager.createUsernameHistoryModal : (player, currentPlayerData) => {
+                console.error("userManager.createUsernameHistoryModal is not available.");
+                // Potentially return a dummy element or throw error to indicate failure
+                return document.createElement('div'); 
+            };
+            
             await window.fetchAndDisplaySessions(
-                // memoizedLoadPlayerData, // REMOVED - sessionManager.js uses window.playerData directly
-                window.addPlayer, 
-                window.createUsernameHistoryModal, 
+                addPlayerFunction, 
+                createUsernameHistoryModalFunction, 
                 window.updateOnlineFavoritesListFunc,
                 sessionListDiv,
                 currentFilterOptions,
@@ -358,7 +386,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             searchTimeout = setTimeout(() => {
                 // Check if the user management tab is currently active before re-rendering
                 if (document.getElementById('userManagement').classList.contains('active')) {
-                    renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+                    } else {
+                        console.error("window.userManager.renderKnownPlayers is not available.");
+                    }
                 }
             }, 300); // Debounce time: 300ms
         });
@@ -374,9 +406,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (sessionListDiv) sessionListDiv.style.display = 'none'; 
 
         await window.fetchAndDisplaySessions(
-            // memoizedLoadPlayerData, // REMOVED - sessionManager.js uses window.playerData directly
-            window.addPlayer,      
-            window.createUsernameHistoryModal, 
+            window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : (id, name, score, notes, isFavorite, callback) => {
+                console.error("userManager.addPlayer is not available. Add operation failed.");
+                if (callback) callback(false);
+            },
+            window.userManager && window.userManager.createUsernameHistoryModal ? window.userManager.createUsernameHistoryModal : (player, currentPlayerData) => {
+                console.error("userManager.createUsernameHistoryModal is not available.");
+                // Potentially return a dummy element or throw error to indicate failure
+                return document.createElement('div'); 
+            },
             window.updateOnlineFavoritesListFunc,
             sessionListDiv, 
             { officialOnly: showOfficialOnly }, 
@@ -418,8 +456,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.playerData, // Assumes playerData is up-to-date
             sessionListDiv, 
             currentFilterOptions, // Pass the updated filter object
-            window.addPlayer, // Pass necessary callbacks
-            window.createUsernameHistoryModal
+            window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : (id, name, score, notes, isFavorite, callback) => {
+                console.error("userManager.addPlayer is not available. Add operation failed.");
+                if (callback) callback(false);
+            },
+            window.userManager && window.userManager.createUsernameHistoryModal ? window.userManager.createUsernameHistoryModal : (player, currentPlayerData) => {
+                console.error("userManager.createUsernameHistoryModal is not available.");
+                // Potentially return a dummy element or throw error to indicate failure
+                return document.createElement('div'); 
+            }
         );
     }
 
@@ -439,123 +484,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         addPlayerButton.title = 'Add Player Manually'; 
 
         addPlayerButton.addEventListener('click', async () => {
-            if (typeof window.addPlayer !== 'function') {
-                ModalManager.showAlert('Error', 'User management feature is unavailable. The addPlayer function is not loaded correctly.');
-                console.error('window.addPlayer is not defined or not a function.');
-                return;
+            if (window.userManager && typeof window.userManager.editPlayerDetails === 'function') {
+                window.userManager.editPlayerDetails(null, true, () => {
+                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+                    } else {
+                        console.error("window.userManager.renderKnownPlayers is not available for callback.");
+                    }
+                });
+            } else {
+                console.error("window.userManager.editPlayerDetails is not available.");
             }
-
-            const modalTitle = 'Add New Player Manually';
-
-            // Create modal body using DOM manipulation
-            const modalBodyContent = document.createElement('div');
-            modalBodyContent.classList.add('modal-add-player-form');
-
-            // Player ID Input
-            const idDiv = document.createElement('div');
-            const idLabel = document.createElement('label');
-            idLabel.htmlFor = 'modalPlayerId';
-            idLabel.textContent = 'Player ID:';
-            const idInput = document.createElement('input');
-            idInput.type = 'text';
-            idInput.id = 'modalPlayerId';
-            idInput.name = 'modalPlayerId'; // Keep name for potential form handling
-            idInput.required = true;
-            idDiv.appendChild(idLabel);
-            idDiv.appendChild(idInput);
-            modalBodyContent.appendChild(idDiv);
-
-            // Player Name Input
-            const nameDiv = document.createElement('div');
-            const nameLabel = document.createElement('label');
-            nameLabel.htmlFor = 'modalPlayerName';
-            nameLabel.textContent = 'Name:';
-            const nameInput = document.createElement('input');
-            nameInput.type = 'text';
-            nameInput.id = 'modalPlayerName';
-            nameInput.name = 'modalPlayerName';
-            nameDiv.appendChild(nameLabel);
-            nameDiv.appendChild(nameInput);
-            modalBodyContent.appendChild(nameDiv);
-
-            // Score Input
-            const scoreDiv = document.createElement('div');
-            const scoreLabel = document.createElement('label');
-            scoreLabel.htmlFor = 'modalPlayerScore';
-            scoreLabel.textContent = 'Score (1-5, optional):';
-            const scoreInput = document.createElement('input');
-            scoreInput.type = 'number';
-            scoreInput.id = 'modalPlayerScore';
-            scoreInput.name = 'modalPlayerScore';
-            scoreInput.min = '1';
-            scoreInput.max = '5';
-            scoreDiv.appendChild(scoreLabel);
-            scoreDiv.appendChild(scoreInput);
-            modalBodyContent.appendChild(scoreDiv);
-
-            // Notes Input
-            const notesDiv = document.createElement('div');
-            const notesLabel = document.createElement('label');
-            notesLabel.htmlFor = 'modalPlayerNotes';
-            notesLabel.textContent = 'Notes (optional):';
-            const notesTextarea = document.createElement('textarea');
-            notesTextarea.id = 'modalPlayerNotes';
-            notesTextarea.name = 'modalPlayerNotes';
-            notesTextarea.rows = 3;
-            notesDiv.appendChild(notesLabel);
-            notesDiv.appendChild(notesTextarea);
-            modalBodyContent.appendChild(notesDiv);
-
-            // Show modal with the created DOM node
-            ModalManager.showModal(modalTitle, modalBodyContent, [
-                {
-                    text: 'Cancel',
-                    className: 'modal-button-secondary',
-                },
-                {
-                    text: 'Add Player',
-                    className: 'modal-button-primary',
-                    callback: async () => {
-                        const playerId = document.getElementById('modalPlayerId').value.trim();
-                        const name = document.getElementById('modalPlayerName').value.trim();
-                        const scoreStr = document.getElementById('modalPlayerScore').value.trim();
-                        const notes = document.getElementById('modalPlayerNotes').value.trim();
-
-                        if (!playerId) {
-                            ModalManager.showAlert('Error', 'Player ID cannot be empty.');
-                            return; 
-                        }
-
-                        const playerName = name || `Player ${playerId}`;
-                        let score = null;
-                        if (scoreStr) {
-                            const parsedScore = parseInt(scoreStr, 10);
-                            if (isNaN(parsedScore) || parsedScore < 1 || parsedScore > 5) {
-                                ModalManager.showAlert('Invalid Input', 'Invalid score. Must be a number between 1 and 5. Score will be ignored.');
-                            } else {
-                                score = parsedScore;
-                            }
-                        }
-
-                        try {
-                            const uiUpdateCallback = (updatedPlayer) => {
-                                ModalManager.showAlert('Success', `Player ${updatedPlayer.name} (ID: ${updatedPlayer.id}) ${score !== null ? 'with score ' + score : ''} has been added/updated successfully.`);
-                                if (typeof refreshUserManagementTab === 'function') {
-                                    refreshUserManagementTab(); 
-                                } else {
-                                    console.warn('refreshUserManagementTab function not found, UI may not update.');
-                                }
-                                ModalManager.closeModal(); 
-                            };
-                            await window.addPlayer(playerId, playerName, score, notes, false, uiUpdateCallback);
-                        } catch (error) {
-                            console.error('Failed to add/update player:', error);
-                            ModalManager.showAlert('Error', `Failed to add/update player: ${error.message}`);
-                        }
-                    },
-                    closesModal: false 
-                }
-            ]);
         });
     } else {
         console.warn('Add Player Manually button not found.');
@@ -593,8 +532,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                         
                         // Code that was previously in the inner callback now runs after await
                         importStatusDiv.textContent = 'Player data imported successfully! Reloading list...';
-                        refreshUserManagementTab(); 
-                        event.target.value = null; // Clear file input
+                        if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                            window.userManager.renderKnownPlayers(knownPlayersDiv, ''); // Re-render with empty search
+                        } else {
+                            console.error("window.userManager.renderKnownPlayers is not available for callback after clearing data.");
+                        }
+                        refreshDisplayedSessions(); // Refresh session display as well
                     } catch (error) {
                         console.error('Error processing imported data:', error);
                         importStatusDiv.textContent = 'Error saving imported data. Check console.';
@@ -619,36 +562,32 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (clearAllPlayerDataButton) {
         clearAllPlayerDataButton.addEventListener('click', function() {
-            ModalManager.showConfirm(
-                'Confirm Clear Data',
-                'Are you sure you want to clear ALL player data? This action cannot be undone and is primarily for testing.',
-                () => { 
-                    chrome.storage.local.set({ playerData: {} }, function() {
-                        if (chrome.runtime.lastError) {
-                            console.error('Error clearing player data:', chrome.runtime.lastError);
-                            ModalManager.showAlert('Error', 'Error clearing player data. Please try again.');
+            ModalManager.showConfirmation(
+                "Are you sure you want to delete ALL player data? This action cannot be undone.", 
+                (confirmed) => {
+                    if (confirmed) {
+                        if (window.userManager && typeof window.userManager.replaceAllPlayerDataAndSave === 'function') {
+                            window.userManager.replaceAllPlayerDataAndSave({}, (success) => {
+                                if (success) {
+                                    // console.log('All player data cleared successfully.');
+                                    ModalManager.showNotification("All player data has been cleared.", false, 2000);
+                                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                                        window.userManager.renderKnownPlayers(knownPlayersDiv, ''); // Re-render with empty search
+                                    } else {
+                                        console.error("window.userManager.renderKnownPlayers is not available for callback after clearing data.");
+                                    }
+                                    refreshDisplayedSessions(); // Refresh session display as well
+                                } else {
+                                    ModalManager.showNotification("Error clearing player data.", true, 3000);
+                                }
+                            });
                         } else {
-                            console.log('All player data cleared.');
-                            ModalManager.showAlert('Success', 'All player data has been cleared.');
-                            
-                            if (typeof window.allPlayerData !== 'undefined') {
-                                 window.allPlayerData = {}; 
-                            } else if (typeof allPlayerData !== 'undefined') { 
-                                allPlayerData = {};
-                            }
-
-                            if (typeof refreshUserManagementTab === 'function') {
-                                refreshUserManagementTab();
-                            } else if (typeof userManager !== 'undefined' && typeof userManager.renderKnownPlayers === 'function') {
-                                userManager.renderKnownPlayers(); 
-                            } else {
-                                console.warn('Could not refresh user management tab after clearing data.');
-                            }
+                            console.error("window.userManager.replaceAllPlayerDataAndSave is not available.");
+                            ModalManager.showNotification("Critical error: Clear data function not found.", true, 3000);
                         }
-                    });
-                },
-                () => { 
-                    ModalManager.showAlert('Cancelled', 'Clear data operation was cancelled.');
+                    }
+                }, 
+                {
                 }
             );
         });

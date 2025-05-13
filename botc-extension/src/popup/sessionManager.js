@@ -365,35 +365,16 @@ async function checkHistoryAndRender(
                 }
                 // --- End Fallback ---
 
-                if (userId && playerData[userId]) {
-                    const player = playerData[userId];
-                    let playerUpdatedThisPass = false;
-
-                    // Username History Update
-                    if (userNameFromApi && player.name !== userNameFromApi) {
-                        const oldUsername = player.name;
-                        player.name = userNameFromApi;
-                        if (!player.usernameHistory) player.usernameHistory = [];
-                        const lastHistoryEntry = player.usernameHistory.length > 0 ? player.usernameHistory[0].username : null;
-                        if (oldUsername && (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase())) {
-                            player.usernameHistory.unshift({ username: oldUsername, timestamp: Date.now() });
-                        }
-                        playerUpdatedThisPass = true;
-                    }
-
-                    // Session History Update
-                    const currentSessionIdentifier = session.name ? session.name.toString() : (session.id ? session.id.toString() : null);
-                    if (currentSessionIdentifier) {
-                        if (!player.sessionHistory) player.sessionHistory = [];
-                        if (!player.sessionHistory.includes(currentSessionIdentifier)) {
-                            player.sessionHistory.push(currentSessionIdentifier);
-                            player.uniqueSessionCount = (player.uniqueSessionCount || 0) + 1;
-                            playerUpdatedThisPass = true;
-                        }
+                if (userId && playerData[userId]) { // Check if player is known in the initially loaded data
+                    // Call userManager functions to update history. They will handle saving.
+                    if (userNameFromApi) {
+                        await window.userManager.updateUsernameHistoryIfNeeded(userId, userNameFromApi, playerData);
                     }
                     
-                    if (playerUpdatedThisPass) {
-                        playerDataNeedsSave = true;
+                    // Use session.id as the unique identifier for the session if available
+                    const currentSessionIdForHistory = session.id ? String(session.id) : (session.name ? String(session.name) : null);
+                    if (currentSessionIdForHistory) {
+                        await window.userManager.updateSessionHistoryIfNeeded(userId, currentSessionIdForHistory, playerData);
                     }
                 }
             }
@@ -452,7 +433,10 @@ async function checkHistoryAndRender(
 
         // Now call the function from popup.js context if it exists
         if (typeof window.updateOnlineFavoritesListFunc === 'function') {
-            updateOnlineFavoritesListFunc(playerData, onlinePlayersObject);
+            // Pass the originally loaded playerData for favorite list UI updates.
+            // History updates via userManager might not be reflected here immediately,
+            // but the favorite status itself should be from the initial load.
+            updateOnlineFavoritesListFunc(initialPlayerData, onlinePlayersObject); 
         } else {
             console.warn("updateOnlineFavoritesListFunc not found on window object. Is popup.js loaded and function exposed?");
         }
@@ -460,23 +444,14 @@ async function checkHistoryAndRender(
         // console.warn('updateOnlineFavoritesListFunc not provided to checkHistoryAndRender');
     }
 
-    // Save player data if it was updated during the history check
-    if (playerDataNeedsSave) {
-        chrome.storage.local.set({ playerData: playerData }, () => {
-            if (chrome.runtime.lastError) {
-                console.error('[FG SessionRender] Error saving player data after history check:', chrome.runtime.lastError.message);
-                // Optionally: Display a user-friendly error message here using a safe method
-                // e.g., ModalManager.showNotification("Error saving updated player data.", true, 3000);
-            } else {
-                console.log('[FG SessionRender] Player data updated with historical info and saved.');
-            }
-        });
-    }
+    // Player data saving is now handled by userManager's update...IfNeeded functions.
+    // No need for playerDataNeedsSave or direct chrome.storage.local.set here.
 
-    // Call renderSessions with potentially updated player data and sorted sessions
+    // Call renderSessions with the initially loaded player data and sorted sessions.
+    // Visuals will reflect this initial data; subsequent loads will show persisted history.
     renderSessions(
         sessions, 
-        playerData, 
+        initialPlayerData, // Use initialPlayerData for rendering consistency in this pass
         resultDiv, 
         options, 
         addPlayerFunc, 
@@ -720,13 +695,22 @@ async function fetchAndDisplaySessions(
         window.liveGameInfo = null; // Ensure it's null on error
     }
 
-    // Directly use window.playerData which should be populated by popup.js
-    // Ensure it defaults to an empty object if window.playerData is null or undefined
-    const currentPlayerData = window.playerData || {};
-    // console.log('[SM] Using window.playerData in fetchAndDisplaySessions. Player count:', Object.keys(currentPlayerData).length);
+    // Fetch initial player data using userManager
+    let currentPlayerData = {};
+    try {
+        if (window.userManager && typeof window.userManager.getAllPlayerData === 'function') {
+            currentPlayerData = await window.userManager.getAllPlayerData();
+            // console.log('[SM] Using window.userManager.getAllPlayerData(). Player count:', Object.keys(currentPlayerData).length);
+        } else {
+            console.error('[SM] window.userManager.getAllPlayerData is not available. Falling back to potentially empty data.');
+            // Fallback or error handling if userManager is not properly set up, though it should be.
+        }
+    } catch (error) {
+        console.error('[SM] Error calling window.userManager.getAllPlayerData():', error);
+    }
+    
     if (Object.keys(currentPlayerData).length === 0) {
-        console.warn('[SM] window.playerData is empty or not yet populated when fetchAndDisplaySessions is called.');
-        // popup.js should ensure window.playerData is populated before calling this.
+        console.warn('[SM] Player data from userManager is empty or not yet populated when fetchAndDisplaySessions is called.');
     }
 
     chrome.runtime.sendMessage({ action: "fetchSessions" }, (response) => {
@@ -751,7 +735,7 @@ async function fetchAndDisplaySessions(
             // and to correctly use currentPlayerData for any residual UI elements that might depend on it.
             checkHistoryAndRender(
                 [], // empty sessions array
-                currentPlayerData, // Pass the currentPlayerData (from window.playerData)
+                currentPlayerData, // Pass the currentPlayerData (from window.userManager)
                 resultDiv,
                 options,
                 addPlayerFunc,
@@ -810,7 +794,7 @@ async function fetchAndDisplaySessions(
         // Call checkHistoryAndRender to handle history updates and rendering
         checkHistoryAndRender(
             backendSessions,
-            currentPlayerData, // Pass currentPlayerData (which is from window.playerData)
+            currentPlayerData, // Pass currentPlayerData (which is from window.userManager)
             resultDiv,
             options,
             addPlayerFunc,

@@ -9,6 +9,7 @@ This file tracks planned features and improvements for the BotC Player Tracker e
     ~~- Consider how to differentiate these from players in fetched historical/recent sessions.~~
 - [x] **Refine Dark Mode Styling**: Improve the visual appearance and consistency of dark mode across all extension components.
 - [x] **Replace `prompt()`** pop-ups in player management (add/edit) with a user-friendly modal dialog.
+- [x] **Player Data Persistence and Refactoring**: Completed in v1.2.0, including resolving player names not persisting correctly, addressing potential race conditions, and refactoring `sessionManager.js` to utilize `userManager` functions.
 
 ## Other Potential Enhancements
 

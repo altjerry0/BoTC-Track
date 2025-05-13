@@ -4,7 +4,9 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-13.
 
 # BotC Player Tracker Extension - Changelog
 ---
+
 ## [v1.1.4] - 2025-05-13
+
 
 ### Added
 
@@ -15,6 +17,24 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-13.
 - 
 
 ### Fixed
+- Resolved critical player data persistence issues: 
+    - Newly added players now correctly remain visible in the 'User Management' tab and in session lists after refreshing or reopening the popup.
+    - Player details (name, score, notes, favorite status, history) are now reliably saved and loaded.
+
+### Changed
+- **Major Refactoring of Player Data Management:**
+    - `userManager.js` is now the definitive source of truth for all player data.
+        - Implemented a robust in-memory cache (`allPlayerData`) within `userManager.js` to ensure data consistency and improve performance.
+        - All player data modifications (add, edit, delete, history updates) and persistence to `chrome.storage.local` are now exclusively handled by `userManager.js`.
+        - Exposed a comprehensive `window.userManager` API (e.g., `getAllPlayerData`, `savePlayerData`, `addPlayer`, `updateUsernameHistoryIfNeeded`, `updateSessionHistoryIfNeeded`) for other modules to interact with player data in a controlled manner.
+    - `sessionManager.js` refactored:
+        - Now exclusively uses the `window.userManager` API to fetch initial player data and to trigger updates to player username and session histories.
+        - Removed all direct `chrome.storage.local.get` and `chrome.storage.local.set` calls related to `playerData`, eliminating previous data conflicts and race conditions.
+    - `popup.js` refactored:
+        - Initializes its `window.playerData` by calling `window.userManager.getAllPlayerData()`.
+        - All UI-driven player actions (e.g., adding a new player, clearing all player data, rendering the user management tab) now correctly call functions exposed on `window.userManager`.
+        - Ensured that functions like `addPlayer` and `createUsernameHistoryModal` passed to `sessionManager.js` are correctly sourced from `window.userManager`.
+- Streamlined the data flow for player information across `popup.js`, `userManager.js`, and `sessionManager.js`, significantly improving data integrity and reducing the likelihood of stale or inconsistent data.
 
 - Corrected an issue where updating a player's score or notes from the session list modal (in 'Active Games' tab) would cause their name to be lost and replaced with a generic "Player [id]" format. The modal's save action in `sessionManager.js` now correctly calls `userManager.addPlayer` with the player's current username, preserving their name and favorite status.
 
@@ -245,22 +265,6 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-13.
 - Corrected various initial setup issues and minor bugs.
 
 ---
-
-## [v1.2.0] - YYYY-MM-DD 
-
-### Changed
-- **UI Enhancements - Session View:**
-    - Replaced the "Add Player" text button on player cards within sessions with an SVG icon for a cleaner interface.
-    - Changed the "Show players" and "Hide players" text for session player lists to ▼ and ▲ arrow icons respectively, providing a more intuitive expand/collapse experience.
-- **UI Enhancements - User Management & General:**
-    - Normalized the appearance and size of action buttons (Favorite, Edit, History, Refresh Username, Delete) in the 'Known Players' list for better visual consistency.
-    - Ensured the "Add Player Manually" button aligns with the updated button styling.
-    - Adjusted styling for various buttons to use consistent padding, icon sizing, and hover effects across the extension.
-- **Modal Theming**: Updated modal CSS to correctly use theme variables, ensuring proper display in both light and dark modes.
-- **Active Session Highlighting**: Sessions where the logged-in user is participating (present in `usersAll`) are now prioritized:
-    - These sessions are sorted to appear at the top of the session list.
-    - The session card header receives a "glow" effect for visual distinction.
-    - This involved updating JWT parsing in `popup.js` (already present), modifying `sessionManager.js` for sorting and class application based on `usersAll`, and updating `popup.css` for the glow effect.
 
 ## [v1.0.0] - 2024-03-10
 
