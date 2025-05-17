@@ -38579,6 +38579,7 @@ let ln = null;
 
 ;// ./src/background.js
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _readOnlyError(r) { throw new TypeError('"' + r + '" is read-only'); }
 function background_ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? background_ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : background_ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
@@ -38866,6 +38867,17 @@ onAuthStateChanged(auth, function (user) {
   if (user) {
     console.log("[Firebase] User signed in:", user.uid, user.email);
 
+    // Store the authenticated user info in storage for access across contexts
+    chrome.storage.local.set({
+      'authUser': {
+        uid: user.uid,
+        email: user.email || null,
+        displayName: user.displayName || null
+      }
+    }, function () {
+      console.log("[Firebase] Auth user info saved to storage");
+    });
+
     // Ensure user document exists in Firestore
     ensureUserDocumentExists(user.uid, {
       email: user.email,
@@ -38875,6 +38887,8 @@ onAuthStateChanged(auth, function (user) {
     // No automatic sync - will be done on demand
   } else {
     console.log("[Firebase] User signed out");
+    // Clear auth user from storage when signed out
+    chrome.storage.local.remove('authUser');
   }
 });
 
@@ -38954,69 +38968,93 @@ function fetchCloudDataToLocal() {
 } // --- Message Listener from Content Script or Popup ---
 function _fetchCloudDataToLocal() {
   _fetchCloudDataToLocal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
-    var user, remoteData;
+    var authUser, currentUser, userId, cloudPlayerData;
     return _regeneratorRuntime().wrap(function _callee8$(_context8) {
       while (1) switch (_context8.prev = _context8.next) {
         case 0:
           _context8.prev = 0;
-          // Get the current user
-          user = auth.currentUser;
-          if (user) {
-            _context8.next = 4;
-            break;
-          }
-          return _context8.abrupt("return", {
-            success: false,
-            error: 'User not signed in'
+          console.log('[Firestore] Fetching cloud data to local');
+
+          // Get auth user from storage for better reliability across contexts
+          _context8.next = 4;
+          return new Promise(function (resolve) {
+            chrome.storage.local.get('authUser', function (result) {
+              resolve(result.authUser || null);
+            });
           });
         case 4:
-          _context8.next = 6;
-          return loadPlayerDataFromFirestore(user.uid);
-        case 6:
-          remoteData = _context8.sent;
-          if (remoteData) {
-            _context8.next = 9;
+          authUser = _context8.sent;
+          if (!(!authUser || !authUser.uid)) {
+            _context8.next = 12;
             break;
           }
+          // Fallback to checking auth.currentUser directly if storage doesn't have it
+          currentUser = auth.currentUser;
+          if (currentUser) {
+            _context8.next = 10;
+            break;
+          }
+          console.warn('[Firestore] Cannot fetch cloud data: User not authenticated');
           return _context8.abrupt("return", {
             success: false,
-            error: 'No data found in the cloud'
+            error: 'User not authenticated'
           });
-        case 9:
-          if (!(Object.keys(remoteData).length === 0)) {
-            _context8.next = 11;
+        case 10:
+          // If found in auth but not in storage, update storage
+          chrome.storage.local.set({
+            'authUser': {
+              uid: currentUser.uid,
+              email: currentUser.email || null,
+              displayName: currentUser.displayName || null
+            }
+          });
+          ({
+            uid: currentUser.uid
+          }), _readOnlyError("authUser");
+        case 12:
+          userId = authUser.uid;
+          console.log('[Firestore] Fetching data for user:', userId);
+
+          // Load player data from Firestore
+          _context8.next = 16;
+          return loadPlayerDataFromFirestore(userId);
+        case 16:
+          cloudPlayerData = _context8.sent;
+          if (cloudPlayerData) {
+            _context8.next = 20;
             break;
           }
+          console.warn('[Firestore] No cloud data found or permissions issue for user:', userId);
           return _context8.abrupt("return", {
-            success: true,
-            updated: false,
-            message: 'No cloud data to update'
+            success: false,
+            error: 'No cloud data found or permissions issue'
           });
-        case 11:
-          _context8.next = 13;
+        case 20:
+          _context8.next = 22;
           return new Promise(function (resolve) {
             chrome.storage.local.set({
-              playerData: remoteData
+              playerData: cloudPlayerData
             }, resolve);
           });
-        case 13:
+        case 22:
+          console.log('[Firestore] Cloud data fetched and saved to local storage');
           return _context8.abrupt("return", {
             success: true,
-            updated: true
+            playerData: cloudPlayerData
           });
-        case 16:
-          _context8.prev = 16;
+        case 26:
+          _context8.prev = 26;
           _context8.t0 = _context8["catch"](0);
           console.error('[Firestore] Error fetching cloud data to local:', _context8.t0);
           return _context8.abrupt("return", {
             success: false,
-            error: _context8.t0.message || 'Unknown error occurred'
+            error: _context8.t0.message || 'Unknown error'
           });
-        case 20:
+        case 30:
         case "end":
           return _context8.stop();
       }
-    }, _callee8, null, [[0, 16]]);
+    }, _callee8, null, [[0, 26]]);
   }));
   return _fetchCloudDataToLocal.apply(this, arguments);
 }

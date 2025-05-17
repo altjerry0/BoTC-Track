@@ -14,6 +14,8 @@ function debounce(func, wait) {
     };
 };
 
+/* COMMENTED OUT - MAY 2025: We believe this functionality is no longer needed as private games are visible in the sessions endpoint
+
 // Helper function to safely send message to the background script
 function safeSendMessage(message) {
     if (chrome.runtime && chrome.runtime.id) { // Check if context is valid
@@ -44,50 +46,82 @@ function safeSendMessage(message) {
         // Optionally: Could consider stopping the observer if the context is permanently gone.
     }
 }
+*/
 
-// Function to scan the DOM for player and storyteller IDs
+/* COMMENTED OUT - MAY 2025: We believe this functionality is no longer needed as private games are visible in the sessions endpoint
+
+// Function to scan the DOM for player, storyteller, and spectator IDs with improved categorization
 function scanPlayPageForGameInfo() {
     // console.log('[BotC Tracker - ECG] Scanning Play Page DOM...');
-    const playerIds = new Set();
-    let storytellerId = null;
-
-    // Select all elements that potentially contain player IDs
-    // Looking for classes like 'player id-XXXXXXXXXX ...'
-    const playerElements = document.querySelectorAll('.player[class*=" id-"]');
+    
+    // Create separate collections for each role type
+    const activePlayerIds = new Set();
+    const storytellerIds = new Set();
+    const spectatorIds = new Set();
+    const allUserIds = new Set(); // Track all users regardless of role
+    
+    // Extract user ID from an element's class
+    function extractUserId(element) {
+        if (!element || typeof element.className !== 'string') return null;
+        const match = element.className.match(/\bid-(\d{10,})\b/); // Match 'id-' followed by 10+ digits
+        return match && match[1] ? match[1] : null;
+    }
+*/
+    
+/*  COMMENTED OUT - Continued from above
+    // --- Find active players ---
+    const playerElements = document.querySelectorAll('.player[class*=" id-"]:not(.spectator)');
     playerElements.forEach(el => {
-        const match = el.className.match(/\bid-(\d{10,})\b/); // Match 'id-' followed by 10+ digits
-        if (match && match[1]) {
-            playerIds.add(match[1]);
+        const userId = extractUserId(el);
+        if (userId) {
+            activePlayerIds.add(userId);
+            allUserIds.add(userId);
+        }
+    });
+    
+    // --- Find all storytellers (might be multiple) ---
+    const storytellerElements = document.querySelectorAll('.storyteller[class*=" id-"]');
+    storytellerElements.forEach(el => {
+        const userId = extractUserId(el);
+        if (userId) {
+            storytellerIds.add(userId);
+            allUserIds.add(userId);
+        }
+    });
+    
+    // --- Find spectators ---
+    const spectatorElements = document.querySelectorAll('.player.spectator[class*=" id-"], .spectator[class*=" id-"]');
+    spectatorElements.forEach(el => {
+        const userId = extractUserId(el);
+        if (userId) {
+            spectatorIds.add(userId);
+            allUserIds.add(userId);
         }
     });
 
-    // Select the element that potentially contains the storyteller ID
-    // Looking for classes like 'storyteller id-XXXXXXXXXX ...'
-    const storytellerElement = document.querySelector('.storyteller[class*=" id-"]');
-    if (storytellerElement) {
-        const match = storytellerElement.className.match(/\bid-(\d{10,})\b/); // Match 'id-' followed by 10+ digits
-        if (match && match[1]) {
-            storytellerId = match[1];
-            // Also add storyteller to playerIds list if they aren't already there
-            playerIds.add(storytellerId);
-        }
-    }
-
+    // Create detailed game info object with proper categorization
     const gameInfo = {
-        playerIds: Array.from(playerIds),
-        storytellerId: storytellerId,
+        allUserIds: Array.from(allUserIds),          // All users in the game
+        activePlayerIds: Array.from(activePlayerIds), // Only active players
+        storytellerIds: Array.from(storytellerIds),   // All storytellers (could be multiple)
+        spectatorIds: Array.from(spectatorIds),       // Spectators
+        // Keep storytellerId for backwards compatibility
+        storytellerId: storytellerIds.size > 0 ? Array.from(storytellerIds)[0] : null
     };
 
-    // Only send message if we found any players or a storyteller
-    if (gameInfo.playerIds.length > 0 || gameInfo.storytellerId) {
+    // Only send message if we found any users
+    if (gameInfo.allUserIds.length > 0) {
         // console.log('[BotC Tracker - ECG] Found Game Info:', gameInfo);
         safeSendMessage({ type: 'CURRENT_GAME_INFO', payload: gameInfo });
     } else {
-        // console.log('[BotC Tracker - ECG] No player/storyteller IDs found in DOM.');
+        // console.log('[BotC Tracker - ECG] No players/storytellers/spectators found in DOM.');
         // Send null if no game is detected (e.g., user left the game)
         safeSendMessage({ type: 'CURRENT_GAME_INFO', payload: null });
     }
-}
+} // End of scanPlayPageForGameInfo
+*/
+
+/* COMMENTED OUT - MAY 2025: We believe this functionality is no longer needed as private games are visible in the sessions endpoint
 
 // Debounced version of the scan function
 const debouncedScan = debounce(scanPlayPageForGameInfo, 500); // Scan at most every 500ms
@@ -148,3 +182,9 @@ if (targetNode) {
 } else {
     console.error('[BotC Tracker - ECG] Target node for MutationObserver not found.');
 }
+
+*/
+
+// Just a placeholder to indicate this script is still loaded but all functionality is commented out
+console.log('[BotC Tracker - ECG] Play Page Observer disabled - testing if this functionality is needed');
+

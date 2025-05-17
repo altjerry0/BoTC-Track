@@ -326,6 +326,23 @@ body.dark-mode .player-card {
     box-shadow: 0 0 3px 1px gold; /* Subtle glow */
 }
 
+/* Styling for different player roles */
+.player-card.player-playing {
+    border-left-color: #10b981; /* Emerald green for active players */
+}
+
+.player-card.player-storyteller {
+    border-left-color: #7c3aed; /* Purple for storytellers (matching storyteller-badge) */
+    background-color: rgba(124, 58, 237, 0.05); /* Very subtle purple background */
+}
+
+.player-card.player-spectator {
+    border-left-color: #9ca3af; /* Gray for spectators */
+    opacity: 0.85; /* Slightly faded appearance */
+}
+
+/* The existing storyteller-badge is used in the HTML instead of ::before content */
+
 .player-info {
     flex-grow: 1;
     margin-right: 10px; /* Add some space between info and actions */
@@ -559,6 +576,16 @@ body.dark-mode .player-card.rating-1 {
 
 .storyteller-badge {
     background-color: #7c3aed;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.spectator-badge {
+    background-color: #9ca3af;
     color: white;
     font-size: 11px;
     padding: 2px 6px;

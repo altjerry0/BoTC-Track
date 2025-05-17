@@ -1,8 +1,24 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-13.
+This CHANGELOG.md was last updated by Cascade on 2025-05-17.
 -->
 
 # BotC Player Tracker Extension - Changelog
+---
+
+## [v1.1.6] - 2025-05-17
+
+### Added
+- **Multiple Role Support:** Enhanced role detection to properly identify and display multiple storytellers and spectators in the session list.
+- **Visual Role Indicators:** Added distinct styling for different player roles:
+  - Active Players: Green left border
+  - Storytellers: Indigo left border with "Storyteller" label
+  - Spectators: Gray left border with "Spectator" label
+
+### Fixed
+- **Current Game Detection:** Fixed the functionality for detecting and highlighting the current game in the session list. The popup now properly requests game information from the background script when opened, enabling the highlighting of private game sessions where the user is participating.
+- **Duplicate Variable Declaration:** Fixed a bug where the `isStoryteller` variable was being declared twice in the `createPlayerCard` function, causing a syntax error.
+- **Function Availability:** Improved script loading sequence to ensure the `fetchAndDisplaySessions` function is always available, preventing errors when refreshing the session list.
+
 ---
 
 ## [v1.1.5] - 2025-05-13

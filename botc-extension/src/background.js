@@ -186,6 +186,15 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     console.log("[Firebase] User signed in:", user.uid, user.email);
     
+    // Store the authenticated user info in storage for access across contexts
+    chrome.storage.local.set({ 'authUser': { 
+      uid: user.uid,
+      email: user.email || null,
+      displayName: user.displayName || null
+    }}, () => {
+      console.log("[Firebase] Auth user info saved to storage");
+    });
+    
     // Ensure user document exists in Firestore
     ensureUserDocumentExists(user.uid, {
         email: user.email,
@@ -195,6 +204,8 @@ onAuthStateChanged(auth, (user) => {
     // No automatic sync - will be done on demand
   } else {
     console.log("[Firebase] User signed out");
+    // Clear auth user from storage when signed out
+    chrome.storage.local.remove('authUser');
   }
 });
 
@@ -241,36 +252,59 @@ async function pushLocalDataToCloud() {
  * @returns {Promise<Object>} - Result of the operation
  */
 async function fetchCloudDataToLocal() {
-  try {
-    // Get the current user
-    const user = auth.currentUser;
-    if (!user) {
-      return { success: false, error: 'User not signed in' };
+    try {
+        console.log('[Firestore] Fetching cloud data to local');
+        
+        // Get auth user from storage for better reliability across contexts
+        const authUser = await new Promise(resolve => {
+            chrome.storage.local.get('authUser', result => {
+                resolve(result.authUser || null);
+            });
+        });
+        
+        // Check if user is authenticated
+        if (!authUser || !authUser.uid) {
+            // Fallback to checking auth.currentUser directly if storage doesn't have it
+            const currentUser = auth.currentUser;
+            
+            if (!currentUser) {
+                console.warn('[Firestore] Cannot fetch cloud data: User not authenticated');
+                return { success: false, error: 'User not authenticated' };
+            }
+            
+            // If found in auth but not in storage, update storage
+            chrome.storage.local.set({ 'authUser': { 
+                uid: currentUser.uid,
+                email: currentUser.email || null,
+                displayName: currentUser.displayName || null
+            }}); 
+            
+            authUser = { uid: currentUser.uid };
+        }
+        
+        const userId = authUser.uid;
+        console.log('[Firestore] Fetching data for user:', userId);
+        
+        // Load player data from Firestore
+        const cloudPlayerData = await loadPlayerDataFromFirestore(userId);
+        
+        if (!cloudPlayerData) {
+            console.warn('[Firestore] No cloud data found or permissions issue for user:', userId);
+            return { success: false, error: 'No cloud data found or permissions issue' };
+        }
+        
+        // Save to local storage
+        await new Promise(resolve => {
+            chrome.storage.local.set({ playerData: cloudPlayerData }, resolve);
+        });
+        
+        console.log('[Firestore] Cloud data fetched and saved to local storage');
+        
+        return { success: true, playerData: cloudPlayerData };
+    } catch (error) {
+        console.error('[Firestore] Error fetching cloud data to local:', error);
+        return { success: false, error: error.message || 'Unknown error' };
     }
-    
-    // Get remote player data
-    const remoteData = await loadPlayerDataFromFirestore(user.uid);
-    
-    // Validate remote data
-    if (!remoteData) {
-      return { success: false, error: 'No data found in the cloud' };
-    }
-    
-    // Check if we have data to update
-    if (Object.keys(remoteData).length === 0) {
-      return { success: true, updated: false, message: 'No cloud data to update' };
-    }
-    
-    // Save to local storage
-    await new Promise(resolve => {
-      chrome.storage.local.set({ playerData: remoteData }, resolve);
-    });
-    
-    return { success: true, updated: true };
-  } catch (error) {
-    console.error('[Firestore] Error fetching cloud data to local:', error);
-    return { success: false, error: error.message || 'Unknown error occurred' };
-  }
 }
 
 // --- Message Listener from Content Script or Popup ---

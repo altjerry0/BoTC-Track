@@ -4,6 +4,17 @@
 let currentFilterOptions = { officialOnly: false, hideCompleted: false };
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // Request current game info from background script
+    chrome.runtime.sendMessage({ type: 'GET_CURRENT_GAME_INFO' }, function(response) {
+        if (response && response.gameInfo) {
+            console.log('[Popup] Received current game info:', response.gameInfo);
+            window.liveGameInfo = response.gameInfo;
+        } else {
+            console.log('[Popup] No current game info available');
+            window.liveGameInfo = null;
+        }
+    });
+
     // Assign core utility functions to window object IMMEDIATELY
     // so they are available even if subsequent async operations fail.
     window.sendMessagePromise = (message) => {
@@ -513,7 +524,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return document.createElement('div'); 
             };
             
-            await window.fetchAndDisplaySessions(
+            // Check if the function exists on window, if not - try accessing it via a more reliable method
+            const fetchAndDisplaySessionsFunc = window.fetchAndDisplaySessions || 
+                (typeof sessionManager !== 'undefined' && sessionManager.fetchAndDisplaySessions);
+            
+            if (!fetchAndDisplaySessionsFunc) {
+                throw new Error('fetchAndDisplaySessions function not found. SessionManager may not be fully loaded.');
+            }
+            
+            await fetchAndDisplaySessionsFunc(
                 addPlayerFunction, 
                 createUsernameHistoryModalFunction, 
                 window.updateOnlineFavoritesListFunc,

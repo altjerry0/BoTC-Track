@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         };
         _refreshDisplayedSessions = function _refreshDisplayedSess2() {
           _refreshDisplayedSessions = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
-            var playerDataResponse, addPlayerFunction, createUsernameHistoryModalFunction;
+            var playerDataResponse, addPlayerFunction, createUsernameHistoryModalFunction, fetchAndDisplaySessionsFunc;
             return _regeneratorRuntime().wrap(function _callee6$(_context6) {
               while (1) switch (_context6.prev = _context6.next) {
                 case 0:
@@ -103,9 +103,16 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
                     console.error("userManager.createUsernameHistoryModal is not available.");
                     // Potentially return a dummy element or throw error to indicate failure
                     return document.createElement('div');
-                  };
-                  _context6.next = 22;
-                  return window.fetchAndDisplaySessions(addPlayerFunction, createUsernameHistoryModalFunction, window.updateOnlineFavoritesListFunc, sessionListDiv, currentFilterOptions, function (sessions, error) {
+                  }; // Check if the function exists on window, if not - try accessing it via a more reliable method
+                  fetchAndDisplaySessionsFunc = window.fetchAndDisplaySessions || typeof sessionManager !== 'undefined' && sessionManager.fetchAndDisplaySessions;
+                  if (fetchAndDisplaySessionsFunc) {
+                    _context6.next = 23;
+                    break;
+                  }
+                  throw new Error('fetchAndDisplaySessions function not found. SessionManager may not be fully loaded.');
+                case 23:
+                  _context6.next = 25;
+                  return fetchAndDisplaySessionsFunc(addPlayerFunction, createUsernameHistoryModalFunction, window.updateOnlineFavoritesListFunc, sessionListDiv, currentFilterOptions, function (sessions, error) {
                     // onCompleteCallback
                     if (loadingIndicator) loadingIndicator.style.display = 'none';
                     if (error) {
@@ -122,20 +129,20 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
                       }
                     }
                   });
-                case 22:
-                  _context6.next = 29;
+                case 25:
+                  _context6.next = 32;
                   break;
-                case 24:
-                  _context6.prev = 24;
+                case 27:
+                  _context6.prev = 27;
                   _context6.t1 = _context6["catch"](17);
                   console.error("[Popup] Critical error calling fetchAndDisplaySessions:", _context6.t1);
                   if (loadingIndicator) loadingIndicator.style.display = 'none';
                   if (sessionListDiv) sessionListDiv.innerHTML = "<p class='error-message'>A critical error occurred: ".concat(_context6.t1.message, "</p>");
-                case 29:
+                case 32:
                 case "end":
                   return _context6.stop();
               }
-            }, _callee6, null, [[6, 13], [17, 24]]);
+            }, _callee6, null, [[6, 13], [17, 27]]);
           }));
           return _refreshDisplayedSessions.apply(this, arguments);
         };
@@ -234,6 +241,19 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           window.latestSessionData = sessions;
           console.log('[setLatestSessionData] latestSessionData set:', sessions);
         };
+        // Request current game info from background script
+        chrome.runtime.sendMessage({
+          type: 'GET_CURRENT_GAME_INFO'
+        }, function (response) {
+          if (response && response.gameInfo) {
+            console.log('[Popup] Received current game info:', response.gameInfo);
+            window.liveGameInfo = response.gameInfo;
+          } else {
+            console.log('[Popup] No current game info available');
+            window.liveGameInfo = null;
+          }
+        });
+
         // Assign core utility functions to window object IMMEDIATELY
         // so they are available even if subsequent async operations fail.
         window.sendMessagePromise = function (message) {
@@ -505,12 +525,12 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         }
 
         // --- Initial Async Setup --- 
-        _context7.prev = 41;
-        _context7.next = 44;
+        _context7.prev = 42;
+        _context7.next = 45;
         return new Promise(function (resolve) {
           return chrome.storage.local.get(['theme'], resolve);
         });
-      case 44:
+      case 45:
         themeResult = _context7.sent;
         if (themeResult && themeResult.theme === 'dark') {
           setDarkMode(true);
@@ -522,11 +542,11 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
 
         // Fetch Auth Token and parse User ID
         // console.log('[Popup Init] Requesting Auth Token...');
-        _context7.next = 48;
+        _context7.next = 49;
         return sendMessagePromise({
           type: 'GET_AUTH_TOKEN'
         });
-      case 48:
+      case 49:
         tokenResponse = _context7.sent;
         if (tokenResponse && tokenResponse.token) {
           // console.log('[Popup Init] Auth Token received.');
@@ -538,41 +558,41 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         }
 
         // Fetch initial player data using userManager
-        _context7.prev = 50;
+        _context7.prev = 51;
         if (!(window.userManager && typeof window.userManager.getAllPlayerData === 'function')) {
-          _context7.next = 57;
+          _context7.next = 58;
           break;
         }
-        _context7.next = 54;
+        _context7.next = 55;
         return window.userManager.getAllPlayerData();
-      case 54:
+      case 55:
         window.playerData = _context7.sent;
-        _context7.next = 59;
+        _context7.next = 60;
         break;
-      case 57:
+      case 58:
         console.error('[Popup Init] window.userManager.getAllPlayerData is not available. Initializing window.playerData to empty object.');
         window.playerData = {};
-      case 59:
-        _context7.next = 65;
+      case 60:
+        _context7.next = 66;
         break;
-      case 61:
-        _context7.prev = 61;
-        _context7.t0 = _context7["catch"](50);
+      case 62:
+        _context7.prev = 62;
+        _context7.t0 = _context7["catch"](51);
         console.error('[Popup Init] Error loading player data via userManager:', _context7.t0);
         window.playerData = {}; // Ensure playerData is an empty object on error
-      case 65:
-        _context7.next = 74;
+      case 66:
+        _context7.next = 75;
         break;
-      case 67:
-        _context7.prev = 67;
-        _context7.t1 = _context7["catch"](41);
+      case 68:
+        _context7.prev = 68;
+        _context7.t1 = _context7["catch"](42);
         console.error('[Popup Init] Error during initial async setup:', _context7.t1);
         // Ensure defaults are set in case of error
         window.currentUserID = null;
         window.liveGameInfo = null;
         setDarkMode(false);
         if (darkModeToggle) darkModeToggle.checked = false;
-      case 74:
+      case 75:
         // Dark Mode Toggle Logic (no longer needs to be conditional on settings modal elements)
         if (darkModeToggle && typeof darkModeToggle.addEventListener === 'function') {
           darkModeToggle.addEventListener('change', function () {
@@ -890,11 +910,11 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           }
           return false; // For synchronous messages or if not handling this specific message type
         });
-      case 89:
+      case 90:
       case "end":
         return _context7.stop();
     }
-  }, _callee7, null, [[41, 67], [50, 61]]);
+  }, _callee7, null, [[42, 68], [51, 62]]);
 })));
 /******/ })()
 ;
