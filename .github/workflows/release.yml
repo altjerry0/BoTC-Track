@@ -3,7 +3,8 @@ name: Release Chrome Extension
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+[a-zA-Z0-9]*' # Triggers on tags like v1.0.0, v1.0.1a, v1.1.3b etc.
+      - 'v[0-9]+.[0-9]+.[0-9]+' # Matches standard version tags like v1.0.0
+      - 'v[0-9]+.[0-9]+.[0-9]+[a-zA-Z0-9]+' # Matches version tags with suffix like v1.0.1a
 
 jobs:
   build-and-release:
