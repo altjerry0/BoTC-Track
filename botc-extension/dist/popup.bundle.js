@@ -152,12 +152,13 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         loadAccountTabScript = function _loadAccountTabScript(callback) {
           // Check if already loaded to prevent duplicate loading
           if (accountTabLoaded || document.querySelector('script[src="accountTab.js"]')) {
-            console.log("accountTab.js already loaded, skipping duplicate load");
+            // Skip loading if already loaded
             accountTabLoaded = true;
             if (callback) callback();
             return;
           }
-          console.log("Loading accountTab.js dynamically");
+
+          // Load the script dynamically
           var script = document.createElement('script');
           script.src = 'accountTab.js';
           script.onload = function () {
@@ -167,7 +168,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           document.head.appendChild(script);
         };
         showTab = function _showTab(tabName) {
-          console.log("Switching to tab: ".concat(tabName));
+          // Debug logging removed
           document.querySelectorAll('.tab-content').forEach(function (tab) {
             if (tab.id === tabName || tabName === 'account' && tab.id === 'accountTab') {
               tab.style.display = 'block';
@@ -178,9 +179,8 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
             }
           });
           if (tabName === 'account') {
-            console.log("Switching to Account tab");
+            // Load the account tab script when switching to that tab
             loadAccountTabScript(function () {
-              console.log("Calling window.initAccountTab");
               if (window.initAccountTab) window.initAccountTab();
             });
           }
@@ -239,17 +239,17 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         setLatestSessionData = function _setLatestSessionData(sessions) {
           latestSessionData = sessions;
           window.latestSessionData = sessions;
-          console.log('[setLatestSessionData] latestSessionData set:', sessions);
+          // Debug logging removed
         };
         // Request current game info from background script
         chrome.runtime.sendMessage({
           type: 'GET_CURRENT_GAME_INFO'
         }, function (response) {
           if (response && response.gameInfo) {
-            console.log('[Popup] Received current game info:', response.gameInfo);
+            // Debug logging removed
             window.liveGameInfo = response.gameInfo;
           } else {
-            console.log('[Popup] No current game info available');
+            // Debug logging removed
             window.liveGameInfo = null;
           }
         });
@@ -315,10 +315,8 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           return _regeneratorRuntime().wrap(function _callee$(_context) {
             while (1) switch (_context.prev = _context.next) {
               case 0:
-                console.log('[fetchOnlinePlayerIds] function called');
-                console.log('[fetchOnlinePlayerIds] window.latestSessionData:', window.latestSessionData);
                 if (window.latestSessionData) {
-                  _context.next = 5;
+                  _context.next = 3;
                   break;
                 }
                 if (!window._fetchOnlinePlayerIdsWarned) {
@@ -326,20 +324,17 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
                   window._fetchOnlinePlayerIdsWarned = true;
                 }
                 return _context.abrupt("return", new Set());
-              case 5:
-                console.log('[fetchOnlinePlayerIds] window.userManager:', window.userManager);
-                console.log('[fetchOnlinePlayerIds] window.userManager.getOnlinePlayerIds:', window.userManager ? window.userManager.getOnlinePlayerIds : undefined);
+              case 3:
                 if (!(window.userManager && typeof window.userManager.getOnlinePlayerIds === 'function')) {
-                  _context.next = 12;
+                  _context.next = 6;
                   break;
                 }
-                ids = window.userManager.getOnlinePlayerIds(window.latestSessionData);
-                console.log('[fetchOnlinePlayerIds] latestSessionData:', window.latestSessionData);
-                console.log('[fetchOnlinePlayerIds] online IDs:', Array.from(ids));
+                ids = window.userManager.getOnlinePlayerIds(window.latestSessionData); // Debug logging removed
+                // Debug logging removed
                 return _context.abrupt("return", ids);
-              case 12:
+              case 6:
                 return _context.abrupt("return", new Set());
-              case 13:
+              case 7:
               case "end":
                 return _context.stop();
             }
@@ -348,11 +343,12 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
 
         // Function to update the online favorites list UI
         window.updateOnlineFavoritesListFunc = function (playerData, onlinePlayersObject) {
-          console.log('[updateOnlineFavoritesListFunc] called');
+          // Debug logging removed
 
           // CRITICAL DEBUG - Log the entire player data structure
-          console.log('[updateOnlineFavoritesListFunc] playerData FULL:', JSON.stringify(playerData, null, 2));
-          console.log('[updateOnlineFavoritesListFunc] onlinePlayersObject FULL:', JSON.stringify(onlinePlayersObject, null, 2));
+          // Debug logging removed
+          // Debug logging removed
+
           var onlineFavoritesListDiv = document.getElementById('onlineFavoritesList');
           var onlineFavoritesCountSpan = document.getElementById('onlineFavoritesCount');
           if (!onlineFavoritesListDiv || !onlineFavoritesCountSpan) {
@@ -388,17 +384,18 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           } else {
             console.warn('[updateOnlineFavoritesListFunc] onlinePlayersObject is invalid or empty');
           }
-          console.log("[updateOnlineFavoritesListFunc] Restructured ".concat(onlineCount, " online players into ").concat(Object.keys(onlinePlayersByNumericId).length, " numeric IDs"));
+
+          // Debug logging removed
 
           // DEBUG: Print sample of the first few player entries
-          console.log('[updateOnlineFavoritesListFunc] First 3 player records:');
+          // Debug logging removed
           var count = 0;
           for (var playerId in playerData) {
             if (count < 3) {
-              console.log("Player ID: ".concat(playerId, ", Data:"), playerData[playerId]);
+              // Debug logging removed
               // Check explicitly for the isFavorite property
-              console.log("  Has .isFavorite property: ".concat(playerData[playerId].hasOwnProperty('isFavorite')));
-              console.log("  Value of .isFavorite: ".concat(playerData[playerId].isFavorite));
+              // Debug logging removed
+              // Debug logging removed
               count++;
             } else {
               break;
@@ -414,7 +411,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
             var isFavorite = playerData[_playerId].isFavorite === true;
             if (isFavorite) {
               favoriteCount++;
-              console.log("[updateOnlineFavoritesListFunc] Found FAVORITE player: ".concat(playerData[_playerId].name || _playerId, " (ID: ").concat(_playerId, ")"));
+              // Debug logging removed
 
               // Get the numeric version of the player ID
               var numericPlayerId = _playerId.replace(/\D/g, '');
@@ -431,9 +428,11 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
               } else if (isOnlineNumeric) {
                 sessionName = onlinePlayersByNumericId[numericPlayerId];
               }
-              console.log("  Online check - exact match: ".concat(isOnlineExact, ", numeric match: ").concat(isOnlineNumeric));
+
+              // Debug logging removed
+
               if (isOnline) {
-                console.log("  \u2705 MATCH! This favorite player is ONLINE: ".concat(playerData[_playerId].name || _playerId, " in session: ").concat(sessionName));
+                // Debug logging removed
                 onlineFavorites.push(_objectSpread({
                   id: _playerId,
                   name: playerData[_playerId].name || _playerId,
@@ -442,7 +441,8 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
               }
             }
           }
-          console.log("[updateOnlineFavoritesListFunc] Stats: ".concat(favoriteCount, " favorites, ").concat(onlineCount, " online, ").concat(onlineFavorites.length, " online favorites"));
+
+          // Debug logging removed
 
           // Update count display
           onlineFavoritesCountSpan.textContent = onlineFavorites.length;
@@ -494,7 +494,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           } else {
             onlineFavoritesListDiv.innerHTML = '<p>No favorite players currently online.</p>';
           }
-          console.log('[updateOnlineFavoritesListFunc] Updated favorites list with', onlineFavorites.length, 'players');
+          // Debug logging removed
         };
 
         // Global scope for popup lifecycle
@@ -623,16 +623,14 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
                   showTab(tabName);
                   // Render known players when switching to userManagement tab
                   if (!(tabName === 'userManagement')) {
-                    _context2.next = 14;
+                    _context2.next = 11;
                     break;
                   }
-                  console.log('Switching to userManagement tab');
                   if (window.latestSessionData) {
-                    _context2.next = 12;
+                    _context2.next = 10;
                     break;
                   }
-                  console.log('[TabSwitch] No session data, fetching sessions before rendering known players...');
-                  _context2.next = 10;
+                  _context2.next = 8;
                   return window.fetchAndDisplaySessions(window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : function (id, name, score, notes, isFavorite, callback) {
                     console.error("userManager.addPlayer is not available. Add operation failed.");
                     if (callback) callback(false);
@@ -648,15 +646,15 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
                       window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
                     }
                   });
-                case 10:
-                  _context2.next = 14;
+                case 8:
+                  _context2.next = 11;
                   break;
-                case 12:
-                  console.log('Rendering known players (session data already available)');
+                case 10:
+                  // Render known players using existing session data
                   if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
                     window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
                   }
-                case 14:
+                case 11:
                 case "end":
                   return _context2.stop();
               }

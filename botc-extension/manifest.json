@@ -11,7 +11,10 @@
     "tabs"
   ],
   "host_permissions": [
-    "*://botc.app/*"
+    "*://botc.app/*",
+    "*://api.botc.app/*",
+    "*://chat-us1.botc.app/*",
+    "*://chat-us2.botc.app/*"
   ],
   "background": {
     "service_worker": "dist/background.bundle.js"
@@ -31,13 +34,6 @@
     "48": "src/icons/icon48.png",
     "128": "src/icons/icon128.png"
   },
-  "content_scripts": [
-    {
-      "matches": ["https://botc.app/play/*"],
-      "js": ["src/content/play_page_observer.js"],
-      "run_at": "document_idle"
-    }
-  ],
   "web_accessible_resources": [
     {
       "resources": ["src/auth/*", "src/icons/*"],

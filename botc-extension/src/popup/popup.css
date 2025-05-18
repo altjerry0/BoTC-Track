@@ -338,7 +338,7 @@ body.dark-mode .player-card {
 
 .player-card.player-spectator {
     border-left-color: #9ca3af; /* Gray for spectators */
-    opacity: 0.85; /* Slightly faded appearance */
+    opacity: 0.60; /* Slightly faded appearance */
 }
 
 /* The existing storyteller-badge is used in the HTML instead of ::before content */
@@ -586,6 +586,16 @@ body.dark-mode .player-card.rating-1 {
 
 .spectator-badge {
     background-color: #9ca3af;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.player-badge {
+    background-color: #10b981;
     color: white;
     font-size: 11px;
     padding: 2px 6px;

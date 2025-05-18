@@ -6,9 +6,11 @@
 This Chrome extension tracks and rates players in Blood on the Clocktower (BotC) games, helping you recognize familiar players across sessions and track username changes.
 
 > **Now Available (v1.1.5):**
+> - Enhanced player role distinction with clear badges for Players, Storytellers, and Spectators
+> - Removed content script functionality and reduced permissions
+> - Improved codebase readability and optimization with debug message cleanup
 > - Firebase and Webpack bundling for Manifest V3 compatibility
 > - Improved user management with enhanced player validation
-> - Rate limiting for database operations to prevent API abuse
 
 ⚠️ **Important: Back Up Your Player Data!** ⚠️
 

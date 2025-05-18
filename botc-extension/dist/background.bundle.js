@@ -38694,7 +38694,7 @@ function savePlayerDataToFirestore(_x3, _x4) {
  */
 function _savePlayerDataToFirestore() {
   _savePlayerDataToFirestore = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4(userId, playerData) {
-    var userDocRef;
+    var userDocRef, userDoc, needsFullOverwrite, existingData, existingPlayerIds, currentPlayerIds, deletedPlayerIds;
     return _regeneratorRuntime().wrap(function _callee4$(_context4) {
       while (1) switch (_context4.prev = _context4.next) {
         case 0:
@@ -38706,8 +38706,32 @@ function _savePlayerDataToFirestore() {
           return _context4.abrupt("return", false);
         case 3:
           _context4.prev = 3;
-          userDocRef = doc(db, 'users', userId); // Update only the playerData field
+          userDocRef = doc(db, 'users', userId); // First, fetch the existing document to check what players need to be deleted
           _context4.next = 7;
+          return getDoc(userDocRef);
+        case 7:
+          userDoc = _context4.sent;
+          needsFullOverwrite = false;
+          if (userDoc.exists()) {
+            existingData = userDoc.data();
+            if (existingData && existingData.playerData && existingData.playerData.data) {
+              // Compare existing player IDs with current player IDs to identify deleted players
+              existingPlayerIds = Object.keys(existingData.playerData.data);
+              currentPlayerIds = Object.keys(playerData || {}); // If any players have been deleted, we need to overwrite the entire playerData
+              // instead of merging to ensure deleted players are removed
+              deletedPlayerIds = existingPlayerIds.filter(function (id) {
+                return !currentPlayerIds.includes(id);
+              });
+              needsFullOverwrite = deletedPlayerIds.length > 0;
+              if (needsFullOverwrite) {
+                console.log("[Firestore] Detected ".concat(deletedPlayerIds.length, " deleted players. Performing full overwrite."));
+              }
+            }
+          }
+
+          // If players were deleted, overwrite the entire playerData object
+          // Otherwise, just merge updates which is more efficient
+          _context4.next = 12;
           return setDoc(userDocRef, {
             playerData: {
               version: 1,
@@ -38715,21 +38739,21 @@ function _savePlayerDataToFirestore() {
               data: playerData || {}
             }
           }, {
-            merge: true
+            merge: !needsFullOverwrite
           });
-        case 7:
+        case 12:
           console.log('[Firestore] Player data saved to Firestore for user:', userId);
           return _context4.abrupt("return", true);
-        case 11:
-          _context4.prev = 11;
+        case 16:
+          _context4.prev = 16;
           _context4.t0 = _context4["catch"](3);
           console.error('[Firestore] Error saving player data to Firestore:', _context4.t0);
           return _context4.abrupt("return", false);
-        case 15:
+        case 20:
         case "end":
           return _context4.stop();
       }
-    }, _callee4, null, [[3, 11]]);
+    }, _callee4, null, [[3, 16]]);
   }));
   return _savePlayerDataToFirestore.apply(this, arguments);
 }
@@ -39386,24 +39410,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       });
     });
     return true; // async
-  } else if (request.type === 'CURRENT_GAME_INFO') {
-    // Handler for info from content script
-    // console.log('[BG Game Info] Received game info from content script:', request.payload);
-    liveGameInfo = request.payload; // Update the stored game info
-    // Notify popup (if open) that live game info has been updated
-    chrome.runtime.sendMessage({
-      type: 'LIVE_GAME_INFO_UPDATED',
-      payload: liveGameInfo
-    }, function (response) {
-      if (chrome.runtime.lastError) {
-        // This error is expected if the popup is not open, so we don't need to log it aggressively.
-        // console.warn("[BG Game Info] Error sending LIVE_GAME_INFO_UPDATED (popup might be closed):", chrome.runtime.lastError.message);
-      }
-    });
-    sendResponse({
-      status: "Live game info received by background."
-    });
-    return true; // Indicate async response
   } else if (request.type === 'GET_AUTH_STATE') {
     // Handler for account tab auth state requests
     console.log('[BG Auth] Received request for auth state.');
@@ -39430,9 +39436,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     return true; // Indicate async response
   } else if (request.type === 'GET_CURRENT_GAME_INFO') {
     // Handler for requests from popup
-    // console.log('[BG Game Info] Popup requested live game info. Sending:', liveGameInfo);
+    // Private game detection now happens through the normal sessions endpoint
+    // Return null since we're not detecting current game through content script anymore
     sendResponse({
-      gameInfo: liveGameInfo
+      gameInfo: null
     });
     // This one is synchronous, no need to return true
   } else if (request.type === 'GET_USERNAME_BY_ID') {
@@ -39781,26 +39788,41 @@ function logStoredData() {
 // });
 
 // Listen for network requests to extract the Authorization token
+// Track token update timestamps to avoid too frequent storage operations
+var lastTokenUpdateTime = 0;
+var TOKEN_UPDATE_MIN_INTERVAL = 2000; // Minimum 2 seconds between token updates
+
+// Token expiration management
+var tokenExpirationTime = 0;
+var TOKEN_ESTIMATED_LIFETIME = 30 * 60 * 1000; // 30 minutes as a safe estimate
+
 chrome.webRequest.onBeforeSendHeaders.addListener(function (details) {
   var authHeader = details.requestHeaders.find(function (header) {
     return header.name.toLowerCase() === "authorization";
   });
   if (authHeader && authHeader.value.startsWith("Bearer ")) {
     var newAuthToken = authHeader.value;
-    if (authToken !== newAuthToken) {
-      // Only update if it changed
+    var currentTime = Date.now();
+
+    // Only update if token is different or the current one is nearing expiration
+    if (authToken !== newAuthToken || currentTime - lastTokenUpdateTime > TOKEN_UPDATE_MIN_INTERVAL) {
       authToken = newAuthToken;
-      // Save to local storage for the alarm to use
+      lastTokenUpdateTime = currentTime;
+      tokenExpirationTime = currentTime + TOKEN_ESTIMATED_LIFETIME;
+
+      // Store additional metadata about when the token was captured
       chrome.storage.local.set({
-        authToken: authToken
-      }, function () {
-        // console.log("Authorization token extracted and stored.");
+        authToken: authToken,
+        authTokenCaptureTime: currentTime,
+        authTokenSource: details.url,
+        tokenExpirationTime: tokenExpirationTime
       });
+      console.log("[Auth] New token captured from ".concat(details.url.substring(0, 40), "..."));
     }
   }
 }, {
-  urls: ["*://botc.app/*"],
-  types: ["xmlhttprequest", "main_frame", "sub_frame"] // Added main_frame and sub_frame for broader capture if needed initially.
+  urls: ["*://botc.app/*", "*://api.botc.app/*", "*://chat-us1.botc.app/*", "*://chat-us2.botc.app/*"],
+  types: ["xmlhttprequest", "main_frame", "sub_frame"]
 }, ["requestHeaders"]);
 /******/ })()
 ;

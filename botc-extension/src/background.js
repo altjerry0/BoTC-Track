@@ -78,14 +78,37 @@ async function savePlayerDataToFirestore(userId, playerData) {
     try {
         const userDocRef = doc(db, 'users', userId);
         
-        // Update only the playerData field
+        // First, fetch the existing document to check what players need to be deleted
+        const userDoc = await getDoc(userDocRef);
+        let needsFullOverwrite = false;
+        
+        if (userDoc.exists()) {
+            const existingData = userDoc.data();
+            if (existingData && existingData.playerData && existingData.playerData.data) {
+                // Compare existing player IDs with current player IDs to identify deleted players
+                const existingPlayerIds = Object.keys(existingData.playerData.data);
+                const currentPlayerIds = Object.keys(playerData || {});
+                
+                // If any players have been deleted, we need to overwrite the entire playerData
+                // instead of merging to ensure deleted players are removed
+                const deletedPlayerIds = existingPlayerIds.filter(id => !currentPlayerIds.includes(id));
+                needsFullOverwrite = deletedPlayerIds.length > 0;
+                
+                if (needsFullOverwrite) {
+                    console.log(`[Firestore] Detected ${deletedPlayerIds.length} deleted players. Performing full overwrite.`);
+                }
+            }
+        }
+        
+        // If players were deleted, overwrite the entire playerData object
+        // Otherwise, just merge updates which is more efficient
         await setDoc(userDocRef, {
             playerData: {
                 version: 1,
                 lastUpdated: Date.now(),
                 data: playerData || {}
             }
-        }, { merge: true });
+        }, { merge: !needsFullOverwrite });
         
         console.log('[Firestore] Player data saved to Firestore for user:', userId);
         return true;
@@ -546,19 +569,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: false, error: error.message || 'Unknown error occurred' });
         });
         return true; // async
-    } else if (request.type === 'CURRENT_GAME_INFO') { // Handler for info from content script
-        // console.log('[BG Game Info] Received game info from content script:', request.payload);
-        liveGameInfo = request.payload; // Update the stored game info
-        // Notify popup (if open) that live game info has been updated
-        chrome.runtime.sendMessage({ type: 'LIVE_GAME_INFO_UPDATED', payload: liveGameInfo }, response => {
-            if (chrome.runtime.lastError) {
-                // This error is expected if the popup is not open, so we don't need to log it aggressively.
-                // console.warn("[BG Game Info] Error sending LIVE_GAME_INFO_UPDATED (popup might be closed):", chrome.runtime.lastError.message);
-            }
-        });
-        sendResponse({ status: "Live game info received by background." });
-        return true; // Indicate async response
-
     } else if (request.type === 'GET_AUTH_STATE') { // Handler for account tab auth state requests
         console.log('[BG Auth] Received request for auth state.');
         // Check for auth user in Chrome storage instead of direct Firebase access
@@ -578,8 +588,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true; // Indicate async response
 
     } else if (request.type === 'GET_CURRENT_GAME_INFO') { // Handler for requests from popup
-        // console.log('[BG Game Info] Popup requested live game info. Sending:', liveGameInfo);
-        sendResponse({ gameInfo: liveGameInfo });
+        // Private game detection now happens through the normal sessions endpoint
+        // Return null since we're not detecting current game through content script anymore
+        sendResponse({ gameInfo: null });
         // This one is synchronous, no need to return true
 
     } else if (request.type === 'GET_USERNAME_BY_ID') {
@@ -891,23 +902,42 @@ function logStoredData() {
 // });
 
 // Listen for network requests to extract the Authorization token
+// Track token update timestamps to avoid too frequent storage operations
+let lastTokenUpdateTime = 0;
+const TOKEN_UPDATE_MIN_INTERVAL = 2000; // Minimum 2 seconds between token updates
+
+// Token expiration management
+let tokenExpirationTime = 0;
+const TOKEN_ESTIMATED_LIFETIME = 30 * 60 * 1000; // 30 minutes as a safe estimate
+
 chrome.webRequest.onBeforeSendHeaders.addListener(
     (details) => {
         const authHeader = details.requestHeaders.find(header => header.name.toLowerCase() === "authorization");
         if (authHeader && authHeader.value.startsWith("Bearer ")) {
             const newAuthToken = authHeader.value;
-            if (authToken !== newAuthToken) { // Only update if it changed
+            const currentTime = Date.now();
+            
+            // Only update if token is different or the current one is nearing expiration
+            if (authToken !== newAuthToken || currentTime - lastTokenUpdateTime > TOKEN_UPDATE_MIN_INTERVAL) {
                 authToken = newAuthToken;
-                // Save to local storage for the alarm to use
-                chrome.storage.local.set({ authToken: authToken }, () => {
-                    // console.log("Authorization token extracted and stored.");
+                lastTokenUpdateTime = currentTime;
+                tokenExpirationTime = currentTime + TOKEN_ESTIMATED_LIFETIME;
+                
+                // Store additional metadata about when the token was captured
+                chrome.storage.local.set({
+                    authToken: authToken,
+                    authTokenCaptureTime: currentTime,
+                    authTokenSource: details.url,
+                    tokenExpirationTime: tokenExpirationTime
                 });
+                
+                console.log(`[Auth] New token captured from ${details.url.substring(0, 40)}...`); 
             }
         }
     },
     {
-        urls: ["*://botc.app/*"],
-        types: ["xmlhttprequest", "main_frame", "sub_frame"] // Added main_frame and sub_frame for broader capture if needed initially.
+        urls: ["*://botc.app/*", "*://api.botc.app/*", "*://chat-us1.botc.app/*", "*://chat-us2.botc.app/*"],
+        types: ["xmlhttprequest", "main_frame", "sub_frame"]
     },
     ["requestHeaders"]
 );

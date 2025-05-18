@@ -1,9 +1,28 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-17.
+This CHANGELOG.md was last updated by Cascade on 2025-05-18.
 -->
 
 # BotC Player Tracker Extension - Changelog
 ---
+
+## [v1.1.5] - 2025-05-18
+
+### Added
+- **Enhanced Role Distinction:** Improved the distinction between active players and spectators:
+  - Added clear role badges for all users (Player, Storyteller, Spectator)
+  - Fixed logic to properly identify users who are in the session but not actually playing
+  - Active players now have a green badge labeled "Player"
+  - Spectators have a gray badge labeled "Spec"
+  - Storytellers have a purple badge labeled "ST"
+
+### Changed
+- **Code Cleanup:** Removed the content script functionality (play_page_observer.js) since private games can now be detected through the standard API.
+- **Reduced Permissions:** Removed unnecessary content script permissions from the manifest file.
+- **Console Log Cleanup:** Removed debug console.log statements throughout the codebase for cleaner browser console output.
+
+### Fixed
+- **Firebase Player Deletion:** Fixed an issue where deleted players weren't being properly removed from Firestore when pushing local changes to the cloud.
+- **API Token Management:** Enhanced the auth token capture system to prevent 403 errors by actively tracking and refreshing tokens from both the BotC website and its chat service.
 
 ## [v1.1.6] - 2025-05-17
 

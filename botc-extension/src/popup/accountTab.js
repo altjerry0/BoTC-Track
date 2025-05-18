@@ -1,5 +1,5 @@
 // accountTab.js - Handles the Account/Cloud Sync tab UI and logic
-console.log("accountTab.js loaded");
+// Account Tab module for handling user authentication and cloud sync features
 
 // DOM references
 let accountTab, accountStatus, signInBtn, signOutBtn;
@@ -16,7 +16,7 @@ const RATE_LIMIT = {
 };
 
 function initAccountTab() {
-    console.log("initAccountTab called");
+    // Initialize the account tab UI elements
     // Basic account elements
     accountTab = document.getElementById('accountTab');
     accountStatus = document.getElementById('accountStatus');

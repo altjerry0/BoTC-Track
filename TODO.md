@@ -13,7 +13,7 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 
 ---
 
-## v1.2.0 – Firebase/Firestore/Google Sign-In & Cloud Sync (Completed)
+## v1.1.5 – Firebase/Firestore/Google Sign-In & Cloud Sync (Completed)
 
 - [x] **Bundle Firebase SDK with Webpack**
     - Installed `firebase` and configured Webpack to bundle all required Firebase modules for Manifest V3 compatibility.
@@ -41,7 +41,7 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 - [x] **Release**
     - Prepared v1.2.0 release with all above features.
 
-## v1.2.1 – Cloud Sync Refinements & Future Roadmap
+## v1.2.0 – Cloud Sync Refinements & Future Roadmap
 
 - [ ] **Enhanced Conflict Resolution**
     - Implement more intelligent merging of cloud and local data when conflicts occur.

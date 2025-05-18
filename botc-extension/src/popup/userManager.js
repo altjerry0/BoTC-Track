@@ -345,7 +345,7 @@ function getOnlinePlayerIds(sessionData) {
  * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
  */
 async function displayKnownPlayers(container, searchTerm = '', playerData, onlinePlayerIds, createUsernameHistoryModalFunc, refreshCallback) {
-    console.log('[displayKnownPlayers] onlinePlayerIds:', onlinePlayerIds);
+    // Debug logging removed
     const lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : ''; // Define lowerSearchTerm here
     container.innerHTML = ''; // Clear previous results
 
@@ -804,7 +804,7 @@ function getRatingClass(rating) {
  * @param {Function} [callback] - Optional callback to execute after saving.
  */
 async function replaceAllPlayerDataAndSave(newData, callback) {
-    console.log('[userManager] Clearing all player data');
+    // Debug logging removed
     try {
         // Force a direct removal from Chrome storage to ensure it's fully cleared
         await new Promise((resolve, reject) => {
@@ -813,7 +813,7 @@ async function replaceAllPlayerDataAndSave(newData, callback) {
                     console.error('[userManager] Error removing playerData from storage:', chrome.runtime.lastError);
                     reject(chrome.runtime.lastError);
                 } else {
-                    console.log('[userManager] Successfully removed playerData from storage');
+                    // Debug logging removed
                     resolve();
                 }
             });
@@ -829,13 +829,13 @@ async function replaceAllPlayerDataAndSave(newData, callback) {
                     console.error('[userManager] Error saving empty playerData:', chrome.runtime.lastError);
                     reject(chrome.runtime.lastError);
                 } else {
-                    console.log('[userManager] Successfully saved empty playerData');
+                    // Debug logging removed
                     resolve();
                 }
             });
         });
         
-        console.log('[userManager] All player data cleared successfully');
+        // Debug logging removed
         
         // Call the callback with success=true if provided
         if (typeof callback === 'function') {
@@ -1214,7 +1214,7 @@ async function editPlayerDetails(playerId, isNewPlayer = false, callback) {
  * @param {string} [searchTerm=''] - Optional search term to filter players.
  */
 async function renderKnownPlayers(container, searchTerm = '') {
-    console.log('[renderKnownPlayers] called. SessionData:', window.latestSessionData);
+    // Debug logging removed
     if (!container) {
         console.error("Container element not provided for rendering known players.");
         return;
@@ -1230,8 +1230,8 @@ async function renderKnownPlayers(container, searchTerm = '') {
     try {
         // Always use window.fetchOnlinePlayerIds for consistency
         if (typeof window.fetchOnlinePlayerIds === 'function') {
-            console.log('[renderKnownPlayers] window.fetchOnlinePlayerIds:', window.fetchOnlinePlayerIds);
-            console.log('[renderKnownPlayers] calling fetchOnlinePlayerIds...');
+            // Debug logging removed
+            // Debug logging removed
             onlinePlayerIds = await window.fetchOnlinePlayerIds();
         } else {
             console.warn("window.fetchOnlinePlayerIds function not found.");
