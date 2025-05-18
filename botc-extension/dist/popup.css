@@ -1,0 +1,1376 @@
+:root {
+    /* Light Mode (Default) */
+    --bg-color: #ffffff;
+    --text-color: #212529;
+    --subtle-text-color: #6c757d; /* Bootstrap secondary text color */
+    --heading-color: #000000;
+    --border-color: #dee2e6;
+    --link-color: #007bff;
+    --button-bg: #007bff;
+    --button-text: #ffffff;
+    --button-hover-bg: #0056b3;
+    --secondary-button-bg: #6c757d;
+    --secondary-button-hover-bg: #5a6268;
+    --input-bg: #ffffff;
+    --input-border: #ced4da;
+    --card-bg: #f8f9fa;
+    --card-border: #dee2e6;
+    --tab-border: #ccc;
+    --tab-active-border: var(--link-color);
+    --tab-hover-bg: #f0f0f0;
+    --online-badge-bg: var(--online-indicator-color); /* Green */
+    --online-badge-text: #ffffff;
+    --modal-bg: #fff;
+    --modal-backdrop: rgba(0, 0, 0, 0.5);
+    --modal-border: #ccc;
+    --modal-header-bg: #f7f7f7;
+    --modal-header-border: #eee;
+    --modal-close-text: #aaa;
+    --modal-close-hover-text: #333;
+    --player-indicator-good-bg: #d1e7dd;
+    --player-indicator-good-text: #0a3622;
+    --player-indicator-bad-bg: #f8d7da;
+    --player-indicator-bad-text: #58151c;
+    --player-indicator-neutral-bg: #e9ecef;
+    --player-indicator-neutral-text: #495057;
+    --score-high-bg: #3bc4b3;
+    --score-med-bg: #d4ac0d;
+    --score-low-bg: #a52a2a;
+    --online-indicator-color: #198754; /* Green */
+    --danger-button-bg: #dc3545; /* Bootstrap danger red */
+    --danger-button-text: #ffffff;
+    --danger-button-hover-bg: #c82333;
+    --danger-button-border: var(--danger-button-bg);
+    --danger-button-hover-border: var(--danger-button-hover-bg);
+    --active-user-glow-color: rgba(255, 165, 0, 0.7);
+    --current-tab-glow-color: rgba(0, 123, 255, 0.6);
+}
+
+/* Dark Mode Variables */
+body.dark-mode {
+    --bg-color: #202124; /* Dark gray */
+    --text-color: #e8eaed; /* Light gray */
+    --subtle-text-color: #9aa0a6; /* Lighter gray for dark mode */
+    --heading-color: #e8eaed; /* Light gray for headings in dark mode */
+    --border-color: #5f6368; /* Darker border */
+    --link-color: #8ab4f8; /* Lighter blue for links */
+    --button-bg: #8ab4f8;
+    --button-text: #202124;
+    --button-hover-bg: #aecbfa;
+    --secondary-button-bg: #5f6368;
+    --secondary-button-hover-bg: #70757a;
+    --input-bg: #3c4043; /* Dark input background */
+    --input-border: #5f6368;
+    --card-bg: #2d2e31; /* Darker card background */
+    --card-border: #5f6368;
+    --tab-border: #5f6368;
+    --tab-active-border: var(--link-color);
+    --tab-hover-bg: #3c4043;
+    --online-badge-bg: #68b36b; /* Adjusted green for dark mode */
+    --online-badge-text: #202124;
+    --modal-bg: #2d2e31;
+    --modal-backdrop: rgba(0, 0, 0, 0.7);
+    --modal-border: #5f6368;
+    --modal-header-bg: #3c4043;
+    --modal-header-border: #5f6368;
+    --modal-close-text: #9aa0a6;
+    --modal-close-hover-text: #e8eaed;
+    --player-indicator-good-bg: #2e7d32; /* Darker green */
+    --player-indicator-good-text: #e8f5e9;
+    --player-indicator-bad-bg: #c62828; /* Darker red */
+    --player-indicator-bad-text: #fce8e6;
+    --player-indicator-neutral-bg: #5f6368; /* Darker neutral */
+    --player-indicator-neutral-text: #e8eaed;
+    --score-high-bg: #26a69a; /* Teal, slightly darker */
+    --score-med-bg: #b08d57; /* Darker yellow/gold */
+    --score-low-bg: #b74b4b; /* Darker red/brown */
+    --online-indicator-color: #68b36b;
+    --danger-button-bg: #c62828; /* Matches --player-indicator-bad-bg */
+    --danger-button-text: #fce8e6; /* Matches --player-indicator-bad-text */
+    --danger-button-hover-bg: #a71313; /* Darker shade of danger red */
+    --danger-button-border: var(--danger-button-bg);
+    --danger-button-hover-border: var(--danger-button-hover-bg);
+    --active-user-glow-color: rgba(255, 193, 7, 0.7); /* Brighter Orange/Amber for dark mode */
+    --current-tab-glow-color: rgba(138, 180, 248, 0.7); /* Lighter/brighter Blue for dark mode (opacity increased slightly) */
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 16px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    width: 600px;
+    min-height: 400px;
+}
+
+#content {
+    max-width: 100%;
+    background-color: var(--bg-color); 
+}
+
+h1 {
+    font-size: 24px;
+    color: var(--heading-color);
+    margin-bottom: 16px;
+}
+
+h2 {
+    font-size: 20px;
+    color: var(--heading-color); /* Use variable */
+    margin: 16px 0;
+}
+
+p {
+    font-size: 14px;
+    color: var(--text-color); /* Use variable */
+    margin: 8px 0;
+}
+
+button {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid var(--button-bg); /* Or var(--input-border) for different outline */
+    padding: 8px 12px; /* Standard padding for text buttons */
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 8px; /* Default margin for buttons placed next to each other */
+    font-size: 14px; /* Standard button text size */
+    text-align: center;
+    vertical-align: middle;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    line-height: 1.5; /* Good for text buttons */
+}
+
+button:hover {
+    background-color: var(--button-hover-bg);
+    border-color: var(--button-hover-bg);
+}
+
+.player-action-button {
+    padding: 6px; /* Reduced padding for a tighter fit around a ~20px icon */
+    min-width: 32px; /* Ensures a minimum clickable area */
+    width: 32px;     /* Fixed width */
+    height: 32px;    /* Fixed height */
+    font-size: 18px; /* Icon character size (if not SVG) */
+    display: inline-flex; /* Use flex to center content */
+    align-items: center; /* Vertically center flex items */
+    justify-content: center; /* Horizontally center flex items */
+    text-align: center; /* Fallback for non-flex scenarios, though not primary here */
+    vertical-align: middle; /* Ensures inline-flex elements align well with surrounding text/elements */
+    margin: 0 3px;   /* Keep small margin between action buttons */
+    /* Inherits background, color (for icon), border, border-radius from default button */
+}
+
+button .button-icon {
+    width: 1em;  /* Relative to button's font-size (14px for normal, 18px for player-action) */
+    height: 1em; 
+    fill: currentColor;
+    vertical-align: middle;
+    margin: 0; /* Center if it's the only content */
+    display: inline-block; /* Ensure it behaves well with centering */
+    margin-right: 5px; /* Space between icon and text */
+}
+
+.player-action-button > .button-icon:only-child {
+    margin-right: 0;
+}
+
+.session-container {
+    margin-bottom: 16px;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.session-header {
+    background-color: var(--card-bg); /* Use variable */
+    padding: 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.session-header-right-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Adjust gap as needed between indicators and toggle button */
+    margin-left: auto; /* Pushes this container to the right if session-title doesn't fill space */
+}
+
+.session-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.edition-tag {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.edition-official {
+    background-color: var(--score-high-bg);
+    border-color: var(--online-badge-bg);
+    color: var(--player-indicator-good-text);
+}
+
+.edition-custom {
+    background-color: var(--player-indicator-neutral-bg);
+    border-color: var(--border-color);
+    color: var(--player-indicator-neutral-text);
+}
+
+.player-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.player-list-section {
+    margin-top: 8px;
+}
+
+.player-list-section-title {
+    font-size: 12px;
+    color: var(--subtle-text-color);
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.session-content {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    background-color: var(--card-bg); /* Use card background for default */
+    color: var(--text-color);
+    border: 1px solid var(--card-border);
+}
+
+body.dark-mode .session-content {
+    background-color: var(--card-bg); /* Ensure it uses the dark card background */
+    color: var(--text-color); /* Ensure it uses the dark text color */
+    border-color: var(--card-border);
+}
+
+.player-card {
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--card-border);
+    background-color: var(--card-bg);
+    border-left: 5px solid var(--card-border); /* Use variable for left border */
+    width: 100%; /* Ensure card takes full width of container */
+    color: var(--text-color); /* Ensure text color is also variable-based */
+    box-sizing: border-box; /* Include padding/border in width calculation */
+}
+
+body.dark-mode .player-card {
+    background-color: var(--card-bg); /* Should be dark from variables */
+    color: var(--text-color);       /* Should be light from variables */
+    border-color: var(--card-border); /* Covers main border and left border if not overridden */
+}
+
+.player-card.rating-good {
+    border-left-color: #31c48d; /* Green */
+}
+
+.player-card.rating-bad {
+    border-left-color: #ef4444; /* Darker Red */
+}
+
+.player-card.rating-neutral {
+    border-left-color: #f59e0b; /* Orange */
+}
+
+.player-card.known-player {
+    display: flex; /* Enable Flexbox */
+    justify-content: space-between; /* Push info and buttons apart */
+    align-items: center; /* Vertically center items */
+    border: 1px solid var(--card-border);
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    background-color: var(--card-bg);
+}
+
+.player-info-container {
+    flex-grow: 1; /* Allow info to take up available space */
+    margin-right: 10px; /* Add space between info and buttons */
+}
+
+.player-card-buttons {
+    display: flex; /* Align buttons in a row */
+    gap: 5px; /* Space between buttons */
+    flex-shrink: 0; /* Prevent buttons from shrinking */
+}
+
+.player-card-buttons button {
+    padding: 4px 8px; /* Smaller buttons for the card */
+    font-size: 0.85em;
+}
+
+.player-card.online {
+    border-left-color: var(--online-indicator-color); /* Online players get a specific border color */
+}
+
+.player-card.favorite-player {
+    box-shadow: 0 0 3px 1px gold; /* Subtle glow */
+}
+
+/* Styling for different player roles */
+.player-card.player-playing {
+    border-left-color: #10b981; /* Emerald green for active players */
+}
+
+.player-card.player-storyteller {
+    border-left-color: #7c3aed; /* Purple for storytellers (matching storyteller-badge) */
+    background-color: rgba(124, 58, 237, 0.05); /* Very subtle purple background */
+}
+
+.player-card.player-spectator {
+    border-left-color: #9ca3af; /* Gray for spectators */
+    opacity: 0.60; /* Slightly faded appearance */
+}
+
+/* The existing storyteller-badge is used in the HTML instead of ::before content */
+
+.player-info {
+    flex-grow: 1;
+    margin-right: 10px; /* Add some space between info and actions */
+    overflow: hidden; /* Prevent content overflow */
+    white-space: nowrap; /* Keep info on one line */
+    text-overflow: ellipsis; /* Add '...' for long text */
+}
+
+.player-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0; /* Prevent actions container from shrinking */
+}
+
+.player-actions button,
+.player-card-buttons button { 
+    padding: 2px 5px;
+    font-size: 0.8em;
+    margin-right: 3px;
+    min-width: auto;
+    line-height: 1.2;
+}
+
+.player-button-container button {
+    padding: 3px 6px; 
+    font-size: 0.75em; 
+    margin-right: 3px;
+    min-width: auto;
+    line-height: 1.1;
+    border-radius: 3px; 
+}
+
+.online-badge {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--online-indicator-color);
+    margin-left: 5px;
+    vertical-align: middle;
+    box-shadow: 0 0 2px var(--online-indicator-color);
+    border: 1px solid var(--text-color); 
+}
+
+.session-name-indicator {
+    font-size: 11px;
+    color: var(--subtle-text-color);
+    margin-left: 4px; 
+}
+
+.last-seen-text {
+    font-style: italic;
+}
+
+.player-meta-info {
+    font-size: 0.9em; 
+    margin-top: 4px;  
+    margin-bottom: 4px; 
+}
+
+.player-card.rating-5 { 
+    border-left-color: #31c48d; /* Green */
+}
+.player-card.rating-4 { 
+    border-left-color: #3b82f6; /* Blue */
+}
+.player-card.rating-3 { 
+    border-left-color: #f59e0b; /* Orange */
+}
+.player-card.rating-2 { 
+    border-left-color: #f98080; /* Light Red */
+}
+.player-card.rating-1 { 
+    border-left-color: #ef4444; /* Darker Red */
+}
+
+body.dark-mode .player-card.rating-5 {
+    border-left-color: #31c48d; /* Green */
+}
+body.dark-mode .player-card.rating-4 {
+    border-left-color: #3b82f6; /* Blue */
+}
+body.dark-mode .player-card.rating-3 {
+    border-left-color: #f59e0b; /* Orange */
+}
+body.dark-mode .player-card.rating-2 {
+    border-left-color: #f98080; /* Light Red */
+}
+body.dark-mode .player-card.rating-1 {
+    border-left-color: #ef4444; /* Darker Red */
+}
+
+.search-container {
+    margin-bottom: 16px;
+    position: relative;
+}
+
+#userSearch {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
+#userSearch:focus {
+    outline: none;
+    border-color: var(--link-color);
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    margin-top: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1),0 6px 20px rgba(0,0,0,0.19);
+    z-index: 1000; 
+    display: none;
+}
+
+.search-result-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: #f5f5f5;
+}
+
+.search-result-name {
+    font-weight: 500;
+}
+
+.search-result-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.search-result-aliases {
+    font-size: 12px;
+    color: var(--subtle-text-color);
+}
+
+.search-result-rating {
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+}
+
+.button-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.user-management {
+    margin-bottom: 24px;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 16px;
+    background-color: white;
+}
+
+.user-management h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 18px;
+    color: var(--heading-color);
+}
+
+.history-button {
+    background-color: var(--secondary-button-bg);
+    color: var(--text-color);
+    border: 1px solid var(--input-border);
+    padding: 4px 8px;
+    font-size: 12px;
+    margin-left: 8px;
+    cursor: pointer;
+}
+
+.history-button:hover {
+    background-color: var(--secondary-button-hover-bg);
+}
+
+.username-history {
+    margin-top: 8px;
+    padding: 8px;
+    background-color: #f9fafb;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.username-history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.username-history-item:last-child {
+    border-bottom: none;
+}
+
+.username-history-name {
+    font-weight: 500;
+}
+
+.username-history-date {
+    color: var(--subtle-text-color);
+}
+
+.storyteller-badge {
+    background-color: #7c3aed;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.spectator-badge {
+    background-color: #9ca3af;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.player-badge {
+    background-color: #10b981;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.session-header .storyteller-info {
+    font-size: 12px;
+    color: var(--subtle-text-color);
+    margin-top: 4px;
+}
+
+.session-header .storyteller-name {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.session-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center; 
+}
+
+.filter-checkbox {
+    display: inline-flex; 
+    align-items: center;
+    margin-left: 15px; 
+    cursor: pointer;
+}
+
+.filter-checkbox input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+.tab-navigation {
+    display: flex;
+    border-bottom: 1px solid var(--tab-border);
+    margin-bottom: 10px;
+}
+
+.tab-button {
+    padding: 10px 15px;
+    cursor: pointer;
+    border: none;
+    background-color: var(--bg-color); 
+    color: var(--text-color);
+    border-bottom: 3px solid transparent; 
+    margin-bottom: -1px; 
+    font-size: 14px;
+}
+
+.tab-button.active {
+    border-bottom-color: var(--tab-active-border);
+    font-weight: bold;
+}
+
+.tab-button:hover {
+    background-color: var(--tab-hover-bg);
+}
+
+.tab-content {
+    display: none; 
+}
+
+.tab-content.active {
+    display: block; 
+}
+
+.user-management-controls {
+    display: flex;
+    justify-content: flex-start; 
+    align-items: center; 
+    margin-bottom: 15px;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color); /* Use theme variable */
+}
+
+.user-management-controls button {
+    margin-right: 4px; /* Reduced margin */
+    /* padding: 8px 12px; Removed, inherits from default button */
+}
+
+#import-status-message {
+    font-style: italic;
+    color: #aaa; 
+}
+
+#clear-all-player-data-button {
+    margin-left: auto; /* Pushes this button to the far right of the flex container */
+    margin-right: 0; /* Reset right margin if not needed, or adjust as necessary */
+}
+
+.import-status-message {
+    font-style: italic;
+    color: #aaa; 
+}
+
+#settingsButton {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 20px; 
+    cursor: pointer;
+    padding: 5px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+#settingsButton:hover {
+    color: var(--link-color); 
+}
+
+.settings-modal {
+    position: fixed; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: var(--modal-backdrop); 
+    z-index: 1000; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+
+.settings-modal-content {
+    background-color: var(--modal-bg);
+    margin: auto; 
+    padding: 20px;
+    border: 1px solid var(--modal-border);
+    width: 80%; 
+    max-width: 400px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+}
+
+.settings-modal-header {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--modal-header-border);
+    margin-bottom: 20px;
+}
+
+.settings-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--heading-color);
+}
+
+.settings-modal-close {
+    color: var(--modal-close-text);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.settings-modal-close:hover,
+.settings-modal-close:focus {
+    color: var(--modal-close-hover-text);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px; 
+    height: 24px; 
+}
+
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc; 
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 24px; 
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px; 
+    width: 18px;  
+    left: 3px;    
+    bottom: 3px;  
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--link-color); 
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--link-color);
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(20px); 
+    -ms-transform: translateX(20px);
+    transform: translateX(20px);
+}
+
+.section-divider {
+    border: 0;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 20px 0;
+}
+
+.username-history-modal { 
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--modal-backdrop, rgba(0, 0, 0, 0.6)); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; 
+    padding: 15px; 
+}
+
+.username-history-content { 
+    background-color: var(--modal-bg, #ffffff); 
+    color: var(--text-color, #333333); 
+    border: 1px solid var(--modal-border, #cccccc);
+    padding: 20px 25px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    position: relative; 
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+body.dark-mode .username-history-content {
+    background-color: var(--modal-bg, #333333); 
+    color: var(--text-color, #f0f0f0); 
+    border-color: var(--modal-border, #555555);
+}
+
+.username-history-title {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.4em;
+    color: var(--heading-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.username-history-current {
+    margin-bottom: 16px;
+    font-size: 1.1em;
+}
+
+.username-history-current strong {
+    color: var(--subtle-text-color);
+}
+
+.username-history-list {
+    list-style-type: none; 
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.username-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 5px;
+    border-bottom: 1px solid var(--border-color-light, #eeeeee);
+}
+
+body.dark-mode .username-history-item {
+    border-bottom-color: var(--border-color-light, #444444);
+}
+
+.username-history-item:last-child {
+    border-bottom: none;
+}
+
+.username-history-name {
+    flex-grow: 1;
+    margin-right: 15px;
+}
+
+.username-history-change .old-name {
+    color: #cc5555; 
+    text-decoration: line-through;
+}
+
+.username-history-change .arrow {
+    margin: 0 5px;
+}
+
+.username-history-change .new-name {
+    color: #55aa55; 
+    font-weight: bold;
+}
+
+.username-history-time {
+    color: var(--subtle-text-color);
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.username-history-list p { 
+    font-style: italic;
+    color: var(--subtle-text-color);
+    text-align: center;
+    padding: 10px 0;
+}
+
+.username-history-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px; 
+    font-weight: bold;
+    color: var(--modal-close-text, #aaa);
+    cursor: pointer;
+    line-height: 1; 
+    padding: 0 5px; 
+    z-index: 10; 
+}
+
+.username-history-close:hover {
+    color: var(--modal-close-hover-text, #333);
+}
+
+#sessionsList, #knownPlayersList, #onlineFavoritesList {
+    max-height: 350px; 
+    overflow-y: auto;
+    padding-right: 5px; 
+    margin-top: 10px;
+}
+
+#knownPlayersList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; 
+}
+
+.button {
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.button:hover {
+    background-color: var(--primary-hover-color);
+}
+
+.phase-zero-indicator {
+    color: orange;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.player-notes {
+    font-size: 0.9em;
+    color: var(--subtle-text-color);
+    margin-top: 4px;
+}
+
+.header-controls {
+    display: flex;
+    justify-content: flex-end; 
+    align-items: center; 
+    padding: 5px 0; 
+    margin-bottom: 5px;
+}
+
+#open-in-tab-btn {
+    padding: 4px 10px;
+    font-size: 0.85em;
+}
+
+.tabs {
+    display: flex;
+    border-bottom: 1px solid var(--tab-border);
+    margin-bottom: 10px;
+}
+
+.tab-button {
+    padding: 10px 15px;
+    cursor: pointer;
+    border: none;
+    background-color: var(--bg-color); 
+    color: var(--text-color);
+    border-bottom: 3px solid transparent; 
+    margin-bottom: -1px; 
+    font-size: 14px;
+}
+
+.tab-button.active {
+    border-bottom-color: var(--tab-active-border);
+    font-weight: bold;
+}
+
+.tab-button:hover {
+    background-color: var(--tab-hover-bg);
+}
+
+.tab-content {
+    display: none; 
+}
+
+.tab-content.active {
+    display: block; 
+}
+
+.user-management-controls {
+    display: flex;
+    justify-content: flex-start; 
+    align-items: center; 
+    margin-bottom: 15px;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color); /* Use theme variable */
+}
+
+.user-management-controls button {
+    margin-right: 10px; /* Reduced margin */
+    /* padding: 8px 12px; Removed, inherits from default button */
+}
+
+#import-status-message {
+    font-style: italic;
+    color: #aaa; 
+}
+
+.hidden {
+    display: none !important;
+}
+
+.button-icon { /* General icon class, keep if used elsewhere */
+    width: 32px; 
+    height: 32px; 
+    vertical-align: middle;
+    margin-right: 5px; 
+}
+
+.session-toggle-button {
+    background-color: transparent;
+    border: none;
+    color: var(--text-color);
+    padding: 4px 8px;
+    font-size: 16px; /* Adjust size of arrow characters */
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.session-toggle-button:hover {
+    background-color: var(--tab-hover-bg);
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 10px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+}
+
+::-webkit-scrollbar-track {
+    background-color: var(--bg-color);
+    border-radius: 10px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+}
+
+/* Modal styles */
+#universalModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--modal-backdrop); /* Use variable */
+    display: none; /* Hidden by default, shown by JS */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(3px); /* Optional: adds a blur effect to background */
+}
+
+.modal-content {
+    background-color: var(--modal-bg); /* Use variable */
+    color: var(--text-color); /* Use variable */
+    padding: 20px 25px;
+    border-radius: 8px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 480px;
+    min-width: 320px; /* Minimum width */
+    position: relative;
+    border: 1px solid var(--modal-border); /* Use variable */
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh; /* Max height to prevent overflow on small screens */
+}
+
+.modal-close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 2em;
+    line-height: 1;
+    color: var(--modal-close-text); /* Use variable */
+    cursor: pointer;
+    padding: 5px;
+}
+.modal-close-button:hover {
+    color: var(--modal-close-hover-text); /* Use variable */
+}
+
+#modalTitle {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    color: var(--heading-color); /* Use variable */
+    border-bottom: 1px solid var(--modal-header-border); /* Use variable */
+    padding-bottom: 10px;
+    font-weight: 500;
+}
+
+#modalBody {
+    margin-bottom: 20px;
+    font-size: 1em;
+    line-height: 1.6;
+    overflow-y: auto; /* Scrollable if content is too long */
+    flex-grow: 1; /* Allows body to take up available space */
+}
+
+#modalBody p {
+    margin-top: 0;
+    margin-bottom: 10px;
+    /* Inherits color from .modal-content */
+}
+
+#modalBody label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--subtle-text-color); /* Use variable */
+}
+
+#modalBody input[type="text"],
+#modalBody input[type="number"],
+#modalBody input[type="password"],
+#modalBody textarea,
+#modalBody select {
+    width: calc(100% - 22px); /* Full width minus padding */
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--input-border); /* Use variable */
+    border-radius: 4px;
+    background-color: var(--input-bg); /* Use variable */
+    color: var(--text-color); /* Use variable */
+    font-size: 1em;
+}
+
+#modalBody input[type="text"]:focus,
+#modalBody input[type="number"]:focus,
+#modalBody input[type="password"]:focus,
+#modalBody textarea:focus,
+#modalBody select:focus {
+    outline: none;
+    border-color: var(--link-color); /* Use variable */
+    box-shadow: 0 0 0 1px var(--link-color); /* Use variable */
+}
+
+#modalBody textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: auto; /* Pushes actions to the bottom if modal content is short */
+    padding-top: 15px;
+    border-top: 1px solid var(--modal-header-border); /* Use variable */
+    flex-shrink: 0; /* Prevent actions from shrinking */
+}
+
+.modal-actions button {
+    padding: 9px 16px;
+    /* border: 1px solid transparent; Replaced by specific button styles */
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 500;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.modal-button-primary {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid var(--button-bg);
+}
+.modal-button-primary:hover {
+    background-color: var(--button-hover-bg);
+    border-color: var(--button-hover-bg);
+}
+
+.modal-button-secondary {
+    background-color: var(--secondary-button-bg);
+    color: var(--text-color); /* Using --text-color for better contrast on secondary bg in dark mode */
+    border: 1px solid var(--secondary-button-bg);
+}
+.modal-button-secondary:hover {
+    background-color: var(--secondary-button-hover-bg);
+    border-color: var(--secondary-button-hover-bg);
+}
+
+.modal-button-danger {
+    background-color: var(--danger-button-bg);
+    color: var(--danger-button-text);
+    border: 1px solid var(--danger-button-border);
+}
+.modal-button-danger:hover {
+    background-color: var(--danger-button-hover-bg);
+    border-color: var(--danger-button-hover-border);
+}
+
+/* Ensure body doesn't scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Utility class for visually hidden but accessible elements */
+
+/* Styles for session title line structure and score indicators */
+.session-title-line {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between main info and edition tag */
+    flex-grow: 1; /* Allow this line to take available space */
+    min-width: 0; /* Prevent overflow issues */
+}
+
+.session-main-info {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between title text and score indicators */
+    flex-grow: 1; /* Allow main info to take available space */
+    min-width: 0; /* Prevent overflow issues */
+}
+
+/* The div holding the session name/phase/player count text, child of .session-main-info */
+.session-main-info > div:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* min-width: 0; /* Implicitly handled by parent's min-width and flex properties */
+}
+
+.session-player-score-indicators {
+    display: inline-flex; /* Aligns children (score spans) in a row */
+    gap: 5px; /* Space between individual score indicators */
+    align-items: center;
+    flex-shrink: 0; /* Prevent indicators from shrinking if space is tight */
+}
+
+.session-player-score-indicators > span { /* Targets .score-good, .score-neutral, .score-bad */
+    display: inline-block;
+    padding: 1px 5px; /* Reduced padding */
+    border-radius: 8px; /* Slightly smaller radius */
+    font-size: 10px; /* Reduced font size */
+    font-weight: 600;
+    line-height: 1.2; /* Adjusted line height */
+    white-space: nowrap; /* Prevent text wrapping within an indicator */
+}
+
+.score-good {
+    background-color: var(--player-indicator-good-bg);
+    color: var(--player-indicator-good-text);
+    border: 1px solid var(--player-indicator-good-text);
+}
+
+.score-neutral {
+    background-color: var(--player-indicator-neutral-bg);
+    color: var(--player-indicator-neutral-text);
+    border: 1px solid var(--player-indicator-neutral-text);
+}
+
+.score-bad {
+    background-color: var(--player-indicator-bad-bg);
+    color: var(--player-indicator-bad-text);
+    border: 1px solid var(--player-indicator-bad-text);
+}
+
+/* Ensure dark mode borders also use the correct text color variable if not inherited */
+body.dark-mode .score-good {
+    border-color: var(--player-indicator-good-text);
+}
+
+body.dark-mode .score-neutral {
+    border-color: var(--player-indicator-neutral-text);
+}
+
+body.dark-mode .score-bad {
+    border-color: var(--player-indicator-bad-text);
+}
+
+/* Apply glow to the entire active session container */
+.session-container.active-user-session {
+    /* Glow effect */
+    box-shadow: 0 0 12px 3px var(--active-user-glow-color); 
+    /* Ensure the container has a border-radius if it doesn't inherit one that looks good with a glow */
+    border-radius: var(--border-radius); /* Or match .session-header's if different and preferred */
+    position: relative; /* Good for stacking context if needed */
+    /* Adding a subtle border of the same color for definition */
+    border: 1px solid var(--active-user-glow-color);
+    z-index: 1; /* Bring to front to ensure glow isn't clipped by subsequent non-active sessions */
+    /* Add a little margin if containers are too close and glow gets cut off by next element */
+    /* margin-bottom: 5px; */ /* Example: uncomment and adjust if needed */
+}
+
+.session-container.current-tab-game-session {
+    box-shadow: 0 0 10px 3px var(--current-tab-glow-color); /* Blue glow, variable for theming */
+    border: 1px solid var(--current-tab-glow-color); /* Blue border to match */
+}
+
+.session-container.current-tab-game-session.active-user-session {
+    /* Combine or prioritize glows. Example: Keep blue outer, orange inner, or make one dominant */
+    box-shadow: 0 0 10px 3px var(--current-tab-glow-color), /* Blue outer glow */
+                0 0 6px 2px var(--active-user-glow-color) inset; /* Orange inner glow */
+    /* Border could be one, or a mix, or prioritized. Let's use the 'current-tab' one as dominant. */
+    border-color: var(--current-tab-glow-color); 
+}
+
+/* Styles for the online status indicator for favorite players */
+.online-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--online-indicator-color);
+    margin-left: 5px;
+    vertical-align: middle;
+    box-shadow: 0 0 2px var(--online-indicator-color);
+    border: 1px solid var(--text-color); 
+}

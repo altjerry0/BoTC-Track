@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="popup.css">
+    <title>BOTC Session Helper</title>
+    <style>
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* Adjust spacing */
+            margin-bottom: 10px;
+        }
+        .fetch-stats {
+            font-size: 0.9em;
+            color: #555;
+        }
+        .header-controls {
+            display: flex;
+            justify-content: space-between; /* Align title left, button right */
+            align-items: center; /* Vertically align items */
+            margin-bottom: 5px;
+        }
+        #open-in-tab-btn {
+            padding: 3px 8px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <div class="header-controls">
+            <h1>BotC Lobby and Player Tracker</h1>
+            <div>
+                <button id="open-in-tab-btn" title="Open full view in a new tab">↗️ Open in Tab</button>
+                <!-- Dark Mode Toggle directly in header -->
+                <label class="switch" title="Toggle Dark Mode" style="margin-left: 10px;"> <!-- Added some margin for spacing -->
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="sessions">Sessions</button>
+            <button class="tab-button" data-tab="userManagement">Manage Users</button>
+            <button class="tab-button" data-tab="account">Account</button>
+        </div>
+
+        <!-- Tab Content Area -->
+        <div class="tab-content-area">
+
+            <!-- Account Tab Content -->
+            <div class="tab-content" id="accountTab" style="display:none;">
+                <h2>Account / Cloud Sync</h2>
+                <div id="accountStatus">Checking sign-in status...</div>
+                <button id="signInBtn">Sign in with Google</button>
+                <button id="signOutBtn" style="display:none;">Sign out</button>
+                
+                <!-- Cloud Sync Controls (visible only when signed in) -->
+                <div id="cloudSyncControls" style="display:none; margin-top: 20px;">
+                    <h3>Data Synchronization</h3>
+                    <p class="sync-description">Manually control when your player data is synchronized with the cloud.</p>
+                    
+                    <div class="sync-actions">
+                        <button id="pushToCloudBtn" class="sync-button">
+                            <span class="sync-icon">⬆️</span> Push Local Data to Cloud
+                        </button>
+                        <button id="fetchFromCloudBtn" class="sync-button">
+                            <span class="sync-icon">⬇️</span> Fetch Latest Data from Cloud
+                        </button>
+                    </div>
+                    
+                    <div id="syncStatus" class="sync-status"></div>
+                    <p class="sync-last-updated" id="lastSyncTime">Last synchronized: Never</p>
+                </div>
+            </div>
+
+            <!-- Sessions Tab Content -->
+            <div class="tab-content active" id="sessions">
+                <div class="session-controls">
+                    <button id="fetchButton">Fetch Active Games</button>
+                    <div class="filter-controls">
+                        <label for="officialOnlyCheckbox">
+                            <input type="checkbox" id="officialOnlyCheckbox">
+                            Official Games Only
+                        </label>
+                    </div>
+                    <span id="fetchStats" class="fetch-stats"></span> <!-- Ensure this is after the filter div -->
+                </div>
+
+                <!-- Online Favorites Section - Moved Here -->
+                <details id="onlineFavoritesSection" class="online-favorites-section results-container">
+                    <summary>Online Favorites (<span id="onlineFavoritesCount">0</span>)</summary>
+                    <div id="onlineFavoritesList" class="online-favorites-list">
+                        <p>No favorite players currently online.</p> 
+                    </div>
+                </details>
+
+                <!-- Session Results Area -->
+                <div id="sessionResults" class="results-container">
+                    <div id="loadingIndicator" style="display: none;">Loading sessions...</div>
+                    <div id="sessionList"></div> <!-- Actual session cards will be appended here by renderSessions -->
+                </div>
+            </div>
+
+            <!-- User Management Tab Content -->
+            <div class="tab-content" id="userManagement">
+                <div class="user-management-controls">
+                    <button id="add-player-button">Add Player Manually</button>
+                    <button id="export-players-button">Export Players (CSV)</button>
+                    <button id="import-players-button">Import Players (CSV)</button>
+                    <input type="file" id="import-file-input" accept=".csv" style="display: none;" />
+                    <div id="import-status" class="import-status-message" style="display: none; margin-left: 10px;"></div> <!-- For import feedback -->
+                    <button id="clear-all-player-data-button">Clear All Player Data</button> 
+                </div>
+                <div class="search-container">
+                    <h2>Search Known Players</h2>
+                    <input type="text" id="userSearch" placeholder="Search by name, notes, score..." />
+                </div>
+
+                <div id="knownPlayers" class="results-container"></div> 
+            </div>
+
+        </div> 
+    </div>
+
+    <script src="userManager.js"></script>
+    <script src="sessionManager.js"></script>
+    <script src="csvManager.js"></script>
+    <script src="popup.js"></script>
+    <script src="../utils/modal.js"></script>
+    <!-- Universal Modal Structure -->
+    <div id="universalModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close-button" id="modalCloseButton" title="Close">&times;</button>
+            <h2 id="modalTitle">Modal Title</h2>
+            <div id="modalBody">
+                <!-- Dynamic content will be injected here -->
+            </div>
+            <div id="modalActions" class="modal-actions">
+                <!-- Dynamic buttons will be injected here -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,11 +1,18 @@
 // --- Firebase Initialization (v1.1.5 Cloud Sync Groundwork) ---
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, signOut, onAuthStateChanged } from "firebase/auth";
+import { authConfig, isProduction, debugLogging } from "./config.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 // TODO: Replace with your actual Firebase config
-// Google OAuth Web Client ID for Chrome Extension (used for Google Sign-In)
-const GOOGLE_OAUTH_WEB_CLIENT_ID = "234038964353-fmvng5skv7bamhgl2f5142pdvclj4du4.apps.googleusercontent.com";
+// Google OAuth Web Client ID is now imported from config.js
+const GOOGLE_OAUTH_WEB_CLIENT_ID = authConfig.clientId;
+
+// Log the environment and client ID being used (only in development)
+if (debugLogging) {
+    console.log(`[BG] Running in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} environment`);
+    console.log(`[BG] Using OAuth client ID: ${GOOGLE_OAUTH_WEB_CLIENT_ID}`);
+}
 
 const firebaseConfig = {
     apiKey: "AIzaSyDVk_kuvYQ_JH700jKXrdSpOtcd3DFC9Rs",

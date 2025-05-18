@@ -15871,6 +15871,32 @@ registerAuth("Browser" /* ClientPlatform.BROWSER */);
 
 //# sourceMappingURL=index.esm.js.map
 
+;// ./src/config.js
+/**
+ * Environment-specific configuration for the BotC Tracker extension
+ */
+
+// Detect environment: When running in the Chrome Web Store, there is no 'key' field in the manifest
+var isProduction = !chrome.runtime.getManifest().key;
+
+// OAuth configuration - get client ID from manifest to ensure consistency
+var authConfig = {
+  // Use the client ID from the manifest.json to avoid inconsistencies
+  clientId: chrome.runtime.getManifest().oauth2.client_id,
+  // OAuth scopes (same for both environments)
+  scopes: ["https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
+};
+
+// Firebase configuration (same for both environments)
+var firebaseConfig = {
+  // Your Firebase configuration here
+  // This could also be environment-specific if needed
+};
+
+// Other environment-specific configuration can be added here
+var debugLogging = !isProduction; // Enable detailed logs only in development
+//? '234038964353-6dienniai2uaso131mp9o9cm9k8mkagd.apps.googleusercontent.com' // Production client ID
+// : '234038964353-fmvng5skv7bamhgl2f5142pdvclj4du4.apps.googleusercontent.com', // Development client ID
 ;// ../node_modules/@firebase/webchannel-wrapper/dist/bloom-blob/esm/bloom_blob_es2018.js
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -38593,10 +38619,17 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
 
 
 
+
 // TODO: Replace with your actual Firebase config
-// Google OAuth Web Client ID for Chrome Extension (used for Google Sign-In)
-var GOOGLE_OAUTH_WEB_CLIENT_ID = "234038964353-fmvng5skv7bamhgl2f5142pdvclj4du4.apps.googleusercontent.com";
-var firebaseConfig = {
+// Google OAuth Web Client ID is now imported from config.js
+var GOOGLE_OAUTH_WEB_CLIENT_ID = authConfig.clientId;
+
+// Log the environment and client ID being used (only in development)
+if (debugLogging) {
+  console.log("[BG] Running in ".concat(isProduction ? 'PRODUCTION' : 'DEVELOPMENT', " environment"));
+  console.log("[BG] Using OAuth client ID: ".concat(GOOGLE_OAUTH_WEB_CLIENT_ID));
+}
+var background_firebaseConfig = {
   apiKey: "AIzaSyDVk_kuvYQ_JH700jKXrdSpOtcd3DFC9Rs",
   authDomain: "botctracker.firebaseapp.com",
   projectId: "botctracker",
@@ -38605,7 +38638,7 @@ var firebaseConfig = {
   appId: "1:234038964353:web:94c42aa23b68e003fd9d80",
   measurementId: "G-C4FLY32JKZ"
 };
-var app = initializeApp(firebaseConfig);
+var app = initializeApp(background_firebaseConfig);
 var auth = getAuth(app);
 var db = getFirestore(app);
 

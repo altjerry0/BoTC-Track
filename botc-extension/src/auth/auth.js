@@ -1,3 +1,12 @@
+// Import the configuration
+import { authConfig, isProduction, debugLogging } from '../config.js';
+
+// Log environment information in development mode
+if (debugLogging) {
+    console.log(`[Auth] Running in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} environment`);
+    console.log(`[Auth] Using client ID: ${authConfig.clientId}`);
+}
+
 // DOM elements
 const signInButton = document.getElementById('signInButton');
 const statusElement = document.getElementById('status');

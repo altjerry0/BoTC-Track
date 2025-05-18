@@ -12,13 +12,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].bundle.js',
   },
-  resolve: {
-    fallback: {
-      "crypto": require.resolve("crypto-browserify"),
-      "stream": require.resolve("stream-browserify"),
-      "buffer": require.resolve("buffer/")
-    }
-  },
+  // No Node.js polyfills needed for Chrome extension environment
   module: {
     rules: [
       {
@@ -39,7 +33,12 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: 'src/popup/accountTab.js', to: 'popup/accountTab.js' }
+        // Include only files that exist
+        { from: 'src/popup/accountTab.js', to: 'popup/accountTab.js' },
+        { from: 'src/popup/popup.html', to: 'popup.html' },
+        { from: 'src/popup/popup.css', to: 'popup.css' },
+        { from: 'src/auth/auth.html', to: 'auth/auth.html' },
+        { from: 'src/icons', to: 'icons' }
       ],
     }),
   ],
