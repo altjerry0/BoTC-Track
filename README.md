@@ -1,5 +1,5 @@
-**Current Version (local):** `1.1.5` | **Chrome Web Store Version:** `1.1.0` (Pending `1.1.3a` Review)
-***
+**Current Version (local):** `1.1.5` | **Chrome Web Store Version:** `1.1.3` (Pending `1.1.5` Review)
+
 
 # BotC Player Tracker Chrome Extension
 
