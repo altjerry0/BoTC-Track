@@ -5,8 +5,8 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-18.
 # BotC Player Tracker Extension - Changelog
 ---
 
-## [v1.1.5] - 2025-05-18
-
+## [v1.1.5b] - 2025-05-18
+**PRODUCTION CLIENT ID USE 1.1.5a FOR DEVELOPMENT MODE**
 ### Added
 - **Enhanced Role Distinction:** Improved the distinction between active players and spectators:
   - Added clear role badges for all users (Player, Storyteller, Spectator)
