@@ -1,27 +1,63 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-13.
+This CHANGELOG.md was last updated by Cascade on 2025-05-18.
 -->
 
 # BotC Player Tracker Extension - Changelog
 ---
 
-## [v1.1.4] - 2025-05-13
-
+## [v1.1.5] - 2025-05-18
 
 ### Added
-
-- 
+- **Enhanced Role Distinction:** Improved the distinction between active players and spectators:
+  - Added clear role badges for all users (Player, Storyteller, Spectator)
+  - Fixed logic to properly identify users who are in the session but not actually playing
+  - Active players now have a green badge labeled "Player"
+  - Spectators have a gray badge labeled "Spec"
+  - Storytellers have a purple badge labeled "ST"
+- **Multiple Role Support:** Enhanced role detection to properly identify and display multiple storytellers and spectators in the session list.
+- **Visual Role Indicators:** Added distinct styling for different player roles:
+  - Active Players: Green left border
+  - Storytellers: Indigo left border with "Storyteller" label
+  - Spectators: Gray left border with "Spectator" label
+- **Firebase and Cloud Sync Infrastructure:**
+  - Added npm and Webpack build system for proper module bundling
+  - Integrated Firebase SDK (v9 modular format) for cloud services
+  - Set up Firestore database structure for player data storage
+  - Created build pipeline for Manifest V3 compatibility
 
 ### Changed
-
-- 
+- **Code Cleanup:** Removed the content script functionality (play_page_observer.js) since private games can now be detected through the standard API.
+- **Reduced Permissions:** Removed unnecessary content script permissions from the manifest file.
+- **Console Log Cleanup:** Removed debug console.log statements throughout the codebase for cleaner browser console output.
 
 ### Fixed
-- Resolved critical player data persistence issues: 
-    - Newly added players now correctly remain visible in the 'User Management' tab and in session lists after refreshing or reopening the popup.
-    - Player details (name, score, notes, favorite status, history) are now reliably saved and loaded.
+- **Firebase Player Deletion:** Fixed an issue where deleted players weren't being properly removed from Firestore when pushing local changes to the cloud.
+- **API Token Management:** Enhanced the auth token capture system to prevent 403 errors by actively tracking and refreshing tokens from both the BotC website and its chat service.
+- **Current Game Detection:** Fixed the functionality for detecting and highlighting the current game in the session list. The popup now properly requests game information from the background script when opened, enabling the highlighting of private game sessions where the user is participating.
+- **Duplicate Variable Declaration:** Fixed a bug where the `isStoryteller` variable was being declared twice in the `createPlayerCard` function, causing a syntax error.
+- **Function Availability:** Improved script loading sequence to ensure the `fetchAndDisplaySessions` function is always available, preventing errors when refreshing the session list.
+- **Module Loading:** Fixed "Cannot use import statement outside a module" error in auth.js by adding the `type="module"` attribute to the script tag in auth.html, allowing proper ES module importing.
+- **OAuth2 Authentication:** Fixed "Invalid OAuth2 Client ID" error by adding the required `oauth2` section to manifest.json with the correct client ID and scopes for Chrome identity API.
+- **User Management Functionality:**
+  - Fixed "Add Player" button on the User Management page which previously displayed "Player not found" error
+  - Enhanced player ID validation for new players with clear guidance on proper format
+  - Improved error messages for invalid inputs when adding or editing players
 
 ### Changed
+- **Code Cleanup:** Removed the content script functionality (play_page_observer.js) since private games can now be detected through the standard API.
+- **Reduced Permissions:** Removed unnecessary content script permissions from the manifest file.
+- **Console Log Cleanup:** Removed debug console.log statements throughout the codebase for cleaner browser console output.
+- **Development Workflow:**
+  - Updated build process to use `npx webpack --mode=production`
+  - Improved documentation for developer setup and first-time build
+  - Added bundling support to ensure proper code organization
+
+### Technical
+- Updated project structure to support modern JavaScript bundling
+- Added Firebase configuration for anonymous authentication
+- Implemented Firestore database connectivity for future sync features
+- Added rate limiting for database operations to prevent API abuse
+- Enhanced sync status messaging with clear visual feedback
 - **Major Refactoring of Player Data Management:**
     - `userManager.js` is now the definitive source of truth for all player data.
         - Implemented a robust in-memory cache (`allPlayerData`) within `userManager.js` to ensure data consistency and improve performance.

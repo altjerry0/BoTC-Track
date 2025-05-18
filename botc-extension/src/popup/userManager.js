@@ -319,15 +319,17 @@ function comparePlayersForSorting(a, b, onlinePlayerIds) {
  */
 function getOnlinePlayerIds(sessionData) {
     const onlinePlayerIds = new Set();
-    if (sessionData && Array.isArray(sessionData)) { // If sessionData is an array of session objects
+    if (sessionData && Array.isArray(sessionData)) {
         sessionData.forEach(session => {
             if (session && session.usersAll && Array.isArray(session.usersAll)) {
                 session.usersAll.forEach(user => {
-                    if (user && user.id) onlinePlayerIds.add(user.id.toString());
+                    if (user && user.id && user.isOnline) {
+                        onlinePlayerIds.add(user.id.toString());
+                    }
                 });
             }
         });
-    } else if (sessionData instanceof Set) { // If sessionData is already a Set of IDs
+    } else if (sessionData instanceof Set) {
         sessionData.forEach(id => onlinePlayerIds.add(id.toString()));
     }
     return onlinePlayerIds;
@@ -343,6 +345,7 @@ function getOnlinePlayerIds(sessionData) {
  * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
  */
 async function displayKnownPlayers(container, searchTerm = '', playerData, onlinePlayerIds, createUsernameHistoryModalFunc, refreshCallback) {
+    // Debug logging removed
     const lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : ''; // Define lowerSearchTerm here
     container.innerHTML = ''; // Clear previous results
 
@@ -407,7 +410,7 @@ async function displayKnownPlayers(container, searchTerm = '', playerData, onlin
             }
 
             const onlineBadge = document.createElement('span');
-            onlineBadge.classList.add('online-badge');
+            onlineBadge.classList.add('online-indicator');
             onlineBadge.title = 'Online';
             infoContainer.appendChild(onlineBadge);
 
@@ -800,9 +803,54 @@ function getRatingClass(rating) {
  * @param {Object} newData - The new player data object to replace the current data.
  * @param {Function} [callback] - Optional callback to execute after saving.
  */
-async function replaceAllPlayerDataAndSave(newData) {
-    allPlayerData = newData; // Replace in-memory store
-    await savePlayerData(allPlayerData);
+async function replaceAllPlayerDataAndSave(newData, callback) {
+    // Debug logging removed
+    try {
+        // Force a direct removal from Chrome storage to ensure it's fully cleared
+        await new Promise((resolve, reject) => {
+            chrome.storage.local.remove('playerData', () => {
+                if (chrome.runtime.lastError) {
+                    console.error('[userManager] Error removing playerData from storage:', chrome.runtime.lastError);
+                    reject(chrome.runtime.lastError);
+                } else {
+                    // Debug logging removed
+                    resolve();
+                }
+            });
+        });
+        
+        // Now set the memory cache and save the new (empty) data
+        allPlayerData = newData || {}; // Replace in-memory store, ensure it's an object
+        
+        // Save the empty data object
+        await new Promise((resolve, reject) => {
+            chrome.storage.local.set({ playerData: allPlayerData }, () => {
+                if (chrome.runtime.lastError) {
+                    console.error('[userManager] Error saving empty playerData:', chrome.runtime.lastError);
+                    reject(chrome.runtime.lastError);
+                } else {
+                    // Debug logging removed
+                    resolve();
+                }
+            });
+        });
+        
+        // Debug logging removed
+        
+        // Call the callback with success=true if provided
+        if (typeof callback === 'function') {
+            callback(true);
+        }
+        return true;
+    } catch (error) {
+        console.error('[userManager] Error clearing player data:', error);
+        
+        // Call the callback with success=false if provided
+        if (typeof callback === 'function') {
+            callback(false);
+        }
+        return false;
+    }
 }
 
 // -- START: Initialization & Utility --
@@ -972,21 +1020,27 @@ function updateUsernameHistory(playerObject, oldUsername) {
 }
 
 /**
- * Function to allow editing of player details
- * @param {string} playerId - The ID of the player to edit
+ * Function to allow editing of player details or adding a new player
+ * @param {string|null} playerId - The ID of the player to edit, null for new player
+ * @param {boolean} isNewPlayer - Whether this is a new player being added
+ * @param {Function} callback - Optional callback after player is saved
  */
-async function editPlayerDetails(playerId) {
+async function editPlayerDetails(playerId, isNewPlayer = false, callback) {
     const playerData = await loadPlayerData();
+    let player = null;
+    let modalTitle = 'Add New Player';
+    let playerDataForForm = { name: '', score: null, notes: '' };
 
-    const player = playerData[playerId]; // Access player directly from the loaded data
-
-    if (!player) {
-        ModalManager.showAlert('Error', 'Player not found.');
-        return;
+    // If editing an existing player
+    if (playerId && !isNewPlayer) {
+        player = playerData[playerId];
+        if (!player) {
+            ModalManager.showAlert('Error', 'Player not found.');
+            return;
+        }
+        modalTitle = `Edit Player: ${player.name || `ID: ${playerId}`}`;
+        playerDataForForm = playerData[playerId]; // Get existing data
     }
-
-    const modalTitle = `Edit Player: ${player.name || `ID: ${player.id}`}`;
-    const playerDataForForm = playerData[playerId]; // Get existing data
 
     // Create modal body content using DOM manipulation
     const modalBodyContent = document.createElement('div');
@@ -1001,11 +1055,22 @@ async function editPlayerDetails(playerId) {
     idInput.type = 'text';
     idInput.id = 'modalEditPlayerId';
     idInput.required = true;
-    idInput.value = playerId;
-    idInput.disabled = true;
+    idInput.value = playerId || '';
+    idInput.disabled = !isNewPlayer; // Only enable editing for new players
     idDiv.appendChild(idLabel);
     idDiv.appendChild(idInput);
     modalBodyContent.appendChild(idDiv);
+    
+    // Add ID format helper text for new players
+    if (isNewPlayer) {
+        const idHelperText = document.createElement('small');
+        idHelperText.textContent = 'Enter a 10+ digit numerical ID (from botc.app)';
+        idHelperText.style.display = 'block';
+        idHelperText.style.marginTop = '2px';
+        idHelperText.style.fontSize = '0.8em';
+        idHelperText.style.color = 'var(--text-muted)';
+        idDiv.appendChild(idHelperText);
+    }
 
     // Player Name
     const nameDiv = document.createElement('div');
@@ -1060,9 +1125,30 @@ async function editPlayerDetails(playerId) {
             text: 'Save Changes',
             className: 'modal-button-primary',
             callback: async () => {
+                const newId = document.getElementById('modalEditPlayerId').value.trim();
                 const newName = document.getElementById('modalEditPlayerName').value.trim();
                 const newScoreStr = document.getElementById('modalEditPlayerScore').value.trim();
                 const newNotes = document.getElementById('modalEditPlayerNotes').value.trim();
+                
+                // Validate new player ID if this is a new player
+                if (isNewPlayer) {
+                    if (!newId) {
+                        ModalManager.showAlert('Invalid Input', 'Player ID is required.');
+                        return; // Keep modal open for correction
+                    }
+                    
+                    // Validate that ID is numerical and long enough to be a BotC ID
+                    if (!/^\d{10,}$/.test(newId)) {
+                        ModalManager.showAlert('Invalid Input', 'Player ID must be a numerical value of at least 10 digits.');
+                        return; // Keep modal open for correction
+                    }
+                    
+                    // Check if player ID already exists
+                    if (playerData[newId]) {
+                        ModalManager.showAlert('Player Exists', 'A player with this ID already exists. Please edit that player instead.');
+                        return; // Keep modal open for correction
+                    }
+                }
 
                 let newScore = null;
                 if (newScoreStr) {
@@ -1079,20 +1165,33 @@ async function editPlayerDetails(playerId) {
                     // Define the UI update callback for after player data is saved
                     const uiUpdateCallback = (updatedPlayer) => {
                         if (updatedPlayer) {
-                            ModalManager.showAlert('Success', `Player ${updatedPlayer.name || updatedPlayer.id} details updated.`);
-                            if (typeof window.renderKnownPlayers === 'function') {
+                            if (isNewPlayer) {
+                                ModalManager.showAlert('Success', `Player ${updatedPlayer.name || updatedPlayer.id} added successfully!`);
+                            } else {
+                                ModalManager.showAlert('Success', `Player ${updatedPlayer.name || updatedPlayer.id} details updated.`);
+                            }
+                            
+                            // Call the provided callback function if it exists
+                            if (typeof callback === 'function') {
+                                callback(updatedPlayer);
+                            } else if (typeof window.renderKnownPlayers === 'function') {
                                 window.renderKnownPlayers(); // Refresh the list
                             } else if (typeof renderKnownPlayers === 'function') {
                                 renderKnownPlayers(); // If called from within userManager.js context
                             }
+                            
                             ModalManager.closeModal();
                         }
                     };
 
-                    // Call addPlayer (which handles updates too)
-                    // Preserve existing isFavorite status if editing.
-                    const existingFavoriteStatus = playerData[playerId]?.isFavorite || false;
-                    await addPlayer(playerId, newName || `Player ${playerId}`, newScore, newNotes, existingFavoriteStatus, uiUpdateCallback);
+                    // Use the appropriate player ID based on whether we're adding or editing
+                    const finalPlayerId = isNewPlayer ? newId : playerId;
+                    
+                    // If adding a new player, don't carry over any favorite status
+                    const existingFavoriteStatus = isNewPlayer ? false : (playerData[playerId]?.isFavorite || false);
+                    
+                    // Call addPlayer (which handles both creation and updates)
+                    await addPlayer(finalPlayerId, newName || `Player ${finalPlayerId}`, newScore, newNotes, existingFavoriteStatus, uiUpdateCallback);
 
                 } catch (error) {
                     console.error(`Failed to update player:`, error);
@@ -1115,8 +1214,13 @@ async function editPlayerDetails(playerId) {
  * @param {string} [searchTerm=''] - Optional search term to filter players.
  */
 async function renderKnownPlayers(container, searchTerm = '') {
+    // Debug logging removed
     if (!container) {
         console.error("Container element not provided for rendering known players.");
+        return;
+    }
+    if (!window.latestSessionData) {
+        console.warn('[renderKnownPlayers] Not rendering: session data not available.');
         return;
     }
     // Load the latest player data directly from storage each time
@@ -1124,13 +1228,13 @@ async function renderKnownPlayers(container, searchTerm = '') {
     // Fetch the latest set of online player IDs
     let onlinePlayerIds = new Set();
     try {
-        // Ensure fetchOnlinePlayerIds is accessible, e.g., via window
+        // Always use window.fetchOnlinePlayerIds for consistency
         if (typeof window.fetchOnlinePlayerIds === 'function') {
+            // Debug logging removed
+            // Debug logging removed
             onlinePlayerIds = await window.fetchOnlinePlayerIds();
-        } else if (typeof fetchOnlinePlayerIds === 'function') {
-             onlinePlayerIds = await fetchOnlinePlayerIds(); // If defined globally/imported
         } else {
-            console.warn("fetchOnlinePlayerIds function not found.");
+            console.warn("window.fetchOnlinePlayerIds function not found.");
         }
     } catch (error) {
         console.error("Error fetching online player IDs in renderKnownPlayers:", error);
@@ -1192,11 +1296,9 @@ async function fetchAndUpdatePlayerName(playerId, refreshListCallback) {
                     
                     // Use addPlayer to ensure all fields are handled correctly and consistently
                     // This will also trigger savePlayerData internally
-                    await addPlayer(playerId, newUsername, player.score, player.notes, player.isFavorite, (updatedPlayer) => {
-                         if (updatedPlayer) {
-                            ModalManager.showAlert('Success', `Player ${playerId}'s name updated from "${oldUsername}" to "${newUsername}".`);
-                            if (refreshListCallback) refreshListCallback();
-                         }
+                    addPlayer(playerId, newUsername, player.score, player.notes, player.isFavorite, (updatedPlayer) => {
+                        ModalManager.showAlert('Success', `Player ${playerId}'s name updated from "${oldUsername}" to "${newUsername}".`);
+                        if (refreshListCallback) refreshListCallback();
                     });
                 } else {
                     ModalManager.showAlert('Info', `Player ${playerId}'s name "${newUsername}" is already up-to-date.`);
@@ -1230,7 +1332,8 @@ window.userManager = {
     handleRefreshUserName,
     fetchAndUpdatePlayerName,
     renderKnownPlayers, // To allow popup.js to trigger re-renders of the user management tab
-    createUsernameHistoryModal // Expose for sessionManager
+    createUsernameHistoryModal, // Expose for sessionManager
+    getOnlinePlayerIds // Add this function for online player detection
 };
 
 // Make getRatingClass globally available as other modules might use it directly

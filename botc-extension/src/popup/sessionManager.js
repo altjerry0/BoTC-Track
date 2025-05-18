@@ -104,6 +104,8 @@ function sortSessionPlayers(session, playerData, storytellerIds, activePlayerIds
  * @param {Function} addPlayer - Function to add/update player
  * @param {Function} createUsernameHistoryModal - Function to create history modal
  * @param {boolean} isPlaying - Whether the user is in the session.players list
+ * @param {boolean} isStoryteller - Whether the user is a storyteller
+ * @param {boolean} isSpectator - Whether the user is a spectator
  * @returns {HTMLElement} Player card element
  */
 function createPlayerCard(
@@ -112,7 +114,9 @@ function createPlayerCard(
     session, 
     addPlayerFunc, 
     createUsernameHistoryModalFunc,
-    isPlaying
+    isPlaying,
+    isStoryteller = false,
+    isSpectator = false
 ) {
     // Check if the user object or user.id is missing/invalid
     if (!user || !user.id) {
@@ -127,9 +131,15 @@ function createPlayerCard(
     const isKnown = knownPlayer !== undefined;
     const playerCard = document.createElement('div');
 
-    if (isPlaying) {
-        playerCard.classList.add('player-playing'); // Add playing class first if applicable
+    // Add role-specific classes first
+    if (isStoryteller) {
+        playerCard.classList.add('player-storyteller');
+    } else if (isSpectator) {
+        playerCard.classList.add('player-spectator');
+    } else if (isPlaying) {
+        playerCard.classList.add('player-playing');
     }
+    
     playerCard.classList.add('player-card'); // Add base class
 
     // Add rating class using the one from userManager.js
@@ -140,7 +150,7 @@ function createPlayerCard(
     playerCard.dataset.playerName = user.username; // Store current username
 
     let isKnownPlayer = playerData[user.id]; // Use let as it can change
-    const isStoryteller = session.storytellers.some(st => st.id === user.id);
+    // Note: isStoryteller is now passed as a parameter, no need to calculate it here
     // playerCard.className = `player-card ${isKnownPlayer ? getRatingClass(playerData[user.id].score) : 'rating-unknown'}`;
 
     const playerInfo = document.createElement('div');
@@ -155,11 +165,22 @@ function createPlayerCard(
     nameEl.textContent = user.username;
     nameContainer.appendChild(nameEl);
 
+    // Add appropriate role badge
     if (isStoryteller) {
         const stBadge = document.createElement('span');
         stBadge.className = 'storyteller-badge';
         stBadge.textContent = 'ST';
         nameContainer.appendChild(stBadge);
+    } else if (isSpectator) {
+        const specBadge = document.createElement('span');
+        specBadge.className = 'spectator-badge';
+        specBadge.textContent = 'Spec';
+        nameContainer.appendChild(specBadge);
+    } else if (isPlaying) {
+        const playerBadge = document.createElement('span');
+        playerBadge.className = 'player-badge';
+        playerBadge.textContent = 'Player';
+        nameContainer.appendChild(playerBadge);
     }
     
     // Add username history indicator if known
@@ -283,7 +304,7 @@ function createPlayerCard(
                                     // For now, let's assume a full list refresh might be handled by a broader mechanism
                                     // or that renderSessions might be called again.
                                     // We could also update the card directly if we have its reference.
-                                    console.log(`Player ${updatedPlayer.id} updated from session card interaction.`);
+                                    // Debug logging removed
                                     ModalManager.showAlert('Success', `Player ${user.name || user.id} details saved.`);
                                     // Potentially refresh the session list or just this card
                                     if (typeof window.fetchAndDisplaySessions === 'function') {
@@ -291,7 +312,11 @@ function createPlayerCard(
                                         // and update this specific card's display.
                                         // For now, just log and show success.
                                     }
-                                    renderKnownPlayers(); // Re-render the user management tab if it's the active one
+                                    // Re-render the known players list if the tab is active
+                                    const knownPlayersContainer = document.getElementById('knownPlayersList');
+                                    if (knownPlayersContainer) {
+                                        window.userManager.renderKnownPlayers(knownPlayersContainer);
+                                    }
                                 }
                             } // Pass the existing UI update callback
                         );
@@ -353,7 +378,7 @@ async function checkHistoryAndRender(
 
                         if (lookupResponse && lookupResponse.username) {
                             userNameFromApi = lookupResponse.username;
-                            console.log(`[SM CheckHistory] Successfully fetched username '${userNameFromApi}' for ID ${userId}.`);
+                            // Debug logging removed
                         } else if (lookupResponse && lookupResponse.error) {
                             console.error(`[SM CheckHistory] API lookup failed for ID ${userId}: ${lookupResponse.error}`);
                         } else {
@@ -421,6 +446,8 @@ async function checkHistoryAndRender(
             if (session.usersAll && Array.isArray(session.usersAll)) {
                 session.usersAll.forEach(user => {
                     if (user.id) { 
+                        // Mark the user as online for the getOnlinePlayerIds function
+                        user.isOnline = true;
                         // Storing session name can be useful, or just true if presence is enough
                         onlinePlayersMap.set(user.id.toString(), session.name || true);
                     }
@@ -502,30 +529,40 @@ function renderSessions(
         sessionContainer.dataset.sessionId = session.name; 
 
         // Highlight if current user is in this session
-        // Logic now based on live game info from content script
+        // Logic now based on enhanced live game info from content script
         const isUserDetectedInLiveGame = window.liveGameInfo && 
-                                         window.liveGameInfo.playerIds &&
                                          window.currentUserID && 
-                                         window.liveGameInfo.playerIds.includes(String(window.currentUserID));
+                                         ((window.liveGameInfo.allUserIds && window.liveGameInfo.allUserIds.includes(String(window.currentUserID))) ||
+                                          // Fallback to older format if needed
+                                          (window.liveGameInfo.playerIds && window.liveGameInfo.playerIds.includes(String(window.currentUserID))));
 
-        const isLiveGameMatchingThisSession = window.liveGameInfo && 
-                                              window.liveGameInfo.storytellerId &&
-                                              session.storytellers && 
-                                              session.storytellers.length > 0 && 
-                                              String(window.liveGameInfo.storytellerId) === String(session.storytellers[0].id);
+        // Check if this session matches the game in the active botc.app tab by matching any storyteller
+        let isLiveGameMatchingThisSession = false;
+        if (window.liveGameInfo && session.storytellers && session.storytellers.length > 0) {
+            // First try the new enhanced storytellerIds array
+            if (window.liveGameInfo.storytellerIds && window.liveGameInfo.storytellerIds.length > 0) {
+                isLiveGameMatchingThisSession = session.storytellers.some(storyteller => 
+                    window.liveGameInfo.storytellerIds.includes(String(storyteller.id)));
+            } 
+            // Fallback to the old single storytellerId if needed
+            else if (window.liveGameInfo.storytellerId) {
+                isLiveGameMatchingThisSession = session.storytellers.some(storyteller => 
+                    String(window.liveGameInfo.storytellerId) === String(storyteller.id));
+            }
+        }
 
         // Highlight if this session matches the game in the active botc.app tab
         sessionContainer.classList.remove('current-tab-game-session'); // Clear previous state
         if (isLiveGameMatchingThisSession) {
             sessionContainer.classList.add('current-tab-game-session');
-            // console.log(`[SM] Session "${session.name}" marked as current-tab-game-session.`);
+            // Debug logging removed
         }
 
         // Separately, highlight if the logged-in user is part of this session's roster (from backend data)
         sessionContainer.classList.remove('active-user-session'); // Clear previous state
         if (window.currentUserID && session.usersAll && session.usersAll.some(user => user && String(user.id) === String(window.currentUserID))) {
             sessionContainer.classList.add('active-user-session');
-            // console.log(`[SM] Session "${session.name}" marked as active-user-session for user ${window.currentUserID}.`);
+            // Debug logging removed
         }
 
         // Determine player roles for sorting and display within this session
@@ -620,6 +657,7 @@ function renderSessions(
         sessionContent.style.display = 'none';
 
         // Create a Set of active player IDs for quick lookup (filter out nulls)
+        // These are players who are actually seated in the game
         const activePlayerIds = new Set(
             (session.players || []).filter(p => p && p.id).map(p => p.id)
         );
@@ -632,16 +670,33 @@ function renderSessions(
         // Sort players by known status, using updated playerData
         const sortedPlayers = sortSessionPlayers(session, playerData, storytellerIds, activePlayerIds);
         sortedPlayers.forEach(user => {
-            // Determine if this user is an active player
+            // Determine player role status
+            // A player is actively playing if they are in the session.players list
             const isPlaying = activePlayerIds.has(user.id);
-            // Create player card for each user
+            
+            // A player is a storyteller if they are in the storytellers list
+            const isStoryteller = storytellerIds.has(user.id);
+            
+            // A player is a spectator if:
+            // 1. They have spectator=true in their user data, OR
+            // 2. They have a className containing 'spectator', OR
+            // 3. They are in usersAll but NOT in storytellers AND NOT in active players
+            const hasSpectatorFlag = user.spectator === true || 
+                                   (user.className && user.className.indexOf('spectator') >= 0);
+            
+            // If they're not playing and not a storyteller, they must be a spectator
+            const isSpectator = hasSpectatorFlag || (!isPlaying && !isStoryteller);
+            
+            // Create player card for each user with role information
             const playerCardElement = createPlayerCard(
                 user, 
                 playerData, 
                 session, 
                 addPlayerFunc, 
                 createUsernameHistoryModalFunc,
-                isPlaying // Pass playing status
+                isPlaying, // Pass playing status 
+                isStoryteller, // Pass storyteller status
+                isSpectator // Pass spectator status
             );
             sessionContent.appendChild(playerCardElement);
         });
@@ -689,7 +744,7 @@ async function fetchAndDisplaySessions(
     try {
         const liveGameInfoResponse = await window.sendMessagePromise({ type: 'GET_CURRENT_GAME_INFO' });
         window.liveGameInfo = liveGameInfoResponse ? liveGameInfoResponse.gameInfo : null;
-        // console.log('[SM] Fetched liveGameInfo in sessionManager:', JSON.stringify(window.liveGameInfo, null, 2));
+        // Debug logging removed
     } catch (error) {
         console.error('[SM] Error fetching liveGameInfo in sessionManager:', error);
         window.liveGameInfo = null; // Ensure it's null on error
@@ -700,7 +755,7 @@ async function fetchAndDisplaySessions(
     try {
         if (window.userManager && typeof window.userManager.getAllPlayerData === 'function') {
             currentPlayerData = await window.userManager.getAllPlayerData();
-            // console.log('[SM] Using window.userManager.getAllPlayerData(). Player count:', Object.keys(currentPlayerData).length);
+            // Debug logging removed
         } else {
             console.error('[SM] window.userManager.getAllPlayerData is not available. Falling back to potentially empty data.');
             // Fallback or error handling if userManager is not properly set up, though it should be.
@@ -747,7 +802,7 @@ async function fetchAndDisplaySessions(
         }
 
         const backendSessions = response.sessions;
-        // console.log('[SM] Received sessions from background:', backendSessions.length);
+        // Debug logging removed
 
         // --- Sort sessions by game phase ---
         backendSessions.sort((a, b) => {
@@ -772,7 +827,7 @@ async function fetchAndDisplaySessions(
         const totalUniquePlayers = uniquePlayerIds.size;
         let knownPlayerCount = 0;
 
-        // console.log('[SM] Stats: currentPlayerData type:', typeof currentPlayerData, 'Is null?', currentPlayerData === null, 'Keys available:', Object.keys(currentPlayerData).length);
+        // Debug logging removed
         if (typeof currentPlayerData !== 'object' || currentPlayerData === null) {
             console.error('[SM] CRITICAL: currentPlayerData is NOT a valid object for stats calculation!', currentPlayerData);
         } else {

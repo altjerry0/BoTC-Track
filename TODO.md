@@ -11,15 +11,67 @@ This file tracks planned features and improvements for the BotC Player Tracker e
 - [x] **Replace `prompt()`** pop-ups in player management (add/edit) with a user-friendly modal dialog.
 - [x] **Player Data Persistence and Refactoring**: Completed in v1.2.0, including resolving player names not persisting correctly, addressing potential race conditions, and refactoring `sessionManager.js` to utilize `userManager` functions.
 
+---
+
+## v1.1.5 – Firebase/Firestore/Google Sign-In & Cloud Sync (Completed)
+
+- [x] **Bundle Firebase SDK with Webpack**
+    - Installed `firebase` and configured Webpack to bundle all required Firebase modules for Manifest V3 compatibility.
+    - Background script now properly imports from the bundle via `background.bundle.js`.
+- [x] **Google Sign-In Integration**
+    - Added Google authentication flow using Chrome's Identity API and Firebase Auth.
+    - Implemented dedicated Account tab with login/logout UI elements.
+    - Successfully storing the Firebase user ID upon login for use in Firestore document paths.
+- [x] **Firestore Cloud Sync**
+    - Implemented upload (push) and download (pull) of `playerData` to/from Firestore under `/userPlayerData/{firebaseUid}`.
+    - Added timestamp tracking for sync operations with visual indicators.
+    - Created manual "Push Local Data to Cloud" and "Fetch Latest Data from Cloud" buttons in the Account tab.
+    - Implemented proper error handling and rate limiting to prevent API abuse.
+- [x] **Conflict Handling & Merge Strategy**
+    - Defined strategy where explicit user actions (push/pull) determine direction of sync.
+    - User has full control over when to push local changes or pull cloud changes.
+- [x] **Manifest & CSP Updates**
+    - Updated `manifest.json` to point to bundled scripts.
+    - Updated Content Security Policy to allow Firebase and Google Auth endpoints.
+- [x] **Testing**
+    - Tested login, logout, sync, and error handling flows in both light and dark modes.
+- [x] **Documentation**
+    - Updated `README.md` with cloud sync and Google login instructions.
+    - Added developer setup steps for npm, Webpack, and Firebase integration.
+- [x] **Release**
+    - Prepared v1.2.0 release with all above features.
+
+## v1.2.0 – Cloud Sync Refinements & Future Roadmap
+
+- [ ] **Enhanced Conflict Resolution**
+    - Implement more intelligent merging of cloud and local data when conflicts occur.
+    - Add option to preview differences before committing to sync.
+- [ ] **Automatic Background Sync**
+    - Add an optional setting for automatic background sync at configurable intervals.
+    - Implement bandwidth-saving delta updates.
+- [ ] **Multi-device Consistency**
+    - Improve handling of data synchronized across multiple devices.
+    - Add last-device-used indicator in the UI.
+- [ ] **Offline Support**
+    - Enhance offline functionality with pending changes queue.
+    - Add visual indicators for pending uploads.
+- [ ] **Sync Analytics**
+    - Add usage statistics for sync operations (optional and privacy-focused).
+    - Track sync success/failure rates for quality monitoring.
+
+---
+
+## Fixes & Improvements Completed
+
+- [x] **Fix Add Player Functionality**: Fixed the "Add Player" button in User Management tab which was showing "Player not found" error. Enhanced with improved validation, proper error messages, and guidance on ID format requirements.
+
 ## Other Potential Enhancements
 
 - [ ] Ensure uniform row height in the session list by handling long game names (e.g., truncation with tooltip or ellipsis).
 
 ## Future Enhancements / Ideas
 
-- [ ] **Display Current Game Players via WebSocket Interception (Phase 2 - UI/UX)**
-  - Goal: If WebSocket method is pursued, define how these players integrate into the popup.
-  - Current State: Feature was on `current-game-sockets` branch, removed for MVP. Logic for this is distinct from historical session fetching.
+
 - [x] **Advanced Player Search/Filtering in 'Manage Users' Tab**
   - [x] Sort by name, rating, last seen, unique sessions.
 - [ ] **UI/UX Refinements**

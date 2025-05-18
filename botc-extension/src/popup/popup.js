@@ -1,10 +1,20 @@
 // This is the main script for the popup interface.
 // It orchestrates calls to functions defined in userManager.js and sessionManager.js
-
 // Globally accessible filter options for the popup
 let currentFilterOptions = { officialOnly: false, hideCompleted: false };
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // Request current game info from background script
+    chrome.runtime.sendMessage({ type: 'GET_CURRENT_GAME_INFO' }, function(response) {
+        if (response && response.gameInfo) {
+            // Debug logging removed
+            window.liveGameInfo = response.gameInfo;
+        } else {
+            // Debug logging removed
+            window.liveGameInfo = null;
+        }
+    });
+
     // Assign core utility functions to window object IMMEDIATELY
     // so they are available even if subsequent async operations fail.
     window.sendMessagePromise = (message) => {
@@ -29,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
     };
+
     window.parseJwt = parseJwt;
 
     // Button and Controls References
@@ -60,6 +71,199 @@ document.addEventListener('DOMContentLoaded', async function() {
     let latestSessionData = null; 
     let showOfficialOnly = false; 
     let searchTimeout = null;
+
+    // Utility to keep both variables in sync
+    function setLatestSessionData(sessions) {
+        latestSessionData = sessions;
+        window.latestSessionData = sessions;
+        // Debug logging removed
+    }
+    window.setLatestSessionData = setLatestSessionData;
+
+    // Expose latestSessionData globally for online player detection
+    window.latestSessionData = latestSessionData;
+    // Expose fetchOnlinePlayerIds globally for userManager.js
+    window.fetchOnlinePlayerIds = async function() {
+    // Debug logging removed
+    // Debug logging removed
+    if (!window.latestSessionData) {
+        if (!window._fetchOnlinePlayerIdsWarned) {
+            console.warn('[fetchOnlinePlayerIds] Not available: session data is not present.');
+            window._fetchOnlinePlayerIdsWarned = true;
+        }
+        return new Set();
+    }
+    // Debug logging removed
+    // Debug logging removed
+    if (window.userManager && typeof window.userManager.getOnlinePlayerIds === 'function') {
+        const ids = window.userManager.getOnlinePlayerIds(window.latestSessionData);
+        // Debug logging removed
+        // Debug logging removed
+        return ids;
+    }
+    return new Set();
+};
+
+    // Function to update the online favorites list UI
+    window.updateOnlineFavoritesListFunc = function(playerData, onlinePlayersObject) {
+        // Debug logging removed
+        
+        // CRITICAL DEBUG - Log the entire player data structure
+        // Debug logging removed
+        // Debug logging removed
+        
+        const onlineFavoritesListDiv = document.getElementById('onlineFavoritesList');
+        const onlineFavoritesCountSpan = document.getElementById('onlineFavoritesCount');
+        
+        if (!onlineFavoritesListDiv || !onlineFavoritesCountSpan) {
+            console.warn('[updateOnlineFavoritesListFunc] Required DOM elements not found');
+            return;
+        }
+        
+        // Clear existing list
+        onlineFavoritesListDiv.innerHTML = '';
+        
+        // Get favorite players who are currently online
+        let onlineFavorites = [];
+        let favoriteCount = 0;
+        let onlineCount = 0;
+        let onlinePlayersByNumericId = {};
+        
+        // Check if playerData is valid
+        if (!playerData || typeof playerData !== 'object') {
+            console.error('[updateOnlineFavoritesListFunc] playerData is invalid:', playerData);
+            onlineFavoritesListDiv.innerHTML = '<p>Error: Player data unavailable</p>';
+            return;
+        }
+        
+        // First, restructure the onlinePlayersObject for easier matching
+        // Create a lookup by numeric-only IDs
+        if (onlinePlayersObject && typeof onlinePlayersObject === 'object') {
+            for (const onlinePlayerId in onlinePlayersObject) {
+                // Store both the original ID format and a numeric-only version
+                const numericId = onlinePlayerId.replace(/\D/g, '');
+                onlinePlayersByNumericId[numericId] = onlinePlayersObject[onlinePlayerId];
+                onlineCount++;
+            }
+        } else {
+            console.warn('[updateOnlineFavoritesListFunc] onlinePlayersObject is invalid or empty');
+        }
+        
+        // Debug logging removed
+        
+        // DEBUG: Print sample of the first few player entries
+        // Debug logging removed
+        let count = 0;
+        for (const playerId in playerData) {
+            if (count < 3) {
+                // Debug logging removed
+                // Check explicitly for the isFavorite property
+                // Debug logging removed
+                // Debug logging removed
+                count++;
+            } else {
+                break;
+            }
+        }
+        
+        // Find all favorite players
+        for (const playerId in playerData) {
+            // Extra safety check
+            if (!playerData[playerId]) continue;
+            
+            // Check if player is marked as favorite
+            const isFavorite = playerData[playerId].isFavorite === true;
+            
+            if (isFavorite) {
+                favoriteCount++;
+                // Debug logging removed
+                
+                // Get the numeric version of the player ID
+                const numericPlayerId = playerId.replace(/\D/g, '');
+                
+                // Check if the player is online using both original and numeric formats
+                const isOnlineExact = !!onlinePlayersObject[playerId];
+                const isOnlineNumeric = !!onlinePlayersByNumericId[numericPlayerId];
+                const isOnline = isOnlineExact || isOnlineNumeric;
+                
+                // Get session name from whichever match worked
+                let sessionName = null;
+                if (isOnlineExact) {
+                    sessionName = onlinePlayersObject[playerId];
+                } else if (isOnlineNumeric) {
+                    sessionName = onlinePlayersByNumericId[numericPlayerId];
+                }
+                
+                // Debug logging removed
+                
+                if (isOnline) {
+                    // Debug logging removed
+                    onlineFavorites.push({
+                        id: playerId,
+                        name: playerData[playerId].name || playerId,
+                        sessionName: sessionName === true ? "Unknown Session" : sessionName,
+                        ...playerData[playerId]
+                    });
+                }
+            }
+        }
+        
+        // Debug logging removed
+        
+        // Update count display
+        onlineFavoritesCountSpan.textContent = onlineFavorites.length;
+        
+        // Populate the list
+        if (onlineFavorites.length > 0) {
+            // Clear previous content
+            onlineFavoritesListDiv.innerHTML = '';
+            
+            // Create simple list of online favorite players
+            onlineFavorites.forEach(player => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'online-favorite-item';
+                
+                // Create main player name span
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'favorite-player-name';
+                nameSpan.textContent = player.name;
+                
+                // Create session name span
+                const sessionSpan = document.createElement('span');
+                sessionSpan.className = 'favorite-player-session';
+                sessionSpan.textContent = player.sessionName ? ` (${player.sessionName})` : '';
+                sessionSpan.style.fontSize = '0.9em';
+                sessionSpan.style.color = 'var(--text-secondary-color, #777)';
+                sessionSpan.style.fontStyle = 'italic';
+                
+                // Add name and session to the player item
+                playerItem.appendChild(nameSpan);
+                playerItem.appendChild(sessionSpan);
+                playerItem.style.cursor = 'pointer'; // Show it's clickable
+                
+                // Add click handler to navigate to the session when clicked
+                playerItem.addEventListener('click', function() {
+                    let url;
+                    // If session name is available and not just 'true' or 'Unknown Session'
+                    if (player.sessionName && player.sessionName !== true && player.sessionName !== 'Unknown Session') {
+                        // Convert the session name to a URL-friendly format and join by session name
+                        const encodedSessionName = encodeURIComponent(player.sessionName.toLowerCase());
+                        url = `https://botc.app/join/${encodedSessionName}`;
+                    } else {
+                        // URL = Nothing
+                        url = ``;
+                    }
+                    window.open(url, '_blank');
+                });
+                
+                onlineFavoritesListDiv.appendChild(playerItem);
+            });
+        } else {
+            onlineFavoritesListDiv.innerHTML = '<p>No favorite players currently online.</p>';
+        }
+        // Debug logging removed
+    };
+
     // Global scope for popup lifecycle
     window.currentUserID = null;
     window.liveGameInfo = null; 
@@ -105,8 +309,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // Helper to wait for userManager to be ready before rendering known players
+    function waitForUserManagerAndRenderKnownPlayers(container, searchTerm, maxRetries = 20, delay = 50) {
+        if (
+            window.userManager &&
+            typeof window.userManager.renderKnownPlayers === 'function' &&
+            typeof window.userManager.getOnlinePlayerIds === 'function'
+        ) {
+            window.userManager.renderKnownPlayers(container, searchTerm);
+        } else if (maxRetries > 0) {
+            setTimeout(() => {
+                waitForUserManagerAndRenderKnownPlayers(container, searchTerm, maxRetries - 1, delay);
+            }, delay);
+        } else {
+            console.error('window.userManager.getOnlinePlayerIds is not available after waiting.');
+        }
+    }
+
+    // --- Search Input Listener (User Management Tab) ---
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            searchTimeout = setTimeout(() => {
+                if (document.getElementById('userManagement').classList.contains('active')) {
+                    waitForUserManagerAndRenderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+                }
+            }, 300);
+        });
+    } else {
+        console.warn('Search input element not found.');
+    }
+
     // --- Initial Async Setup --- 
     try {
+
         // Load theme preference first (synchronous parts + async storage)
         const themeResult = await new Promise((resolve) => chrome.storage.local.get(['theme'], resolve));
         if (themeResult && themeResult.theme === 'dark') {
@@ -165,139 +403,88 @@ document.addEventListener('DOMContentLoaded', async function() {
     // --- Proceed with rest of initialization AFTER async setup ---
 
     // Function to show a specific tab
-    function showTab(tabId) {
-        // Deactivate all tabs
-        tabButtons.forEach(button => button.classList.remove('active'));
-        tabContents.forEach(content => content.classList.remove('active'));
-
-        // Activate the selected tab
-        const selectedTabButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
-        const selectedTabContent = document.getElementById(tabId);
-
-        if (selectedTabButton) selectedTabButton.classList.add('active');
-        if (selectedTabContent) selectedTabContent.classList.add('active');
-
-        // Load data if switching to user management tab
-        if (tabId === 'userManagement') {
-            // Call the async render function from userManager.js
-            // This function now handles loading data itself.
-            // No need to await if we don't need the result immediately.
-            if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+    function showTab(tabName) {
+        // Debug logging removed
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            if (tab.id === tabName || (tabName === 'account' && tab.id === 'accountTab')) {
+                tab.style.display = 'block';
+                tab.classList.add('active');
             } else {
-                console.error("window.userManager.renderKnownPlayers is not available.");
+                tab.style.display = 'none';
+                tab.classList.remove('active');
             }
-        }
-    }
+        });
 
-    // --- Helper Functions (Defined Early) ---
-
-    /**
-     * Fetches the set of currently online player IDs from the backend.
-     * @returns {Promise<Set<string>>} A promise that resolves with a Set of online player IDs.
-     */
-    async function fetchOnlinePlayerIds() {
-        return new Promise((resolve) => {
-            // Use sendMessagePromise for built-in error handling
-            sendMessagePromise({ action: "fetchSessions" }).then(response => {
-                const onlineIds = new Set();
-                if (response && response.sessions && Array.isArray(response.sessions)) {
-                    response.sessions.forEach(session => {
-                        if (session && session.usersAll && Array.isArray(session.usersAll)) {
-                            session.usersAll.forEach(user => {
-                                if (user && user.id) {
-                                    onlineIds.add(user.id.toString());
-                                }
-                            });
-                        }
-                    });
-                }
-                resolve(onlineIds); // Resolve with the Set
-            }).catch(error => {
-                console.error("Error fetching online player IDs:", error);
-                resolve(new Set()); // Resolve with an empty set on error
+        if (tabName === 'account') {
+            // Load the account tab script when switching to that tab
+            loadAccountTabScript(() => {
+                if (window.initAccountTab) window.initAccountTab();
             });
-        });
+        }
     }
 
-    /**
-     * Updates the list of online favorite players in the UI.
-     * @param {Object} playerData - The complete player data object.
-     * @param {Object} onlinePlayersMap - Object of online player IDs to their session names.
-     */
-    function updateOnlineFavoritesList(playerData, onlinePlayersMap) {
-        // console.log('[Popup] onlinePlayersMap received (should be object):', onlinePlayersMap, 'Is Map?', onlinePlayersMap instanceof Map); 
-        const favoritesListDiv = document.getElementById('onlineFavoritesList');
-        const favoritesCountSpan = document.getElementById('onlineFavoritesCount');
-
-        if (!favoritesListDiv || !favoritesCountSpan) {
-            console.warn('onlineFavoritesList DIV or onlineFavoritesCount SPAN not found in popup.html.');
+    // --- Dynamic loader for Account Tab ---
+    let accountTabLoaded = false;
+    function loadAccountTabScript(callback) {
+        // Check if already loaded to prevent duplicate loading
+        if (accountTabLoaded || document.querySelector('script[src="accountTab.js"]')) {
+            // Skip loading if already loaded
+            accountTabLoaded = true;
+            if (callback) callback();
             return;
         }
+        
+        // Load the script dynamically
+        const script = document.createElement('script');
+        script.src = 'accountTab.js';
+        script.onload = () => {
+            accountTabLoaded = true;
+            if (callback) callback();
+        };
+        document.head.appendChild(script);
+    }
 
-        favoritesListDiv.innerHTML = ''; 
-        favoritesCountSpan.textContent = '0'; 
-
-        if (!playerData || Object.keys(playerData).length === 0) {
-            favoritesListDiv.textContent = 'No player data available.';
-            return;
-        }
-
-        const onlineFavorites = [];
-        for (const playerId in playerData) {
-            if (playerData[playerId].isFavorite && onlinePlayersMap.hasOwnProperty(playerId)) { 
-                onlineFavorites.push({
-                    ...playerData[playerId],
-                    id: playerId, 
-                    sessionName: onlinePlayersMap[playerId] 
-                });
+    // Tab Button Listeners
+    tabButtons.forEach(button => {
+        button.addEventListener('click', async () => {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const tabName = button.dataset.tab;
+            showTab(tabName);
+            // Render known players when switching to userManagement tab
+            if (tabName === 'userManagement') {
+                // Handle user management tab switching
+                if (!window.latestSessionData) {
+                    // No session data available, fetch it first
+                    await window.fetchAndDisplaySessions(
+                        window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : (id, name, score, notes, isFavorite, callback) => {
+                            console.error("userManager.addPlayer is not available. Add operation failed.");
+                            if (callback) callback(false);
+                        },
+                        window.userManager && window.userManager.createUsernameHistoryModal ? window.userManager.createUsernameHistoryModal : (player, currentPlayerData) => {
+                            console.error("userManager.createUsernameHistoryModal is not available.");
+                            return document.createElement('div');
+                        },
+                        window.updateOnlineFavoritesListFunc,
+                        sessionListDiv,
+                        { officialOnly: showOfficialOnly },
+                        (sessions, finalPlayerData) => {
+                            latestSessionData = sessions;
+                            window.latestSessionData = sessions;
+                            if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                                window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                            }
+                        }
+                    );
+                } else {
+                    // Render known players using existing session data
+                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                    }
+                }
             }
-        }
-
-        favoritesCountSpan.textContent = onlineFavorites.length.toString();
-
-        if (onlineFavorites.length === 0) {
-            favoritesListDiv.textContent = 'No favorite players are currently online in fetched sessions.';
-            return;
-        }
-
-        const ul = document.createElement('ul');
-        ul.classList.add('player-list'); 
-        onlineFavorites.forEach(player => {
-            const li = document.createElement('li');
-            li.classList.add('player-item'); 
-            li.innerHTML = `
-                <span class="player-name">${player.name}</span> 
-                <span class="player-rating">(Rating: ${player.score || 'N/A'})</span> - 
-                <span class="player-session">Online in: ${player.sessionName}</span>
-            `;
-            ul.appendChild(li);
         });
-        favoritesListDiv.appendChild(ul);
-    }
-
-    // Expose functions globally if needed by other scripts
-    window.updateOnlineFavoritesListFunc = updateOnlineFavoritesList;
-    window.refreshUserManagementTab = refreshUserManagementTab; 
-    window.fetchOnlinePlayerIds = fetchOnlinePlayerIds;
-
-    /**
-     * Refreshes the content of the User Management tab.
-     */
-    function refreshUserManagementTab() {
-        if (!knownPlayersDiv) {
-            console.error('User list container not found for refresh.');
-            return;
-        }
-        // Call the async render function from userManager.js
-        // This function now handles loading data and displaying.
-        // No need to await if we don't need the result immediately.
-        if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-            window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
-        } else {
-            console.error("window.userManager.renderKnownPlayers is not available.");
-        }
-    }
+    });
 
     // Function to refresh the session display
     async function refreshDisplayedSessions() {
@@ -336,7 +523,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return document.createElement('div'); 
             };
             
-            await window.fetchAndDisplaySessions(
+            // Check if the function exists on window, if not - try accessing it via a more reliable method
+            const fetchAndDisplaySessionsFunc = window.fetchAndDisplaySessions || 
+                (typeof sessionManager !== 'undefined' && sessionManager.fetchAndDisplaySessions);
+            
+            if (!fetchAndDisplaySessionsFunc) {
+                throw new Error('fetchAndDisplaySessions function not found. SessionManager may not be fully loaded.');
+            }
+            
+            await fetchAndDisplaySessionsFunc(
                 addPlayerFunction, 
                 createUsernameHistoryModalFunction, 
                 window.updateOnlineFavoritesListFunc,
@@ -352,8 +547,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                         latestSessionData = sessions; // Store the latest session data
                         // After sessions are rendered, update the user management tab if it's active
                         // This ensures player statuses (e.g., online) are current
-                        if (document.getElementById('userManagement').classList.contains('active')) {
-                            refreshUserManagementTab();
+                        if (document.getElementById('userManagement').classList.contains('active') && 
+                            window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                            // Use the existing renderKnownPlayers function instead of undefined refreshUserManagementTab
+                            window.userManager.renderKnownPlayers(knownPlayersDiv, userSearchInput ? userSearchInput.value : '');
                         }
                     }
                 }
@@ -367,14 +564,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // --- Initialize Event Listeners ---
 
-    // Tab Button Listeners
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const tabId = button.getAttribute('data-tab');
-            showTab(tabId);
-        });
-    });
-
     // Search Input Listener (User Management Tab)
     if (searchInput) {
         searchInput.addEventListener('input', () => {
@@ -382,20 +571,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
             }
-            // Set a new timeout to call renderKnownPlayers after 300ms
             searchTimeout = setTimeout(() => {
-                // Check if the user management tab is currently active before re-rendering
                 if (document.getElementById('userManagement').classList.contains('active')) {
-                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
-                    } else {
-                        console.error("window.userManager.renderKnownPlayers is not available.");
-                    }
+                    waitForUserManagerAndRenderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
                 }
-            }, 300); // Debounce time: 300ms
+            }, 300);
         });
-    } else {
-        console.warn('Search input element not found.');
     }
 
     fetchButton.addEventListener('click', async () => {
@@ -419,9 +600,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             sessionListDiv, 
             { officialOnly: showOfficialOnly }, 
             (sessions, finalPlayerData) => { 
-                latestSessionData = sessions; 
+                setLatestSessionData(sessions);
                 if (loadingIndicator) loadingIndicator.style.display = 'none';
                 if (sessionListDiv) sessionListDiv.style.display = 'block'; 
+                // --- Force re-render of User Management tab if active ---
+                const userManagementTab = document.getElementById('userManagement');
+                if (userManagementTab && userManagementTab.classList.contains('active')) {
+                    waitForUserManagerAndRenderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                }
             }
         );
     });
@@ -562,33 +748,43 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (clearAllPlayerDataButton) {
         clearAllPlayerDataButton.addEventListener('click', function() {
-            ModalManager.showConfirmation(
-                "Are you sure you want to delete ALL player data? This action cannot be undone.", 
-                (confirmed) => {
-                    if (confirmed) {
-                        if (window.userManager && typeof window.userManager.replaceAllPlayerDataAndSave === 'function') {
-                            window.userManager.replaceAllPlayerDataAndSave({}, (success) => {
-                                if (success) {
-                                    // console.log('All player data cleared successfully.');
-                                    ModalManager.showNotification("All player data has been cleared.", false, 2000);
-                                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                                        window.userManager.renderKnownPlayers(knownPlayersDiv, ''); // Re-render with empty search
-                                    } else {
-                                        console.error("window.userManager.renderKnownPlayers is not available for callback after clearing data.");
-                                    }
-                                    refreshDisplayedSessions(); // Refresh session display as well
-                                } else {
-                                    ModalManager.showNotification("Error clearing player data.", true, 3000);
-                                }
-                            });
+            console.log('Clear all player data button clicked');
+            
+            // Define confirm and cancel handlers first
+            const handleConfirm = () => {
+                console.log('Clear data confirmed by user');
+                if (window.userManager && typeof window.userManager.replaceAllPlayerDataAndSave === 'function') {
+                    console.log('Calling replaceAllPlayerDataAndSave');
+                    window.userManager.replaceAllPlayerDataAndSave({}, (success) => {
+                        if (success) {
+                            console.log('All player data cleared successfully.');
+                            ModalManager.showNotification("Success", "All player data has been cleared.", 2000);
+                            if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                                window.userManager.renderKnownPlayers(knownPlayersDiv, ''); // Re-render with empty search
+                            } else {
+                                console.error("window.userManager.renderKnownPlayers is not available for callback after clearing data.");
+                            }
+                            refreshDisplayedSessions(); // Refresh session display as well
                         } else {
-                            console.error("window.userManager.replaceAllPlayerDataAndSave is not available.");
-                            ModalManager.showNotification("Critical error: Clear data function not found.", true, 3000);
+                            ModalManager.showNotification("Error", "Failed to clear player data.", 3000);
                         }
-                    }
-                }, 
-                {
+                    });
+                } else {
+                    console.error("window.userManager.replaceAllPlayerDataAndSave is not available.");
+                    ModalManager.showNotification("Critical Error", "Clear data function not found. Please reload the extension.", 3000);
                 }
+            };
+            
+            const handleCancel = () => {
+                console.log('Clear data cancelled by user');
+            };
+
+            // Call the confirm modal with our properly defined handlers
+            ModalManager.showConfirm(
+                "Clear Player Data",
+                "Are you sure you want to delete ALL player data? This action cannot be undone.", 
+                handleConfirm, 
+                handleCancel
             );
         });
     } else {

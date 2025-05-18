@@ -1,18 +1,23 @@
 {
   "manifest_version": 3,
-  "name": "BotC Tracker-MainBranch",
-  "version": "1.1.4", 
+  "name": "BotC Tracker-firebase",
+  "version": "1.1.5", 
   "description": "Track and rate players in Blood on the Clocktower games, with username history tracking and player analysis.",
   "permissions": [
     "webRequest",
     "storage",
-    "alarms"
+    "alarms",
+    "identity",
+    "tabs"
   ],
   "host_permissions": [
-    "*://botc.app/*"
+    "*://botc.app/*",
+    "*://api.botc.app/*",
+    "*://chat-us1.botc.app/*",
+    "*://chat-us2.botc.app/*"
   ],
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "dist/background.bundle.js"
   },
   "action": {
     "default_popup": "src/popup/popup.html",
@@ -29,11 +34,17 @@
     "48": "src/icons/icon48.png",
     "128": "src/icons/icon128.png"
   },
-  "content_scripts": [
+  "web_accessible_resources": [
     {
-      "matches": ["https://botc.app/play/*"],
-      "js": ["src/content/play_page_observer.js"],
-      "run_at": "document_idle"
+      "resources": ["src/auth/*", "src/icons/*"],
+      "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "oauth2": {
+    "client_id": "234038964353-fmvng5skv7bamhgl2f5142pdvclj4du4.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  }
 }

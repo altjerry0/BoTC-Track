@@ -1,9 +1,16 @@
-**Current Version (local):** `1.1.4a` | **Chrome Web Store Version:** `1.1.0` (Pending `1.1.4a` Review)
-***
+**Current Version (local):** `1.1.5` | **Chrome Web Store Version:** `1.1.3` (Pending `1.1.5` Review)
+
 
 # BotC Player Tracker Chrome Extension
 
 This Chrome extension tracks and rates players in Blood on the Clocktower (BotC) games, helping you recognize familiar players across sessions and track username changes.
+
+> **Now Available (v1.1.5):**
+> - Enhanced player role distinction with clear badges for Players, Storytellers, and Spectators
+> - Removed content script functionality and reduced permissions
+> - Improved codebase readability and optimization with debug message cleanup
+> - Firebase and Webpack bundling for Manifest V3 compatibility
+> - Improved user management with enhanced player validation
 
 ⚠️ **Important: Back Up Your Player Data!** ⚠️
 
@@ -59,6 +66,7 @@ This method allows you to install a specific version from GitHub, which might be
 ## Features
 
 *   **Session Tracking & Player Identification**: Fetches active `botc.app` game sessions and identifies players. Known players are highlighted within session details.
+*   **Cloud Sync (Coming v1.1.5+)**: Sync your player data securely to the cloud and across devices with Google Sign-In (Firebase Firestore backend).
 *   **Enhanced Session Highlighting (Popup Interface)**:
     *   **Current Tab Game**: Sessions matching the game currently open in your active `botc.app/play` tab are highlighted with a distinct blue glow. This helps quickly locate the session you're viewing or interacting with.
     *   **User's Active Games**: Sessions where your logged-in user is a participant (based on backend data) are highlighted with an orange glow, making it easy to see your games. **These sessions are also sorted to appear at the very top of the list.**
@@ -135,6 +143,24 @@ BoTC-Track (repository root)
 ```
 
 ## Developer Setup / Loading from Source
+
+### Setting up the Development Environment
+
+1. **Install Node.js and npm** (if not already installed)
+   - Download and install from [nodejs.org](https://nodejs.org/)
+   - Verify installation with `node -v` and `npm -v`
+
+2. **Install Project Dependencies**
+   - Navigate to the project root directory in your terminal
+   - Run `npm install` to install all dependencies defined in package.json
+   - This will install Firebase, Webpack, and other required packages
+
+3. **Build the Extension**
+   - Run `npx webpack --mode=production` to bundle the JavaScript files
+   - This will create bundled files in the `dist/` directory, particularly `background.bundle.js`
+   - *Note: You must rebuild with this command whenever you make changes to files that are part of the Webpack build*
+
+- v1.1.5+ uses Firebase and Firestore for cloud sync. All Firebase modules are bundled using Webpack for Manifest V3 compatibility. See TODO.md for setup steps and requirements.
 
 These instructions are for developers or users who want to load the extension directly from the source code.
 
