@@ -1,9 +1,43 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-18.
+This CHANGELOG.md was last updated by Cascade on 2025-05-19.
 -->
 
 # BotC Player Tracker Extension - Changelog
 ---
+
+## [v1.1.7] - 2025-05-20
+### Fixed
+- **Chrome Web Store Compliance:** Eliminated external script loading to comply with Chrome Web Store policies:
+  - Implemented a secure external authentication service at auth.trackbotc.com
+  - Used Chrome Identity API for Google authentication without external scripts
+  - Created a token exchange system for secure Firebase authentication
+  - Maintained proper security with Firebase custom tokens
+  - Preserved compatibility with existing Firestore data and security rules
+  - Ensured proper data isolation between users
+  - Retained all cloud sync functionality while ensuring full compliance
+
+### Changed
+- **Authentication System:** Refactored to use a more secure hybrid approach:
+  - Chrome Identity API handles Google authentication (no external scripts)
+  - Custom auth service at auth.trackbotc.com manages token exchange
+  - Secure Firebase authentication with custom tokens
+
+### Fixed
+- **Online Player Detection:** Fixed issues with online player tracking:
+  - Improved session data processing to correctly identify online players
+  - Fixed online count display in favorites list
+  - Ensured proper boolean handling of online status
+  - Removed debug logging for cleaner production code
+  - Firebase Anonymous Auth provides compatible UIDs for Firestore rules (no reCAPTCHA)
+  - User profiles store both Firebase UID and Google ID for cross-reference
+  - Updated all message handlers to work with the new hybrid authentication system
+  - Improved session persistence with enhanced token management
+
+### Security
+- Enhanced the authentication security model to maintain Firestore rules while avoiding external scripts
+- Implemented proper auth token revocation on logout
+- Improved user profile data management with better structured document model
+
 
 ## [v1.1.6] - 2025-05-18
 **PRODUCTION CLIENT ID USE 1.1.5a FOR DEVELOPMENT MODE**

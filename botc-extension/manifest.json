@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BotC Tracker",
-  "version": "1.1.6", 
+  "version": "1.1.7", 
   "description": "Track and rate players in Blood on the Clocktower games, with username history tracking and player analysis.",
   "permissions": [
     "webRequest",
@@ -34,9 +34,12 @@
     "48": "src/icons/icon48.png",
     "128": "src/icons/icon128.png"
   },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "web_accessible_resources": [
     {
-      "resources": ["src/auth/*", "src/icons/*"],
+      "resources": ["src/auth/*", "src/icons/*", "src/**/*.js"],
       "matches": ["<all_urls>"]
     }
   ],

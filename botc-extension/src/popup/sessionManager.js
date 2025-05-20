@@ -443,13 +443,15 @@ async function checkHistoryAndRender(
     if (updateOnlineFavoritesListFunc) {
         const onlinePlayersMap = new Map();
         sessions.forEach(session => {
+
             if (session.usersAll && Array.isArray(session.usersAll)) {
                 session.usersAll.forEach(user => {
                     if (user.id) { 
-                        // Mark the user as online for the getOnlinePlayerIds function
-                        user.isOnline = true;
-                        // Storing session name can be useful, or just true if presence is enough
-                        onlinePlayersMap.set(user.id.toString(), session.name || true);
+
+                        if (user.isOnline) {
+                            // User is marked as online from the API
+                            onlinePlayersMap.set(user.id.toString(), session.name || true);
+                        }
                     }
                 });
             }
@@ -457,6 +459,8 @@ async function checkHistoryAndRender(
 
         // Convert Map to plain object for safer cross-context passing
         const onlinePlayersObject = Object.fromEntries(onlinePlayersMap);
+
+
 
         // Now call the function from popup.js context if it exists
         if (typeof window.updateOnlineFavoritesListFunc === 'function') {
@@ -802,7 +806,11 @@ async function fetchAndDisplaySessions(
         }
 
         const backendSessions = response.sessions;
-        // Debug logging removed
+
+        // Update latest session data for online player detection
+        if (typeof window.setLatestSessionData === 'function') {
+            window.setLatestSessionData(backendSessions);
+        }
 
         // --- Sort sessions by game phase ---
         backendSessions.sort((a, b) => {

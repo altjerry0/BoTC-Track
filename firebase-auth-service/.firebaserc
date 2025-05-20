@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "botctracker"
+  },
+  "targets": {
+    "botctracker": {
+      "hosting": {
+        "auth-botctracker": [
+          "auth-botctracker"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

@@ -1,24 +1,1789 @@
 /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+
+;// ./src/popup/userManager.js
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == _typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
-// This is the main script for the popup interface.
-// It orchestrates calls to functions defined in userManager.js and sessionManager.js
+/**
+ * User Manager Module
+ * Handles all user-related functionality including:
+ * - Storing and retrieving user data
+ * - Username history tracking
+ * - User interface for managing players
+ */
+
+
+
+// Store reference to player data
+var allPlayerData = null;
+
+/**
+ * Load player data from Chrome storage.
+ * @returns {Promise<Object>} A promise that resolves with the player data object.
+ */
+function loadPlayerData() {
+  return _loadPlayerData.apply(this, arguments);
+}
+/**
+ * Save player data to Chrome storage.
+ * @param {Object} playerData - Player data to save.
+ * @returns {Promise<void>} A promise that resolves when saving is complete.
+ */
+function _loadPlayerData() {
+  _loadPlayerData = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+    return _regeneratorRuntime().wrap(function _callee$(_context) {
+      while (1) switch (_context.prev = _context.next) {
+        case 0:
+          return _context.abrupt("return", new Promise(function (resolve, reject) {
+            chrome.storage.local.get('playerData', function (data) {
+              if (chrome.runtime.lastError) {
+                console.error("Error loading playerData from storage:", chrome.runtime.lastError.message);
+                // Resolve with an empty object in case of error to prevent breaking subsequent logic
+                allPlayerData = {};
+                resolve({});
+              } else {
+                allPlayerData = data.playerData || {};
+                resolve(JSON.parse(JSON.stringify(allPlayerData))); // Return deep copy
+              }
+            });
+          }));
+        case 1:
+        case "end":
+          return _context.stop();
+      }
+    }, _callee);
+  }));
+  return _loadPlayerData.apply(this, arguments);
+}
+function savePlayerData(_x) {
+  return _savePlayerData.apply(this, arguments);
+}
+/**
+ * Retrieves a deep copy of all player data from the in-memory cache.
+ * Loads it from storage if the cache is not yet initialized.
+ * @returns {Promise<Object>} A deep copy of the player data.
+ */
+function _savePlayerData() {
+  _savePlayerData = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(playerData) {
+    return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+      while (1) switch (_context2.prev = _context2.next) {
+        case 0:
+          return _context2.abrupt("return", new Promise(function (resolve, reject) {
+            allPlayerData = JSON.parse(JSON.stringify(playerData)); // Update cache with deep copy
+            chrome.storage.local.set({
+              playerData: allPlayerData
+            }, function () {
+              if (chrome.runtime.lastError) {
+                console.error("Error saving playerData to storage:", chrome.runtime.lastError.message);
+                reject(chrome.runtime.lastError);
+              } else {
+                resolve(); // Resolve promise on successful save
+              }
+            });
+          }));
+        case 1:
+        case "end":
+          return _context2.stop();
+      }
+    }, _callee2);
+  }));
+  return _savePlayerData.apply(this, arguments);
+}
+function getAllPlayerData() {
+  return _getAllPlayerData.apply(this, arguments);
+}
+/**
+ * Format timestamp to readable date and time
+ * @param {number} timestamp - Timestamp to format
+ * @returns {string} Formatted date and time
+ */
+function _getAllPlayerData() {
+  _getAllPlayerData = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+    return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+      while (1) switch (_context3.prev = _context3.next) {
+        case 0:
+          if (!(allPlayerData === null)) {
+            _context3.next = 3;
+            break;
+          }
+          _context3.next = 3;
+          return loadPlayerData();
+        case 3:
+          return _context3.abrupt("return", JSON.parse(JSON.stringify(allPlayerData || {})));
+        case 4:
+        case "end":
+          return _context3.stop();
+      }
+    }, _callee3);
+  }));
+  return _getAllPlayerData.apply(this, arguments);
+}
+function formatTimestamp(timestamp) {
+  var date = new Date(timestamp);
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+/**
+ * Formats a timestamp into a human-readable 'time ago' string.
+ * e.g., "5 minutes ago", "2 hours ago", "3 days ago".
+ * @param {number} timestamp - The Unix timestamp in milliseconds.
+ * @returns {string} A human-readable string representing the time since the timestamp, or "Not seen yet" if timestamp is invalid.
+ */
+function formatTimeSince(timestamp) {
+  if (!timestamp || isNaN(timestamp) || timestamp <= 0) {
+    return "Not seen yet";
+  }
+  var now = Date.now();
+  var seconds = Math.round((now - timestamp) / 1000);
+  if (seconds < 0) {
+    // Timestamp is in the future
+    return "In the future"; // Or handle as an error/default
+  }
+  if (seconds < 60) {
+    return seconds + " sec ago";
+  }
+  var minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return minutes + (minutes === 1 ? " min ago" : " mins ago");
+  }
+  var hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return hours + (hours === 1 ? " hour ago" : " hours ago");
+  }
+  var days = Math.round(hours / 24);
+  if (days < 30) {
+    return days + (days === 1 ? " day ago" : " days ago");
+  }
+  var months = Math.round(days / 30);
+  if (months < 12) {
+    return months + (months === 1 ? " month ago" : " months ago");
+  }
+  var years = Math.round(months / 12);
+  return years + (years === 1 ? " year ago" : " years ago");
+}
+
+/**
+ * Create modal to display username history
+ * @param {Array} history - Array of username history entries
+ * @param {string} currentName - Current username
+ */
+function createUsernameHistoryModal(history, currentName) {
+  // Remove any existing modal first to prevent duplicates
+  var existingModal = document.querySelector('.username-history-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  var modal = document.createElement('div');
+  modal.className = 'username-history-modal';
+  var modalContent = document.createElement('div');
+  modalContent.className = 'username-history-content';
+  var closeButton = document.createElement('span');
+  closeButton.className = 'username-history-close';
+  closeButton.innerHTML = '&times;';
+  closeButton.onclick = function () {
+    return document.body.removeChild(modal);
+  };
+  var title = document.createElement('h2');
+  title.className = 'username-history-title';
+  title.textContent = 'Username History';
+  var currentNameElement = document.createElement('div');
+  currentNameElement.className = 'username-history-current';
+  currentNameElement.innerHTML = "<strong>Current:</strong> <span style=\"font-weight: bold;\">".concat(currentName, "</span>");
+  var historyList = document.createElement('div');
+  historyList.className = 'username-history-list';
+  if (history && history.length > 0) {
+    history.forEach(function (entry) {
+      var historyItem = document.createElement('div');
+      historyItem.className = 'username-history-item';
+      var nameElement = document.createElement('span');
+      nameElement.className = 'username-history-name';
+      if (entry.oldName && entry.newName) {
+        historyItem.classList.add('username-history-change');
+        nameElement.innerHTML = "<span class=\"old-name\">".concat(entry.oldName, "</span><span class=\"arrow\"> &rarr; </span><span class=\"new-name\">").concat(entry.newName, "</span>");
+      } else {
+        nameElement.textContent = entry.name || entry.username || 'Unknown Change';
+      }
+      var timeElement = document.createElement('span');
+      timeElement.className = 'username-history-time';
+      timeElement.textContent = formatTimestamp(entry.timestamp);
+      historyItem.appendChild(nameElement);
+      historyItem.appendChild(timeElement);
+      historyList.appendChild(historyItem);
+    });
+  } else {
+    var noHistory = document.createElement('p');
+    noHistory.textContent = 'No history available.';
+    historyList.appendChild(noHistory);
+  }
+  modalContent.appendChild(closeButton);
+  modalContent.appendChild(title);
+  modalContent.appendChild(currentNameElement);
+  modalContent.appendChild(historyList);
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
+
+  // Close when clicking outside the modal
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+    }
+  });
+}
+
+/**
+ * Compares two players for sorting according to specific criteria:
+ * 1. Online Favorite players first (sorted by rating desc, then name asc).
+ * 2. Online Non-Favorite players next (sorted by rating desc, then name asc).
+ * 3. Offline players last (sorted by lastSeenTimestamp desc (recent first, no data last), then rating desc, then name asc).
+ * @param {Array} a - First player entry: [idString, playerObjectA]
+ * @param {Array} b - Second player entry: [idString, playerObjectB]
+ * @param {Set<string>} onlinePlayerIds - Set of IDs for players currently online.
+ * @returns {number} -1 if a < b, 1 if a > b, 0 if a === b.
+ */
+function comparePlayersForSorting(a, b, onlinePlayerIds) {
+  // Handle null/undefined cases
+  if (!a || !b) return 0;
+  var _a = _slicedToArray(a, 2),
+    idA = _a[0],
+    playerAData = _a[1];
+  var _b = _slicedToArray(b, 2),
+    idB = _b[0],
+    playerBData = _b[1];
+
+  // Handle cases where player data is missing
+  if (!playerAData || !playerBData) return 0;
+
+  // Safely convert IDs to strings and check online status
+  var isOnlineA = idA && (onlinePlayerIds === null || onlinePlayerIds === void 0 ? void 0 : onlinePlayerIds.has(idA.toString()));
+  var isOnlineB = idB && (onlinePlayerIds === null || onlinePlayerIds === void 0 ? void 0 : onlinePlayerIds.has(idB.toString()));
+  var isFavoriteA = playerAData.isFavorite || false;
+  var isFavoriteB = playerBData.isFavorite || false;
+
+  // Priority 1: Online AND Favorite
+  var aIsOnlineFav = isOnlineA && isFavoriteA;
+  var bIsOnlineFav = isOnlineB && isFavoriteB;
+  if (aIsOnlineFav !== bIsOnlineFav) {
+    return aIsOnlineFav ? -1 : 1; // OnlineFav (true) comes before not OnlineFav (false)
+  }
+  if (aIsOnlineFav && bIsOnlineFav) {
+    // Both are Online + Favorite
+    // Sub-sort by rating (desc)
+    var _scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
+    var _scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
+    if (_scoreA !== _scoreB) {
+      return _scoreB - _scoreA; // Higher score first
+    }
+    // Then by name (asc)
+    return (playerAData.name || '').localeCompare(playerBData.name || '');
+  }
+
+  // Priority 2: Online (but not favorite, or only one is favorite - handled above)
+  if (isOnlineA !== isOnlineB) {
+    return isOnlineA ? -1 : 1; // Online (true) comes before offline (false)
+  }
+  if (isOnlineA) {
+    // Both are Online (but not both Online+Favorite)
+    // Sort by rating (desc)
+    var _scoreA2 = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
+    var _scoreB2 = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
+    if (_scoreA2 !== _scoreB2) {
+      return _scoreB2 - _scoreA2;
+    }
+    // Then by name (asc)
+    return (playerAData.name || '').localeCompare(playerBData.name || '');
+  }
+
+  // Priority 3: Both are Offline
+  // Sort by lastSeenTimestamp (desc - recent first)
+  // Treat null/undefined/0 as very old to push them to the bottom of offline players
+  var lastSeenA = playerAData.lastSeenTimestamp || 0;
+  var lastSeenB = playerBData.lastSeenTimestamp || 0;
+  if (lastSeenA !== lastSeenB) {
+    return lastSeenB - lastSeenA; // More recent (higher timestamp) first
+  }
+
+  // If lastSeen is same (or both unknown), sort by rating (desc)
+  var scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
+  var scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
+  if (scoreA !== scoreB) {
+    return scoreB - scoreA;
+  }
+
+  // Finally, by name (asc)
+  return (playerAData.name || '').localeCompare(playerBData.name || '');
+}
+
+/**
+ * Helper function to extract a Set of online player IDs from session data.
+ * @param {Array|Set|null} sessionData - Active session data or a Set of online IDs.
+ * @returns {Set<string>} A Set of player IDs that are currently online.
+ */
+/**
+ * Extract online player IDs from session data.
+ * @param {Array} sessionData - Array of session objects from the API
+ * @returns {Set<string>} Set of online player IDs
+ */
+function getOnlinePlayerIds(sessionData) {
+  // Validate input
+  if (!Array.isArray(sessionData)) {
+    return new Set();
+  }
+  var onlinePlayerIds = new Set();
+
+  // Process each session
+  sessionData.forEach(function (session) {
+    var _session$usersAll;
+    if (!(session !== null && session !== void 0 && (_session$usersAll = session.usersAll) !== null && _session$usersAll !== void 0 && _session$usersAll.length)) return;
+
+    // Find online users in this session
+    var onlineUsers = session.usersAll.filter(function (user) {
+      return (user === null || user === void 0 ? void 0 : user.id) && user.isOnline;
+    });
+    if (onlineUsers.length > 0) {
+      // Add their IDs to the set
+      onlineUsers.forEach(function (user) {
+        return onlinePlayerIds.add(user.id.toString());
+      });
+    }
+  });
+  return onlinePlayerIds;
+}
+
+/**
+ * Displays known players in the specified container, filtered by search term and indicating online status.
+ * @param {HTMLElement} container - The container element to display players in.
+ * @param {string} [searchTerm=''] - Optional search term to filter players.
+ * @param {Object} playerData - The player data object.
+ * @param {Set<string>} onlinePlayerIds - A Set containing the IDs of currently online players.
+ * @param {Function} createUsernameHistoryModalFunc - Function to create the history modal.
+ * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
+ */
+function displayKnownPlayers(_x2) {
+  return _displayKnownPlayers.apply(this, arguments);
+}
+/**
+ * Add or update a player in the data
+ * @param {string} id - Player ID
+ * @param {string} name - Player name
+ * @param {number} score - Player rating
+ * @param {string} notes - Player notes
+ * @param {boolean} isFavorite - Player favorite status
+ * @param {Function} [updateUICallback] - Optional callback to execute after saving, receives updated player data
+ */
+function _displayKnownPlayers() {
+  _displayKnownPlayers = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4(container) {
+    var searchTerm,
+      playerData,
+      onlinePlayerIds,
+      createUsernameHistoryModalFunc,
+      refreshCallback,
+      lowerSearchTerm,
+      filteredPlayersArray,
+      sortedPlayersArray,
+      _args4 = arguments;
+    return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+      while (1) switch (_context4.prev = _context4.next) {
+        case 0:
+          searchTerm = _args4.length > 1 && _args4[1] !== undefined ? _args4[1] : '';
+          playerData = _args4.length > 2 ? _args4[2] : undefined;
+          onlinePlayerIds = _args4.length > 3 ? _args4[3] : undefined;
+          createUsernameHistoryModalFunc = _args4.length > 4 ? _args4[4] : undefined;
+          refreshCallback = _args4.length > 5 ? _args4[5] : undefined;
+          lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : ''; // Define lowerSearchTerm here
+          container.innerHTML = ''; // Clear previous results
+
+          // Filter and then sort the player data
+          filteredPlayersArray = Object.entries(playerData || {}).filter(function (_ref) {
+            var _ref2 = _slicedToArray(_ref, 2),
+              id = _ref2[0],
+              player = _ref2[1];
+            if (!id || !player) return false;
+            var nameMatch = player.name && player.name.toLowerCase().includes(lowerSearchTerm);
+            var notesMatch = player.notes && player.notes.toLowerCase().includes(lowerSearchTerm);
+            var scoreMatch = player.score !== undefined && player.score.toString().toLowerCase().includes(lowerSearchTerm);
+            var idMatch = id.toString().toLowerCase().includes(lowerSearchTerm);
+            return nameMatch || notesMatch || scoreMatch || idMatch;
+          }); // Sort the filtered array using the new comparison function
+          sortedPlayersArray = filteredPlayersArray.sort(function (a, b) {
+            return comparePlayersForSorting(a, b, onlinePlayerIds);
+          });
+          if (!(sortedPlayersArray.length === 0 && searchTerm)) {
+            _context4.next = 12;
+            break;
+          }
+          container.innerHTML = '<p>No players match your search.</p>';
+          return _context4.abrupt("return");
+        case 12:
+          if (!(sortedPlayersArray.length === 0)) {
+            _context4.next = 15;
+            break;
+          }
+          container.innerHTML = '<p>No players known. Add some!</p>';
+          return _context4.abrupt("return");
+        case 15:
+          // For each player, create a card
+          sortedPlayersArray.forEach(function (_ref3) {
+            var _ref4 = _slicedToArray(_ref3, 2),
+              id = _ref4[0],
+              player = _ref4[1];
+            // Corrected: Destructure id and player here
+            var card = document.createElement('div');
+            card.className = 'player-card known-player';
+            card.dataset.playerId = id;
+
+            // Add rating class for styling
+            card.classList.add(getRatingClass(player.score));
+            var isOnline = onlinePlayerIds.has(id.toString()); // Correctly use destructured id
+            var hasMetaInfo = false; // Declare hasMetaInfo here for broader scope within the loop iteration
+
+            if (isOnline) {
+              card.classList.add('online');
+            }
+            if (player.isFavorite) {
+              card.classList.add('favorite-player');
+            }
+
+            // --- Player Info Container ---
+            var infoContainer = document.createElement('div');
+            infoContainer.className = 'player-info-container';
+            if (isOnline) {
+              var nameElement = document.createElement('strong');
+              nameElement.textContent = player.name || "Player ".concat(id);
+              infoContainer.appendChild(nameElement);
+              var idElement = document.createElement('small');
+              idElement.textContent = " (ID: ".concat(id, ")");
+              idElement.style.color = 'var(--subtle-text-color)';
+              infoContainer.appendChild(idElement);
+              var sessionName = null;
+              if (player.lastSeenSessionId) {
+                sessionName = player.lastSeenSessionId;
+              }
+              var onlineBadge = document.createElement('span');
+              onlineBadge.classList.add('online-badge');
+              onlineBadge.title = 'Online';
+              infoContainer.appendChild(onlineBadge);
+              if (sessionName) {
+                var sessionNameSpan = document.createElement('small');
+                sessionNameSpan.style.color = 'var(--accent-color)';
+                sessionNameSpan.style.marginLeft = '5px';
+                sessionNameSpan.textContent = " (in: ".concat(sessionName, ")");
+                infoContainer.appendChild(sessionNameSpan);
+              }
+            } else {
+              // Offline player name and ID (similar to online, but no badge or current session name)
+              var _nameElement = document.createElement('strong');
+              _nameElement.textContent = player.name || "Player ".concat(id);
+              infoContainer.appendChild(_nameElement);
+              var _idElement = document.createElement('small');
+              _idElement.textContent = " (ID: ".concat(id, ")");
+              _idElement.style.color = 'var(--subtle-text-color)';
+              infoContainer.appendChild(_idElement);
+            }
+
+            // Create a container for meta info (Sessions, Last Seen) - applies to ALL players
+            var metaInfoContainer = document.createElement('div');
+            metaInfoContainer.className = 'player-meta-info';
+            var addedSessionInfo = false;
+            // Add session count information (for ALL players if available)
+            if (player.lastSeenSessionId) {
+              var sessionInfoText = document.createElement('span');
+              sessionInfoText.textContent = "Sessions: ".concat(player.uniqueSessionCount || 1);
+              sessionInfoText.style.color = 'var(--subtle-text-color)';
+              metaInfoContainer.appendChild(sessionInfoText);
+              hasMetaInfo = true;
+              addedSessionInfo = true;
+            }
+
+            // Handle offline player last seen time (ONLY for offline players)
+            if (!isOnline && player.lastSeenTimestamp) {
+              if (addedSessionInfo) {
+                // Add a separator if session info was already added
+                var separator = document.createElement('span');
+                separator.textContent = ' | ';
+                separator.style.color = 'var(--subtle-text-color)';
+                separator.style.marginLeft = '5px';
+                separator.style.marginRight = '5px';
+                metaInfoContainer.appendChild(separator);
+              }
+              var lastSeenTextContent = formatTimeSince(player.lastSeenTimestamp);
+              var lastSeenElement = document.createElement('span');
+              lastSeenElement.textContent = "Last seen: ".concat(lastSeenTextContent);
+              lastSeenElement.className = 'last-seen-text';
+              lastSeenElement.style.color = 'var(--subtle-text-color)';
+              metaInfoContainer.appendChild(lastSeenElement);
+              hasMetaInfo = true;
+            }
+            if (hasMetaInfo) {
+              infoContainer.appendChild(metaInfoContainer);
+            }
+            var scoreElement = document.createElement('span');
+            scoreElement.textContent = "Score: ".concat(player.score !== undefined ? player.score : 'N/A', "/5");
+            scoreElement.style.display = 'block'; // Make score take its own line after meta info
+            scoreElement.style.marginTop = hasMetaInfo ? '5px' : '0'; // Now hasMetaInfo should be defined
+            infoContainer.appendChild(scoreElement);
+            if (player.notes) {
+              var notesElement = document.createElement('p');
+              notesElement.textContent = "Notes: ".concat(player.notes);
+              notesElement.className = 'player-notes';
+              // Check if notes already contain session count to avoid duplication if logic is complex
+              // For now, assuming session count is primarily handled by the new metaInfoContainer
+              infoContainer.appendChild(notesElement);
+            }
+            card.appendChild(infoContainer);
+
+            // --- Player Actions (Buttons) ---
+            var buttonContainer = document.createElement('div');
+            buttonContainer.className = 'player-actions'; // Updated class for consistency
+
+            // Favorite Button
+            var favoriteButton = document.createElement('button');
+            favoriteButton.classList.add('player-action-button', 'favorite-button'); // Ensure player-action-button is present
+            favoriteButton.innerHTML = player.isFavorite ? '★' : '☆'; // Updated Star icons
+            favoriteButton.title = player.isFavorite ? 'Unfavorite Player' : 'Favorite Player';
+            favoriteButton.addEventListener('click', function (e) {
+              e.stopPropagation();
+              toggleFavoriteStatus(id, favoriteButton, player); // Pass player object
+              // No need to call refreshCallback here if toggleFavoriteStatus handles UI update
+            });
+            buttonContainer.appendChild(favoriteButton);
+
+            // Edit Button
+            var editButton = document.createElement('button');
+            editButton.classList.add('player-action-button');
+            editButton.innerHTML = "<img src=\"../icons/editbutton.svg\" alt=\"Edit\" class=\"button-icon\">";
+            editButton.title = 'Edit Player';
+            editButton.addEventListener('click', function (e) {
+              e.stopPropagation();
+              editPlayerDetails(id);
+            });
+            buttonContainer.appendChild(editButton);
+
+            // History Button (if history exists)
+            if (player.usernameHistory && player.usernameHistory.length > 0) {
+              var historyButton = document.createElement('button');
+              historyButton.classList.add('player-action-button'); // Removed 'history-button' class
+              historyButton.innerHTML = "\uD83D\uDD52"; // Updated Clock icon
+              historyButton.title = "View Username History (".concat(player.usernameHistory.length, " entries)");
+              historyButton.addEventListener('click', function (e) {
+                e.stopPropagation();
+                createUsernameHistoryModalFunc(player.usernameHistory, player.name);
+              });
+              buttonContainer.appendChild(historyButton);
+            }
+
+            // Refresh Username Button (only if player has an ID, which they should)
+            var refreshUsernameButton = document.createElement('button');
+            refreshUsernameButton.classList.add('player-action-button'); // Removed 'refresh-username-button' class
+            refreshUsernameButton.innerHTML = '🔄'; // Updated Refresh icon
+            refreshUsernameButton.title = 'Refresh Username from Server';
+            refreshUsernameButton.addEventListener('click', function (e) {
+              e.stopPropagation();
+              handleRefreshUserName(id, refreshUsernameButton, refreshCallback);
+            });
+            buttonContainer.appendChild(refreshUsernameButton);
+
+            // Delete Button
+            var deleteButton = document.createElement('button');
+            deleteButton.classList.add('player-action-button');
+            deleteButton.innerHTML = "<img src=\"../icons/deletebutton.svg\" alt=\"Delete\" class=\"button-icon\">";
+            deleteButton.title = 'Delete Player';
+            deleteButton.addEventListener('click', function (e) {
+              e.stopPropagation();
+              deletePlayer(id, function () {
+                // Pass the refreshCallback to the version of deletePlayer that accepts it.
+                // console.log("Player deleted, attempting to refresh list after modal confirmation.");
+                if (typeof refreshCallback === 'function') {
+                  refreshCallback();
+                }
+              });
+            });
+            buttonContainer.appendChild(deleteButton);
+            card.appendChild(infoContainer);
+            card.appendChild(buttonContainer);
+            container.appendChild(card);
+          });
+        case 16:
+        case "end":
+          return _context4.stop();
+      }
+    }, _callee4);
+  }));
+  return _displayKnownPlayers.apply(this, arguments);
+}
+function addPlayer(_x3, _x4, _x5, _x6, _x7, _x8) {
+  return _addPlayer.apply(this, arguments);
+}
+/**
+ * Checks if a player's username from a session differs from the stored one.
+ * If it differs, updates the username and history in storage.
+ * @param {string} userId - The ID of the player.
+ * @param {string} sessionUsername - The username found in the current session data.
+ * @param {Object} currentPlayerData - The currently loaded player data object.
+ * @param {Function} callback - Callback function, receives (wasUpdated: boolean, updatedPlayerData: Object).
+ */
+function _addPlayer() {
+  _addPlayer = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(id, name, score, notes, isFavorite, updateUICallback) {
+    var parsedScore, finalScore, playerData, isUpdate, oldPlayerData, usernameHistory, sessionHistoryArray, uniqueSessionCount, lastSeenSessionId, lastSeenTimestamp, newIsFavoriteValue;
+    return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+      while (1) switch (_context5.prev = _context5.next) {
+        case 0:
+          // Validate score input
+          parsedScore = parseInt(score, 10);
+          finalScore = !isNaN(parsedScore) && parsedScore >= -5 && parsedScore <= 5 ? parsedScore : null;
+          _context5.next = 4;
+          return loadPlayerData();
+        case 4:
+          playerData = _context5.sent;
+          if (id) {
+            _context5.next = 8;
+            break;
+          }
+          console.error('Attempted to add player with no ID.');
+          return _context5.abrupt("return");
+        case 8:
+          // Check if player exists for potential update
+          isUpdate = !!playerData[id];
+          oldPlayerData = isUpdate ? _objectSpread({}, playerData[id]) : null; // Preserve or initialize username history
+          usernameHistory = isUpdate && playerData[id].usernameHistory ? _toConsumableArray(playerData[id].usernameHistory) : []; // Preserve or initialize session history
+          sessionHistoryArray = isUpdate && Array.isArray(playerData[id].sessionHistory) ? _toConsumableArray(playerData[id].sessionHistory) : [];
+          uniqueSessionCount = isUpdate && typeof playerData[id].uniqueSessionCount === 'number' ? playerData[id].uniqueSessionCount : 0;
+          lastSeenSessionId = isUpdate && playerData[id].lastSeenSessionId ? playerData[id].lastSeenSessionId : null;
+          lastSeenTimestamp = isUpdate && playerData[id].lastSeenTimestamp ? playerData[id].lastSeenTimestamp : null; // Determine the new favorite status
+          if (isUpdate) {
+            // For updates, use the provided 'isFavorite' parameter if it's a boolean, otherwise keep the existing one.
+            newIsFavoriteValue = typeof isFavorite === 'boolean' ? isFavorite : playerData[id].isFavorite;
+          } else {
+            // For new players, use the provided 'isFavorite' parameter if it's a boolean, otherwise default to false.
+            newIsFavoriteValue = typeof isFavorite === 'boolean' ? isFavorite : false;
+          }
+
+          // If updating, check if name changed and update history
+          if (isUpdate && playerData[id].name !== name) {
+            // console.log(`Updating name for ${id}: "${playerData[id].name}" -> "${name}"`);
+            usernameHistory.unshift({
+              username: playerData[id].name,
+              timestamp: Date.now()
+            });
+            // Limit history size if needed (e.g., keep last 10)
+            if (usernameHistory.length > 10) {
+              usernameHistory = usernameHistory.slice(0, 10);
+            }
+          }
+
+          // Update or create player data
+          playerData[id] = {
+            id: id,
+            name: name,
+            score: finalScore,
+            notes: notes || (isUpdate ? playerData[id].notes : ''),
+            usernameHistory: usernameHistory,
+            sessionHistory: sessionHistoryArray,
+            uniqueSessionCount: uniqueSessionCount,
+            lastSeenSessionId: lastSeenSessionId,
+            lastSeenTimestamp: lastSeenTimestamp,
+            isFavorite: newIsFavoriteValue
+          };
+          _context5.next = 20;
+          return savePlayerData(playerData);
+        case 20:
+          // Pass the updated data for this specific player to the callback
+          if (updateUICallback && typeof updateUICallback === 'function') {
+            // Ensure the callback receives the full updated player data, including isFavorite
+            updateUICallback(playerData[id]);
+          }
+        case 21:
+        case "end":
+          return _context5.stop();
+      }
+    }, _callee5);
+  }));
+  return _addPlayer.apply(this, arguments);
+}
+function updateUsernameHistoryIfNeeded(_x9, _x0, _x1) {
+  return _updateUsernameHistoryIfNeeded.apply(this, arguments);
+}
+/**
+ * Checks if a player is seen in a new session compared to the last recorded one.
+ * If it's a new session, increments the unique session count and updates the last seen ID.
+ * @param {string} userId - The ID of the player.
+ * @param {string} currentSessionId - The ID of the session the player was just seen in.
+ * @param {Object} currentPlayerData - The currently loaded player data object.
+ * @param {Function} callback - Callback function, receives (wasUpdated: boolean, updatedPlayerData: Object).
+ */
+function _updateUsernameHistoryIfNeeded() {
+  _updateUsernameHistoryIfNeeded = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6(userId, sessionUsername, currentPlayerData) {
+    var player, updatedData, needsSave, currentStoredName, history, latestHistoryEntry;
+    return _regeneratorRuntime().wrap(function _callee6$(_context6) {
+      while (1) switch (_context6.prev = _context6.next) {
+        case 0:
+          player = currentPlayerData[userId];
+          updatedData = _objectSpread({}, currentPlayerData); // Work on a copy
+          needsSave = false; // If player isn't known at all, we can't update history (should be added first)
+          if (player) {
+            _context6.next = 5;
+            break;
+          }
+          return _context6.abrupt("return", false);
+        case 5:
+          // Initialize history if it doesn't exist
+          if (!player.usernameHistory) {
+            player.usernameHistory = [];
+            needsSave = true; // Need to save if we initialize the array structure
+          }
+          currentStoredName = player.name;
+          history = player.usernameHistory; // Check if the session username is different from the currently stored name
+          if (sessionUsername && currentStoredName !== sessionUsername) {
+            // Check if this session username is already the *latest* in history (avoids redundant entries)
+            latestHistoryEntry = history.length > 0 ? history[history.length - 1] : null; // Add the *previous* name to history only if it's not already the latest entry
+            if (!latestHistoryEntry || latestHistoryEntry.username !== currentStoredName) {
+              history.push({
+                username: currentStoredName,
+                timestamp: Date.now()
+              });
+              // console.log(`[Username History] Added '${currentStoredName}' to history for player ${player.id}. New name: '${sessionUsername}'.`);
+              needsSave = true;
+            }
+
+            // Update the player's current name to the new one from the session
+            player.name = sessionUsername;
+            needsSave = true;
+          } else {
+            // If names match, ensure the current name is at least the first entry if history is empty
+            if (history.length === 0 && currentStoredName) {
+              history.push({
+                username: currentStoredName,
+                timestamp: Date.now()
+              });
+              needsSave = true;
+            }
+          }
+
+          // If any changes occurred that require saving
+          if (!needsSave) {
+            _context6.next = 15;
+            break;
+          }
+          _context6.next = 12;
+          return savePlayerData(updatedData);
+        case 12:
+          return _context6.abrupt("return", true);
+        case 15:
+          return _context6.abrupt("return", false);
+        case 16:
+        case "end":
+          return _context6.stop();
+      }
+    }, _callee6);
+  }));
+  return _updateUsernameHistoryIfNeeded.apply(this, arguments);
+}
+function updateSessionHistoryIfNeeded(_x10, _x11, _x12) {
+  return _updateSessionHistoryIfNeeded.apply(this, arguments);
+}
+/**
+ * Helper function to get CSS class based on player rating.
+ * Ensures rating is clamped between 1 and 5 for class generation.
+ * @param {number|string} rating - Player rating.
+ * @returns {string} CSS class name (e.g., 'rating-3', 'rating-unknown').
+ */
+function _updateSessionHistoryIfNeeded() {
+  _updateSessionHistoryIfNeeded = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7(userId, currentSessionId, currentPlayerData) {
+    var player, changed, newUniqueSessionCount, newTimestamp;
+    return _regeneratorRuntime().wrap(function _callee7$(_context7) {
+      while (1) switch (_context7.prev = _context7.next) {
+        case 0:
+          if (!(!userId || !currentSessionId)) {
+            _context7.next = 2;
+            break;
+          }
+          return _context7.abrupt("return", false);
+        case 2:
+          player = currentPlayerData[userId];
+          if (player) {
+            _context7.next = 5;
+            break;
+          }
+          return _context7.abrupt("return", false);
+        case 5:
+          changed = false; // Initialize session tracking fields if they don't exist
+          if (!Array.isArray(player.sessionHistory)) {
+            player.sessionHistory = [];
+            changed = true; // Mark as changed if we initialize this
+          }
+          if (typeof player.uniqueSessionCount !== 'number') {
+            // Also ensure uniqueSessionCount is a number
+            player.uniqueSessionCount = player.sessionHistory.length; // Or 0 if sessionHistory was also just init'd
+            changed = true; // Mark as changed
+          }
+          // Ensure lastSeenSessionId exists, though it will be updated shortly if different
+          if (player.lastSeenSessionId === undefined) {
+            player.lastSeenSessionId = null;
+            changed = true;
+          }
+          // Ensure lastSeenTimestamp exists
+          if (player.lastSeenTimestamp === undefined) {
+            player.lastSeenTimestamp = null;
+            changed = true;
+          }
+
+          // Add current session ID if it's not already in the history
+          if (!player.sessionHistory.includes(currentSessionId)) {
+            player.sessionHistory.push(currentSessionId);
+            changed = true;
+          }
+
+          // Update unique session count based on the length of the (now potentially updated) sessionHistory array
+          newUniqueSessionCount = player.sessionHistory.length;
+          if (player.uniqueSessionCount !== newUniqueSessionCount) {
+            player.uniqueSessionCount = newUniqueSessionCount;
+            changed = true;
+          }
+
+          // Update lastSeenSessionId (could be the same as current if it's a repeat, or new)
+          if (player.lastSeenSessionId !== currentSessionId) {
+            player.lastSeenSessionId = currentSessionId;
+            changed = true;
+          }
+
+          // Always update lastSeenTimestamp if processing this player from a session
+          newTimestamp = Date.now();
+          if (player.lastSeenTimestamp !== newTimestamp) {
+            // Could be redundant if always updating, but good for explicitness
+            player.lastSeenTimestamp = newTimestamp;
+            changed = true;
+          }
+          if (!changed) {
+            _context7.next = 22;
+            break;
+          }
+          _context7.next = 19;
+          return savePlayerData(_objectSpread(_objectSpread({}, currentPlayerData), {}, _defineProperty({}, userId, player)));
+        case 19:
+          return _context7.abrupt("return", true);
+        case 22:
+          return _context7.abrupt("return", false);
+        case 23:
+        case "end":
+          return _context7.stop();
+      }
+    }, _callee7);
+  }));
+  return _updateSessionHistoryIfNeeded.apply(this, arguments);
+}
+function getRatingClass(rating) {
+  if (rating === null || rating === undefined || rating === '') return 'rating-unknown';
+  var numRating = parseInt(rating, 10);
+  if (isNaN(numRating)) return 'rating-unknown';
+  var validRating = Math.max(1, Math.min(5, numRating));
+  return "rating-".concat(validRating);
+}
+
+/**
+ * Adds a new player manually using their ID.
+ * @param {string} playerId - The unique ID of the player.
+ * @param {string} initialName - The initial name to assign.
+ * @param {string|number} initialScore - The initial score (validated later).
+ * @param {string} initialNotes - The initial notes.
+ * @param {function} [callback] - Optional callback after saving.
+ */
+
+// -- START: Data Management & Utility --
+
+/**
+ * Replaces all player data in memory and saves it to Chrome storage.
+ * @param {Object} newData - The new player data object to replace the current data.
+ * @param {Function} [callback] - Optional callback to execute after saving.
+ */
+function replaceAllPlayerDataAndSave(_x13, _x14) {
+  return _replaceAllPlayerDataAndSave.apply(this, arguments);
+} // -- START: Initialization & Utility --
+/**
+ * Toggles the favorite status of a player and updates storage and UI.
+ * @param {string} playerId - The ID of the player.
+ * @param {HTMLElement} buttonElement - The button element to update.
+ * @param {Object} [playerObject] - Optional: The player object, to update its isFavorite status directly for immediate UI feedback.
+ */
+function _replaceAllPlayerDataAndSave() {
+  _replaceAllPlayerDataAndSave = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8(newData, callback) {
+    return _regeneratorRuntime().wrap(function _callee8$(_context8) {
+      while (1) switch (_context8.prev = _context8.next) {
+        case 0:
+          _context8.prev = 0;
+          _context8.next = 3;
+          return new Promise(function (resolve, reject) {
+            chrome.storage.local.remove('playerData', function () {
+              if (chrome.runtime.lastError) {
+                console.error('[userManager] Error removing playerData from storage:', chrome.runtime.lastError);
+                reject(chrome.runtime.lastError);
+              } else {
+                // Debug logging removed
+                resolve();
+              }
+            });
+          });
+        case 3:
+          // Now set the memory cache and save the new (empty) data
+          allPlayerData = newData || {}; // Replace in-memory store, ensure it's an object
+
+          // Save the empty data object
+          _context8.next = 6;
+          return new Promise(function (resolve, reject) {
+            chrome.storage.local.set({
+              playerData: allPlayerData
+            }, function () {
+              if (chrome.runtime.lastError) {
+                console.error('[userManager] Error saving empty playerData:', chrome.runtime.lastError);
+                reject(chrome.runtime.lastError);
+              } else {
+                // Debug logging removed
+                resolve();
+              }
+            });
+          });
+        case 6:
+          // Debug logging removed
+
+          // Call the callback with success=true if provided
+          if (typeof callback === 'function') {
+            callback(true);
+          }
+          return _context8.abrupt("return", true);
+        case 10:
+          _context8.prev = 10;
+          _context8.t0 = _context8["catch"](0);
+          console.error('[userManager] Error clearing player data:', _context8.t0);
+
+          // Call the callback with success=false if provided
+          if (typeof callback === 'function') {
+            callback(false);
+          }
+          return _context8.abrupt("return", false);
+        case 15:
+        case "end":
+          return _context8.stop();
+      }
+    }, _callee8, null, [[0, 10]]);
+  }));
+  return _replaceAllPlayerDataAndSave.apply(this, arguments);
+}
+function toggleFavoriteStatus(_x15, _x16, _x17) {
+  return _toggleFavoriteStatus.apply(this, arguments);
+}
+/**
+ * Deletes a player from the stored data.
+ * @param {string} playerId - The ID of the player to delete.
+ * @param {Function} callback - Function to call after deletion attempt (receives success: boolean, deletedPlayerId: string|null, message: string).
+ */
+function _toggleFavoriteStatus() {
+  _toggleFavoriteStatus = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9(playerId, buttonElement, playerObject) {
+    var playerData;
+    return _regeneratorRuntime().wrap(function _callee9$(_context9) {
+      while (1) switch (_context9.prev = _context9.next) {
+        case 0:
+          _context9.next = 2;
+          return loadPlayerData();
+        case 2:
+          playerData = _context9.sent;
+          if (playerData[playerId]) {
+            _context9.next = 7;
+            break;
+          }
+          console.warn("Player ".concat(playerId, " not found for toggling favorite."));
+          ModalManager.showNotification("Player ".concat(playerId, " not found."), true, 3000);
+          return _context9.abrupt("return");
+        case 7:
+          playerData[playerId].isFavorite = !playerData[playerId].isFavorite;
+          if (playerObject) {
+            // Update the passed object for immediate UI consistency if provided
+            playerObject.isFavorite = playerData[playerId].isFavorite;
+          }
+          _context9.next = 11;
+          return savePlayerData(playerData);
+        case 11:
+          // Update button text/appearance
+          if (buttonElement) {
+            buttonElement.textContent = playerData[playerId].isFavorite ? '★ Unfavorite' : '☆ Favorite';
+            buttonElement.classList.toggle('favorite-active', playerData[playerId].isFavorite);
+          }
+          // Trigger a refresh of the list or relevant UI part
+          // This needs to be handled by the caller or a passed-in refresh function
+          // For now, assume popup.js handles refresh via its own mechanisms after this callback if needed
+          // If a global refresh function is available, call it here:
+          // e.g., if (typeof refreshUserManagementTab === 'function') refreshUserManagementTab();
+          // Or, more robustly, the function that calls toggleFavoriteStatus should handle refresh.
+        case 12:
+        case "end":
+          return _context9.stop();
+      }
+    }, _callee9);
+  }));
+  return _toggleFavoriteStatus.apply(this, arguments);
+}
+function deletePlayer(_x18, _x19) {
+  return _deletePlayer.apply(this, arguments);
+}
+/**
+ * Handles the process of refreshing a player's username from the API.
+ * @param {string} playerId - The ID of the player whose name to refresh.
+ * @param {HTMLElement} buttonElement - The refresh button element for UI feedback.
+ * @param {Function} refreshListCallback - Callback to refresh the user list display.
+ */
+function _deletePlayer() {
+  _deletePlayer = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee1(playerId, callback) {
+    return _regeneratorRuntime().wrap(function _callee1$(_context1) {
+      while (1) switch (_context1.prev = _context1.next) {
+        case 0:
+          ModalManager.showConfirm('Delete Player', "Are you sure you want to delete player ".concat(playerId, "? This cannot be undone."), /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee0() {
+            var playerData, deletedPlayerName;
+            return _regeneratorRuntime().wrap(function _callee0$(_context0) {
+              while (1) switch (_context0.prev = _context0.next) {
+                case 0:
+                  _context0.next = 2;
+                  return loadPlayerData();
+                case 2:
+                  playerData = _context0.sent;
+                  if (playerData[playerId]) {
+                    _context0.next = 8;
+                    break;
+                  }
+                  console.warn("[Delete Player] Player with ID ".concat(playerId, " not found."));
+                  ModalManager.showNotification('Error', "Player not found.", 500);
+                  if (callback) callback(false, null, "Player not found.");
+                  return _context0.abrupt("return");
+                case 8:
+                  deletedPlayerName = playerData[playerId].name || playerId;
+                  delete playerData[playerId]; // Delete the player data
+                  _context0.next = 12;
+                  return savePlayerData(playerData);
+                case 12:
+                  ModalManager.showNotification('Success', "Player ".concat(deletedPlayerName, " deleted."), 500);
+                  if (callback) callback(true, playerId, "Player deleted.");
+                case 14:
+                case "end":
+                  return _context0.stop();
+              }
+            }, _callee0);
+          })), function () {
+            // onCancel
+            ModalManager.showNotification('Cancelled', 'Delete operation cancelled.', 500);
+            if (callback) callback(false, null, "Delete operation cancelled.");
+          });
+        case 1:
+        case "end":
+          return _context1.stop();
+      }
+    }, _callee1);
+  }));
+  return _deletePlayer.apply(this, arguments);
+}
+function handleRefreshUserName(_x20, _x21, _x22) {
+  return _handleRefreshUserName.apply(this, arguments);
+}
+/**
+ * Updates the username history for a player if the new username is different.
+ * This function is adapted from background.js and should be available in userManager.js context.
+ * @param {Object} playerObject - The player object from playerData.
+ * @param {string} oldUsername - The username before the update.
+ */
+function _handleRefreshUserName() {
+  _handleRefreshUserName = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee10(playerId, buttonElement, refreshListCallback) {
+    var authToken, response, errorData, data, newUsername, playerData, player, oldUsername;
+    return _regeneratorRuntime().wrap(function _callee10$(_context10) {
+      while (1) switch (_context10.prev = _context10.next) {
+        case 0:
+          buttonElement.disabled = true;
+          buttonElement.innerHTML = '&#x21bb;'; // Loading/hourglass emoji
+          _context10.prev = 2;
+          _context10.next = 5;
+          return new Promise(function (resolve, reject) {
+            chrome.storage.local.get('authToken', function (result) {
+              if (chrome.runtime.lastError) {
+                return reject(chrome.runtime.lastError);
+              }
+              resolve(result.authToken);
+            });
+          });
+        case 5:
+          authToken = _context10.sent;
+          if (authToken) {
+            _context10.next = 9;
+            break;
+          }
+          ModalManager.showAlert('Error', 'Authentication token not found. Please ensure you are logged in to botc.app.');
+          throw new Error('Auth token not found');
+        case 9:
+          _context10.next = 11;
+          return fetch("https://botc.app/backend/user/".concat(playerId), {
+            headers: {
+              'Authorization': authToken
+            }
+          });
+        case 11:
+          response = _context10.sent;
+          if (response.ok) {
+            _context10.next = 18;
+            break;
+          }
+          _context10.next = 15;
+          return response.json()["catch"](function () {
+            return {
+              message: response.statusText
+            };
+          });
+        case 15:
+          errorData = _context10.sent;
+          ModalManager.showAlert('Error', "Error fetching user data: ".concat(errorData.message || response.statusText));
+          throw new Error("API error: ".concat(response.status));
+        case 18:
+          _context10.next = 20;
+          return response.json();
+        case 20:
+          data = _context10.sent;
+          newUsername = data && data.user ? data.user.username : null;
+          if (!newUsername) {
+            _context10.next = 40;
+            break;
+          }
+          _context10.next = 25;
+          return loadPlayerData();
+        case 25:
+          playerData = _context10.sent;
+          player = playerData[playerId];
+          if (!(player && player.name !== newUsername)) {
+            _context10.next = 37;
+            break;
+          }
+          oldUsername = player.name;
+          player.name = newUsername;
+          updateUsernameHistory(player, oldUsername); // Ensure this function is defined and works
+          _context10.next = 33;
+          return savePlayerData(playerData);
+        case 33:
+          ModalManager.showAlert('Success', "Player ".concat(playerId, "'s name updated from \"").concat(oldUsername, "\" to \"").concat(newUsername, "\"."));
+          if (refreshListCallback) refreshListCallback();
+          _context10.next = 38;
+          break;
+        case 37:
+          if (player && player.name === newUsername) {
+            ModalManager.showAlert('Success', "Player ".concat(playerId, "'s name \"").concat(newUsername, "\" is already up-to-date."));
+          } else {
+            ModalManager.showAlert('Error', "Player ".concat(playerId, " not found in local data. This shouldn't happen."));
+          }
+        case 38:
+          _context10.next = 41;
+          break;
+        case 40:
+          ModalManager.showAlert('Error', "Could not retrieve a valid username for player ".concat(playerId, "."));
+        case 41:
+          _context10.next = 46;
+          break;
+        case 43:
+          _context10.prev = 43;
+          _context10.t0 = _context10["catch"](2);
+          console.error('Error refreshing username:', _context10.t0);
+          // ModalManager.showAlert('Error', 'Failed to refresh username. See console for details.'); // Already alerted specific errors
+        case 46:
+          _context10.prev = 46;
+          buttonElement.disabled = false;
+          buttonElement.innerHTML = '&#x21bb;'; // Reset to refresh icon
+          return _context10.finish(46);
+        case 50:
+        case "end":
+          return _context10.stop();
+      }
+    }, _callee10, null, [[2, 43, 46, 50]]);
+  }));
+  return _handleRefreshUserName.apply(this, arguments);
+}
+function updateUsernameHistory(playerObject, oldUsername) {
+  if (!playerObject) return false;
+  var newUsername = playerObject.name; // Assumes playerObject.name has been updated to the new name
+
+  if (oldUsername && newUsername && oldUsername.toLowerCase() !== newUsername.toLowerCase()) {
+    if (!playerObject.usernameHistory) {
+      playerObject.usernameHistory = [];
+    }
+
+    // Check if the old username is already the most recent entry (to avoid duplicates if rapidly changed)
+    var lastHistoryEntry = playerObject.usernameHistory.length > 0 ? playerObject.usernameHistory[0].username : null;
+
+    // Add the *previous* name to history only if it's not already the latest entry
+    if (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase()) {
+      playerObject.usernameHistory.unshift({
+        username: oldUsername,
+        timestamp: Date.now()
+      });
+      // console.log(`[Username History] Added '${oldUsername}' to history for player ${playerObject.id}. New name: '${newUsername}'.`);
+      return true; // Indicates history was updated
+    }
+  }
+  return false; // No update to history needed
+}
+
+/**
+ * Function to allow editing of player details or adding a new player
+ * @param {string|null} playerId - The ID of the player to edit, null for new player
+ * @param {boolean} isNewPlayer - Whether this is a new player being added
+ * @param {Function} callback - Optional callback after player is saved
+ */
+function editPlayerDetails(_x23) {
+  return _editPlayerDetails.apply(this, arguments);
+}
+/**
+ * Render the known players list, optionally filtering by search term.
+ * @param {HTMLElement} container - The container element to render into.
+ * @param {string} [searchTerm=''] - Optional search term to filter players.
+ */
+function _editPlayerDetails() {
+  _editPlayerDetails = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee12(playerId) {
+    var isNewPlayer,
+      _callback,
+      playerData,
+      player,
+      modalTitle,
+      playerDataForForm,
+      modalBodyContent,
+      idDiv,
+      idLabel,
+      idInput,
+      idHelperText,
+      nameDiv,
+      nameLabel,
+      nameInput,
+      scoreDiv,
+      scoreLabel,
+      scoreInput,
+      notesDiv,
+      notesLabel,
+      notesTextarea,
+      buttonsConfig,
+      _args12 = arguments;
+    return _regeneratorRuntime().wrap(function _callee12$(_context12) {
+      while (1) switch (_context12.prev = _context12.next) {
+        case 0:
+          isNewPlayer = _args12.length > 1 && _args12[1] !== undefined ? _args12[1] : false;
+          _callback = _args12.length > 2 ? _args12[2] : undefined;
+          _context12.next = 4;
+          return loadPlayerData();
+        case 4:
+          playerData = _context12.sent;
+          player = null;
+          modalTitle = 'Add New Player';
+          playerDataForForm = {
+            name: '',
+            score: null,
+            notes: ''
+          }; // If editing an existing player
+          if (!(playerId && !isNewPlayer)) {
+            _context12.next = 15;
+            break;
+          }
+          player = playerData[playerId];
+          if (player) {
+            _context12.next = 13;
+            break;
+          }
+          ModalManager.showAlert('Error', 'Player not found.');
+          return _context12.abrupt("return");
+        case 13:
+          modalTitle = "Edit Player: ".concat(player.name || "ID: ".concat(playerId));
+          playerDataForForm = playerData[playerId]; // Get existing data
+        case 15:
+          // Create modal body content using DOM manipulation
+          modalBodyContent = document.createElement('div');
+          modalBodyContent.classList.add('modal-edit-player-form');
+
+          // Player ID (for Add New)
+          idDiv = document.createElement('div');
+          idLabel = document.createElement('label');
+          idLabel.htmlFor = 'modalEditPlayerId';
+          idLabel.textContent = 'Player ID:';
+          idInput = document.createElement('input');
+          idInput.type = 'text';
+          idInput.id = 'modalEditPlayerId';
+          idInput.required = true;
+          idInput.value = playerId || '';
+          idInput.disabled = !isNewPlayer; // Only enable editing for new players
+          idDiv.appendChild(idLabel);
+          idDiv.appendChild(idInput);
+          modalBodyContent.appendChild(idDiv);
+
+          // Add ID format helper text for new players
+          if (isNewPlayer) {
+            idHelperText = document.createElement('small');
+            idHelperText.textContent = 'Enter a 10+ digit numerical ID (from botc.app)';
+            idHelperText.style.display = 'block';
+            idHelperText.style.marginTop = '2px';
+            idHelperText.style.fontSize = '0.8em';
+            idHelperText.style.color = 'var(--text-muted)';
+            idDiv.appendChild(idHelperText);
+          }
+
+          // Player Name
+          nameDiv = document.createElement('div');
+          nameLabel = document.createElement('label');
+          nameLabel.htmlFor = 'modalEditPlayerName';
+          nameLabel.textContent = 'Player Name:';
+          nameInput = document.createElement('input');
+          nameInput.type = 'text';
+          nameInput.id = 'modalEditPlayerName';
+          nameInput.value = playerDataForForm.name || '';
+          nameDiv.appendChild(nameLabel);
+          nameDiv.appendChild(nameInput);
+          modalBodyContent.appendChild(nameDiv);
+
+          // Score
+          scoreDiv = document.createElement('div');
+          scoreLabel = document.createElement('label');
+          scoreLabel.htmlFor = 'modalEditPlayerScore';
+          scoreLabel.textContent = 'Score (1-5, optional):';
+          scoreInput = document.createElement('input');
+          scoreInput.type = 'number';
+          scoreInput.id = 'modalEditPlayerScore';
+          scoreInput.value = playerDataForForm.score === null || playerDataForForm.score === undefined ? '' : playerDataForForm.score;
+          scoreInput.min = '1';
+          scoreInput.max = '5';
+          scoreDiv.appendChild(scoreLabel);
+          scoreDiv.appendChild(scoreInput);
+          modalBodyContent.appendChild(scoreDiv);
+
+          // Notes
+          notesDiv = document.createElement('div');
+          notesLabel = document.createElement('label');
+          notesLabel.htmlFor = 'modalEditPlayerNotes';
+          notesLabel.textContent = 'Notes (optional):';
+          notesTextarea = document.createElement('textarea');
+          notesTextarea.id = 'modalEditPlayerNotes';
+          notesTextarea.rows = 3;
+          notesTextarea.textContent = playerDataForForm.notes || ''; // Use textContent for textarea
+          notesDiv.appendChild(notesLabel);
+          notesDiv.appendChild(notesTextarea);
+          modalBodyContent.appendChild(notesDiv);
+
+          // Define button configuration
+          buttonsConfig = [{
+            text: 'Cancel',
+            className: 'modal-button-secondary',
+            callback: function callback() {
+              return ModalManager.closeModal();
+            },
+            // Simple close on cancel
+            closesModal: true
+          }, {
+            text: 'Save Changes',
+            className: 'modal-button-primary',
+            callback: function () {
+              var _callback2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee11() {
+                var newId, newName, newScoreStr, newNotes, newScore, parsedScore, _playerData$playerId, uiUpdateCallback, finalPlayerId, existingFavoriteStatus;
+                return _regeneratorRuntime().wrap(function _callee11$(_context11) {
+                  while (1) switch (_context11.prev = _context11.next) {
+                    case 0:
+                      newId = document.getElementById('modalEditPlayerId').value.trim();
+                      newName = document.getElementById('modalEditPlayerName').value.trim();
+                      newScoreStr = document.getElementById('modalEditPlayerScore').value.trim();
+                      newNotes = document.getElementById('modalEditPlayerNotes').value.trim(); // Validate new player ID if this is a new player
+                      if (!isNewPlayer) {
+                        _context11.next = 14;
+                        break;
+                      }
+                      if (newId) {
+                        _context11.next = 8;
+                        break;
+                      }
+                      ModalManager.showAlert('Invalid Input', 'Player ID is required.');
+                      return _context11.abrupt("return");
+                    case 8:
+                      if (/^\d{10,}$/.test(newId)) {
+                        _context11.next = 11;
+                        break;
+                      }
+                      ModalManager.showAlert('Invalid Input', 'Player ID must be a numerical value of at least 10 digits.');
+                      return _context11.abrupt("return");
+                    case 11:
+                      if (!playerData[newId]) {
+                        _context11.next = 14;
+                        break;
+                      }
+                      ModalManager.showAlert('Player Exists', 'A player with this ID already exists. Please edit that player instead.');
+                      return _context11.abrupt("return");
+                    case 14:
+                      newScore = null;
+                      if (!newScoreStr) {
+                        _context11.next = 23;
+                        break;
+                      }
+                      parsedScore = parseInt(newScoreStr, 10);
+                      if (!(isNaN(parsedScore) || parsedScore < 1 || parsedScore > 5)) {
+                        _context11.next = 22;
+                        break;
+                      }
+                      ModalManager.showAlert('Invalid Input', 'Invalid score. Must be a number between 1 and 5. Score will not be changed unless corrected.');
+                      return _context11.abrupt("return");
+                    case 22:
+                      newScore = parsedScore;
+                    case 23:
+                      _context11.prev = 23;
+                      // Define the UI update callback for after player data is saved
+                      uiUpdateCallback = function uiUpdateCallback(updatedPlayer) {
+                        if (updatedPlayer) {
+                          if (isNewPlayer) {
+                            ModalManager.showAlert('Success', "Player ".concat(updatedPlayer.name || updatedPlayer.id, " added successfully!"));
+                          } else {
+                            ModalManager.showAlert('Success', "Player ".concat(updatedPlayer.name || updatedPlayer.id, " details updated."));
+                          }
+
+                          // Call the provided callback function if it exists
+                          if (typeof _callback === 'function') {
+                            _callback(updatedPlayer);
+                          } else if (typeof window.renderKnownPlayers === 'function') {
+                            window.renderKnownPlayers(); // Refresh the list
+                          } else if (typeof renderKnownPlayers === 'function') {
+                            renderKnownPlayers(); // If called from within userManager.js context
+                          }
+                          ModalManager.closeModal();
+                        }
+                      }; // Use the appropriate player ID based on whether we're adding or editing
+                      finalPlayerId = isNewPlayer ? newId : playerId; // If adding a new player, don't carry over any favorite status
+                      existingFavoriteStatus = isNewPlayer ? false : ((_playerData$playerId = playerData[playerId]) === null || _playerData$playerId === void 0 ? void 0 : _playerData$playerId.isFavorite) || false; // Call addPlayer (which handles both creation and updates)
+                      _context11.next = 29;
+                      return addPlayer(finalPlayerId, newName || "Player ".concat(finalPlayerId), newScore, newNotes, existingFavoriteStatus, uiUpdateCallback);
+                    case 29:
+                      _context11.next = 35;
+                      break;
+                    case 31:
+                      _context11.prev = 31;
+                      _context11.t0 = _context11["catch"](23);
+                      console.error("Failed to update player:", _context11.t0);
+                      ModalManager.showAlert('Error', "Failed to update player: ".concat(_context11.t0.message));
+                    case 35:
+                    case "end":
+                      return _context11.stop();
+                  }
+                }, _callee11, null, [[23, 31]]);
+              }));
+              function callback() {
+                return _callback2.apply(this, arguments);
+              }
+              return callback;
+            }(),
+            closesModal: false // Handle close explicitly in callback after save/error
+          }]; // Call ModalManager with the created DOM element and button config
+
+          ModalManager.showModal(modalTitle, modalBodyContent, buttonsConfig);
+        case 68:
+        case "end":
+          return _context12.stop();
+      }
+    }, _callee12);
+  }));
+  return _editPlayerDetails.apply(this, arguments);
+}
+function renderKnownPlayers(_x24) {
+  return _renderKnownPlayers.apply(this, arguments);
+}
+/**
+ * Fetches and updates a player's name from the API.
+ * @param {string} playerId - The ID of the player to update.
+ * @param {Function} [refreshListCallback] - Optional callback to refresh the list after updating.
+ */
+function _renderKnownPlayers() {
+  _renderKnownPlayers = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee13(container) {
+    var searchTerm,
+      playerData,
+      onlinePlayerIds,
+      ids,
+      _args13 = arguments;
+    return _regeneratorRuntime().wrap(function _callee13$(_context13) {
+      while (1) switch (_context13.prev = _context13.next) {
+        case 0:
+          searchTerm = _args13.length > 1 && _args13[1] !== undefined ? _args13[1] : '';
+          if (container) {
+            _context13.next = 4;
+            break;
+          }
+          console.error("Container element not provided for rendering known players.");
+          return _context13.abrupt("return");
+        case 4:
+          if (window.latestSessionData) {
+            _context13.next = 7;
+            break;
+          }
+          console.warn('[renderKnownPlayers] Not rendering: session data not available.');
+          return _context13.abrupt("return");
+        case 7:
+          _context13.next = 9;
+          return loadPlayerData();
+        case 9:
+          _context13.t0 = _context13.sent;
+          if (_context13.t0) {
+            _context13.next = 12;
+            break;
+          }
+          _context13.t0 = {};
+        case 12:
+          playerData = _context13.t0;
+          if (!(_typeof(playerData) !== 'object')) {
+            _context13.next = 16;
+            break;
+          }
+          console.error('Invalid player data format');
+          return _context13.abrupt("return");
+        case 16:
+          // Fetch the latest set of online player IDs
+          onlinePlayerIds = new Set();
+          _context13.prev = 17;
+          if (!(typeof window.fetchOnlinePlayerIds === 'function')) {
+            _context13.next = 25;
+            break;
+          }
+          _context13.next = 21;
+          return window.fetchOnlinePlayerIds();
+        case 21:
+          ids = _context13.sent;
+          // Ensure we have a valid Set
+          onlinePlayerIds = ids instanceof Set ? ids : new Set();
+          _context13.next = 26;
+          break;
+        case 25:
+          console.warn("window.fetchOnlinePlayerIds function not found.");
+        case 26:
+          _context13.next = 31;
+          break;
+        case 28:
+          _context13.prev = 28;
+          _context13.t1 = _context13["catch"](17);
+          console.error("Error fetching online player IDs in renderKnownPlayers:", _context13.t1);
+          // Continue with empty Set on error
+        case 31:
+          _context13.prev = 31;
+          _context13.next = 34;
+          return displayKnownPlayers(container, searchTerm || '', playerData, onlinePlayerIds, typeof createUsernameHistoryModal === 'function' ? createUsernameHistoryModal : null, function () {
+            return renderKnownPlayers(container, searchTerm);
+          });
+        case 34:
+          _context13.next = 40;
+          break;
+        case 36:
+          _context13.prev = 36;
+          _context13.t2 = _context13["catch"](31);
+          console.error('Error displaying known players:', _context13.t2);
+          container.innerHTML = '<p>Error displaying player list. Please try again.</p>';
+        case 40:
+        case "end":
+          return _context13.stop();
+      }
+    }, _callee13, null, [[17, 28], [31, 36]]);
+  }));
+  return _renderKnownPlayers.apply(this, arguments);
+}
+function fetchAndUpdatePlayerName(_x25, _x26) {
+  return _fetchAndUpdatePlayerName.apply(this, arguments);
+} // Export functions to window for non-module access
+function _fetchAndUpdatePlayerName() {
+  _fetchAndUpdatePlayerName = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee14(playerId, refreshListCallback) {
+    var authToken, response, errorData, data, newUsername, currentPlayerData, player, oldUsername;
+    return _regeneratorRuntime().wrap(function _callee14$(_context14) {
+      while (1) switch (_context14.prev = _context14.next) {
+        case 0:
+          if (playerId) {
+            _context14.next = 2;
+            break;
+          }
+          return _context14.abrupt("return");
+        case 2:
+          _context14.prev = 2;
+          _context14.next = 5;
+          return new Promise(function (resolve, reject) {
+            chrome.storage.local.get('authToken', function (result) {
+              if (chrome.runtime.lastError) {
+                return reject(chrome.runtime.lastError);
+              }
+              resolve(result.authToken);
+            });
+          });
+        case 5:
+          authToken = _context14.sent;
+          if (authToken) {
+            _context14.next = 9;
+            break;
+          }
+          ModalManager.showAlert('Error', 'Authentication token not found for API call. Please log in.');
+          throw new Error('Auth token not found for API call');
+        case 9:
+          _context14.next = 11;
+          return fetch("https://botc.app/backend/user/".concat(playerId), {
+            headers: {
+              'Authorization': authToken
+            }
+          });
+        case 11:
+          response = _context14.sent;
+          if (response.ok) {
+            _context14.next = 17;
+            break;
+          }
+          _context14.next = 15;
+          return response.json()["catch"](function () {
+            return {
+              message: response.statusText
+            };
+          });
+        case 15:
+          errorData = _context14.sent;
+          throw new Error("API request failed: ".concat(errorData.message || response.statusText));
+        case 17:
+          _context14.next = 19;
+          return response.json();
+        case 19:
+          data = _context14.sent;
+          newUsername = data && data.user ? data.user.username : null;
+          if (!newUsername) {
+            _context14.next = 29;
+            break;
+          }
+          _context14.next = 24;
+          return loadPlayerData();
+        case 24:
+          currentPlayerData = _context14.sent;
+          // Load current data
+          player = currentPlayerData[playerId];
+          if (player) {
+            oldUsername = player.name;
+            if (player.name !== newUsername) {
+              player.name = newUsername;
+              // Update username history internally before saving through addPlayer
+              // This logic is now encapsulated within addPlayer if name changes
+              // For standalone name updates, ensure history is managed here or within addPlayer
+              updateUsernameHistory(player, oldUsername); // Pass the player object and old name
+
+              // Use addPlayer to ensure all fields are handled correctly and consistently
+              // This will also trigger savePlayerData internally
+              addPlayer(playerId, newUsername, player.score, player.notes, player.isFavorite, function (updatedPlayer) {
+                ModalManager.showAlert('Success', "Player ".concat(playerId, "'s name updated from \"").concat(oldUsername, "\" to \"").concat(newUsername, "\"."));
+                if (refreshListCallback) refreshListCallback();
+              });
+            } else {
+              ModalManager.showAlert('Info', "Player ".concat(playerId, "'s name \"").concat(newUsername, "\" is already up-to-date."));
+            }
+          } else {
+            ModalManager.showAlert('Notice', "Player ".concat(playerId, " not found in local data. You may add them if desired."));
+            // Optionally trigger add player flow here if it's desired behavior
+          }
+          _context14.next = 30;
+          break;
+        case 29:
+          ModalManager.showAlert('Warning', "Could not retrieve a valid username for player ".concat(playerId, " from API."));
+        case 30:
+          _context14.next = 36;
+          break;
+        case 32:
+          _context14.prev = 32;
+          _context14.t0 = _context14["catch"](2);
+          console.error("Error fetching or updating player ".concat(playerId, " name:"), _context14.t0);
+          ModalManager.showAlert('Error', "Failed to fetch/update player name: ".concat(_context14.t0.message));
+        case 36:
+        case "end":
+          return _context14.stop();
+      }
+    }, _callee14, null, [[2, 32]]);
+  }));
+  return _fetchAndUpdatePlayerName.apply(this, arguments);
+}
+window.userManager = {
+  getAllPlayerData: getAllPlayerData,
+  loadPlayerData: loadPlayerData,
+  savePlayerData: savePlayerData,
+  addPlayer: addPlayer,
+  updateUsernameHistoryIfNeeded: updateUsernameHistoryIfNeeded,
+  updateSessionHistoryIfNeeded: updateSessionHistoryIfNeeded,
+  createUsernameHistoryModal: createUsernameHistoryModal,
+  displayKnownPlayers: displayKnownPlayers,
+  renderKnownPlayers: renderKnownPlayers,
+  editPlayerDetails: editPlayerDetails,
+  deletePlayer: deletePlayer,
+  toggleFavoriteStatus: toggleFavoriteStatus,
+  handleRefreshUserName: handleRefreshUserName,
+  fetchAndUpdatePlayerName: fetchAndUpdatePlayerName,
+  replaceAllPlayerDataAndSave: replaceAllPlayerDataAndSave
+};
+
+// Export functions as a module
+
+
+// Make getRatingClass globally available as other modules might use it directly
+if (typeof window.getRatingClass === 'undefined') {
+  window.getRatingClass = getRatingClass;
+}
+;// ./src/utils/auth.js
+// Utility functions for authentication
+
+/**
+ * Parse a JWT token and extract the user ID
+ * @param {string} token - The JWT token to parse
+ * @returns {string|null} The user ID from the token, or null if invalid
+ */
+function parseJwt(token) {
+  if (!token) {
+    console.warn("Attempted to parse a null or empty token.");
+    return null;
+  }
+  try {
+    var base64Url = token.split('.')[1];
+    if (!base64Url) {
+      console.error("Invalid JWT: Missing payload.");
+      return null;
+    }
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    var decodedToken = JSON.parse(jsonPayload);
+    // Try different fields used by Firebase and our auth service
+    return decodedToken.uid || decodedToken.sub || decodedToken.id || null;
+  } catch (error) {
+    console.error('Failed to parse JWT:', error);
+    return null;
+  }
+}
+;// ./src/popup/popup.js
+function popup_ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function popup_objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? popup_ownKeys(Object(t), !0).forEach(function (r) { popup_defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : popup_ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function popup_defineProperty(e, r, t) { return (r = popup_toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function popup_toPropertyKey(t) { var i = popup_toPrimitive(t, "string"); return "symbol" == popup_typeof(i) ? i : i + ""; }
+function popup_toPrimitive(t, r) { if ("object" != popup_typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != popup_typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function popup_typeof(o) { "@babel/helpers - typeof"; return popup_typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, popup_typeof(o); }
+function popup_regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ popup_regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == popup_typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(popup_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
+function popup_asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function popup_asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { popup_asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { popup_asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+
+
+
 // Globally accessible filter options for the popup
 var currentFilterOptions = {
   officialOnly: false,
   hideCompleted: false
 };
-document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
-  var fetchButton, officialOnlyCheckbox, searchInput, exportPlayersButton, importPlayersButton, importFileInput, importStatusDiv, addPlayerButton, clearAllPlayerDataButton, darkModeToggle, sessionListDiv, loadingIndicator, knownPlayersDiv, onlineFavoritesListDiv, onlineFavoritesCountSpan, openInTabButton, fetchStatsSpan, tabButtons, tabContents, latestSessionData, showOfficialOnly, searchTimeout, setLatestSessionData, parseJwt, setDarkMode, waitForUserManagerAndRenderKnownPlayers, themeResult, tokenResponse, showTab, accountTabLoaded, loadAccountTabScript, refreshDisplayedSessions, _refreshDisplayedSessions, applySessionFilters, openInTabBtn;
-  return _regeneratorRuntime().wrap(function _callee7$(_context7) {
-    while (1) switch (_context7.prev = _context7.next) {
+document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee8() {
+  var fetchButton, officialOnlyCheckbox, searchInput, exportPlayersButton, importPlayersButton, importFileInput, importStatusDiv, addPlayerButton, clearAllPlayerDataButton, darkModeToggle, sessionListDiv, loadingIndicator, knownPlayersDiv, onlineFavoritesListDiv, onlineFavoritesCountSpan, openInTabButton, fetchStatsSpan, tabButtons, tabContents, latestSessionData, showOfficialOnly, searchTimeout, setLatestSessionData, setDarkMode, waitForUserManagerAndRenderKnownPlayers, _waitForUserManagerAndRenderKnownPlayers, themeResult, tokenResponse, showTab, accountTabLoaded, loadAccountTabScript, refreshDisplayedSessions, _refreshDisplayedSessions, applySessionFilters, openInTabBtn;
+  return popup_regeneratorRuntime().wrap(function _callee8$(_context8) {
+    while (1) switch (_context8.prev = _context8.next) {
       case 0:
         applySessionFilters = function _applySessionFilters() {
           if (!window.renderSessions) {
@@ -56,10 +1821,10 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           });
         };
         _refreshDisplayedSessions = function _refreshDisplayedSess2() {
-          _refreshDisplayedSessions = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
+          _refreshDisplayedSessions = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee7() {
             var playerDataResponse, addPlayerFunction, createUsernameHistoryModalFunction, fetchAndDisplaySessionsFunc;
-            return _regeneratorRuntime().wrap(function _callee6$(_context6) {
-              while (1) switch (_context6.prev = _context6.next) {
+            return popup_regeneratorRuntime().wrap(function _callee7$(_context7) {
+              while (1) switch (_context7.prev = _context7.next) {
                 case 0:
                   // console.log('[Popup] Refreshing displayed sessions...');
                   if (loadingIndicator) loadingIndicator.style.display = 'block';
@@ -72,47 +1837,40 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
                   // Ensure window.playerData is populated. It should be by the time this is called after initial setup.
                   // If called before initial setup, it might be empty, which sessionManager now handles with a warning.
                   if (window.playerData) {
-                    _context6.next = 17;
+                    _context7.next = 17;
                     break;
                   }
                   console.warn('[Popup] refreshDisplayedSessions called but window.playerData is not yet initialized.');
                   // Attempt to load it now as a fallback - ideally, popup.js structure ensures it's loaded prior.
-                  _context6.prev = 6;
-                  _context6.next = 9;
+                  _context7.prev = 6;
+                  _context7.next = 9;
                   return sendMessagePromise({
                     type: 'GET_PLAYER_DATA'
                   });
                 case 9:
-                  playerDataResponse = _context6.sent;
+                  playerDataResponse = _context7.sent;
                   window.playerData = playerDataResponse && playerDataResponse.playerData ? playerDataResponse.playerData : {};
                   // console.log('[Popup] Fallback playerData load completed during refresh.');
-                  _context6.next = 17;
+                  _context7.next = 17;
                   break;
                 case 13:
-                  _context6.prev = 13;
-                  _context6.t0 = _context6["catch"](6);
-                  console.error('[Popup] Error during fallback playerData load:', _context6.t0);
+                  _context7.prev = 13;
+                  _context7.t0 = _context7["catch"](6);
+                  console.error('[Popup] Error during fallback playerData load:', _context7.t0);
                   window.playerData = {}; // Ensure it's at least an empty object
                 case 17:
-                  _context6.prev = 17;
-                  addPlayerFunction = window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : function (id, name, score, notes, isFavorite, callback) {
-                    console.error("userManager.addPlayer is not available. Add operation failed.");
-                    if (callback) callback(false);
-                  };
-                  createUsernameHistoryModalFunction = window.userManager && window.userManager.createUsernameHistoryModal ? window.userManager.createUsernameHistoryModal : function (player, currentPlayerData) {
-                    console.error("userManager.createUsernameHistoryModal is not available.");
-                    // Potentially return a dummy element or throw error to indicate failure
-                    return document.createElement('div');
-                  }; // Check if the function exists on window, if not - try accessing it via a more reliable method
+                  _context7.prev = 17;
+                  addPlayerFunction = addPlayer;
+                  createUsernameHistoryModalFunction = createUsernameHistoryModal; // Check if the function exists on window, if not - try accessing it via a more reliable method
                   fetchAndDisplaySessionsFunc = window.fetchAndDisplaySessions || typeof sessionManager !== 'undefined' && sessionManager.fetchAndDisplaySessions;
                   if (fetchAndDisplaySessionsFunc) {
-                    _context6.next = 23;
+                    _context7.next = 23;
                     break;
                   }
                   throw new Error('fetchAndDisplaySessions function not found. SessionManager may not be fully loaded.');
                 case 23:
-                  _context6.next = 25;
-                  return fetchAndDisplaySessionsFunc(addPlayerFunction, createUsernameHistoryModalFunction, window.updateOnlineFavoritesListFunc, sessionListDiv, currentFilterOptions, function (sessions, error) {
+                  _context7.next = 25;
+                  return fetchAndDisplaySessionsFunc(addPlayer, createUsernameHistoryModal, window.updateOnlineFavoritesListFunc, sessionListDiv, currentFilterOptions, function (sessions, error) {
                     // onCompleteCallback
                     if (loadingIndicator) loadingIndicator.style.display = 'none';
                     if (error) {
@@ -130,19 +1888,19 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
                     }
                   });
                 case 25:
-                  _context6.next = 32;
+                  _context7.next = 32;
                   break;
                 case 27:
-                  _context6.prev = 27;
-                  _context6.t1 = _context6["catch"](17);
-                  console.error("[Popup] Critical error calling fetchAndDisplaySessions:", _context6.t1);
+                  _context7.prev = 27;
+                  _context7.t1 = _context7["catch"](17);
+                  console.error("[Popup] Critical error calling fetchAndDisplaySessions:", _context7.t1);
                   if (loadingIndicator) loadingIndicator.style.display = 'none';
-                  if (sessionListDiv) sessionListDiv.innerHTML = "<p class='error-message'>A critical error occurred: ".concat(_context6.t1.message, "</p>");
+                  if (sessionListDiv) sessionListDiv.innerHTML = "<p class='error-message'>A critical error occurred: ".concat(_context7.t1.message, "</p>");
                 case 32:
                 case "end":
-                  return _context6.stop();
+                  return _context7.stop();
               }
-            }, _callee6, null, [[6, 13], [17, 27]]);
+            }, _callee7, null, [[6, 13], [17, 27]]);
           }));
           return _refreshDisplayedSessions.apply(this, arguments);
         };
@@ -185,18 +1943,40 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
             });
           }
         };
-        waitForUserManagerAndRenderKnownPlayers = function _waitForUserManagerAn(container, searchTerm) {
-          var maxRetries = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 20;
-          var delay = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 50;
-          if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function' && typeof window.userManager.getOnlinePlayerIds === 'function') {
-            window.userManager.renderKnownPlayers(container, searchTerm);
-          } else if (maxRetries > 0) {
-            setTimeout(function () {
-              waitForUserManagerAndRenderKnownPlayers(container, searchTerm, maxRetries - 1, delay);
-            }, delay);
-          } else {
-            console.error('window.userManager.getOnlinePlayerIds is not available after waiting.');
-          }
+        _waitForUserManagerAndRenderKnownPlayers = function _waitForUserManagerAn2() {
+          _waitForUserManagerAndRenderKnownPlayers = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee6(container, searchTerm) {
+            var maxRetries,
+              delay,
+              _args6 = arguments;
+            return popup_regeneratorRuntime().wrap(function _callee6$(_context6) {
+              while (1) switch (_context6.prev = _context6.next) {
+                case 0:
+                  maxRetries = _args6.length > 2 && _args6[2] !== undefined ? _args6[2] : 20;
+                  delay = _args6.length > 3 && _args6[3] !== undefined ? _args6[3] : 50;
+                  _context6.prev = 2;
+                  _context6.next = 5;
+                  return renderKnownPlayers(container, searchTerm);
+                case 5:
+                  _context6.next = 11;
+                  break;
+                case 7:
+                  _context6.prev = 7;
+                  _context6.t0 = _context6["catch"](2);
+                  console.error('[Popup Init] Failed to render known players:', _context6.t0);
+                  // Show a user-friendly error message in the container
+                  if (container) {
+                    container.innerHTML = '<div class="error-message">Failed to load player management. Please try refreshing.</div>';
+                  }
+                case 11:
+                case "end":
+                  return _context6.stop();
+              }
+            }, _callee6, null, [[2, 7]]);
+          }));
+          return _waitForUserManagerAndRenderKnownPlayers.apply(this, arguments);
+        };
+        waitForUserManagerAndRenderKnownPlayers = function _waitForUserManagerAn(_x, _x2) {
+          return _waitForUserManagerAndRenderKnownPlayers.apply(this, arguments);
         };
         setDarkMode = function _setDarkMode(isDark) {
           if (isDark) {
@@ -214,32 +1994,16 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
             }
           });
         };
-        parseJwt = function _parseJwt(token) {
-          if (!token) {
-            console.warn("Attempted to parse a null or empty token.");
-            return null;
-          }
-          try {
-            var base64Url = token.split('.')[1];
-            if (!base64Url) {
-              console.error("Invalid JWT: Missing payload.");
-              return null;
-            }
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            var decodedToken = JSON.parse(jsonPayload);
-            return decodedToken.id || null;
-          } catch (error) {
-            console.error('Failed to parse JWT:', error);
-            return null;
-          }
-        };
         setLatestSessionData = function _setLatestSessionData(sessions) {
+          var _sessions$;
+          console.debug('[Popup] Setting latest session data:', {
+            type: sessions ? Array.isArray(sessions) ? 'array' : 'other' : 'null',
+            sessionCount: (sessions === null || sessions === void 0 ? void 0 : sessions.length) || 0,
+            firstSession: sessions === null || sessions === void 0 ? void 0 : sessions[0],
+            firstSessionUsers: sessions === null || sessions === void 0 || (_sessions$ = sessions[0]) === null || _sessions$ === void 0 || (_sessions$ = _sessions$.usersAll) === null || _sessions$ === void 0 ? void 0 : _sessions$.slice(0, 3)
+          });
           latestSessionData = sessions;
           window.latestSessionData = sessions;
-          // Debug logging removed
         };
         // Request current game info from background script
         chrome.runtime.sendMessage({
@@ -310,31 +2074,38 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         // Expose latestSessionData globally for online player detection
         window.latestSessionData = latestSessionData;
         // Expose fetchOnlinePlayerIds globally for userManager.js
-        window.fetchOnlinePlayerIds = /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-          var ids;
-          return _regeneratorRuntime().wrap(function _callee$(_context) {
+        // Global function to get online player IDs from latest session data
+        window.fetchOnlinePlayerIds = /*#__PURE__*/popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee() {
+          var _window$latestSession, _window$userManager;
+          var ids, onlineIds;
+          return popup_regeneratorRuntime().wrap(function _callee$(_context) {
             while (1) switch (_context.prev = _context.next) {
               case 0:
-                if (window.latestSessionData) {
-                  _context.next = 3;
+                if (!(!((_window$latestSession = window.latestSessionData) !== null && _window$latestSession !== void 0 && _window$latestSession.length) || !Array.isArray(window.latestSessionData))) {
+                  _context.next = 2;
                   break;
-                }
-                if (!window._fetchOnlinePlayerIdsWarned) {
-                  console.warn('[fetchOnlinePlayerIds] Not available: session data is not present.');
-                  window._fetchOnlinePlayerIdsWarned = true;
                 }
                 return _context.abrupt("return", new Set());
-              case 3:
-                if (!(window.userManager && typeof window.userManager.getOnlinePlayerIds === 'function')) {
-                  _context.next = 6;
+              case 2:
+                if (!((_window$userManager = window.userManager) !== null && _window$userManager !== void 0 && _window$userManager.getOnlinePlayerIds)) {
+                  _context.next = 5;
                   break;
                 }
-                ids = window.userManager.getOnlinePlayerIds(window.latestSessionData); // Debug logging removed
-                // Debug logging removed
+                ids = window.userManager.getOnlinePlayerIds(window.latestSessionData);
                 return _context.abrupt("return", ids);
-              case 6:
-                return _context.abrupt("return", new Set());
-              case 7:
+              case 5:
+                // Fallback: process session data directly if userManager not available
+                onlineIds = new Set();
+                window.latestSessionData.forEach(function (session) {
+                  var _session$usersAll;
+                  (_session$usersAll = session.usersAll) === null || _session$usersAll === void 0 || _session$usersAll.forEach(function (user) {
+                    if (user !== null && user !== void 0 && user.id && user.isOnline) {
+                      onlineIds.add(user.id.toString());
+                    }
+                  });
+                });
+                return _context.abrupt("return", onlineIds);
+              case 8:
               case "end":
                 return _context.stop();
             }
@@ -366,7 +2137,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           var onlinePlayersByNumericId = {};
 
           // Check if playerData is valid
-          if (!playerData || _typeof(playerData) !== 'object') {
+          if (!playerData || popup_typeof(playerData) !== 'object') {
             console.error('[updateOnlineFavoritesListFunc] playerData is invalid:', playerData);
             onlineFavoritesListDiv.innerHTML = '<p>Error: Player data unavailable</p>';
             return;
@@ -374,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
 
           // First, restructure the onlinePlayersObject for easier matching
           // Create a lookup by numeric-only IDs
-          if (onlinePlayersObject && _typeof(onlinePlayersObject) === 'object') {
+          if (onlinePlayersObject && popup_typeof(onlinePlayersObject) === 'object') {
             for (var onlinePlayerId in onlinePlayersObject) {
               // Store both the original ID format and a numeric-only version
               var numericId = onlinePlayerId.replace(/\D/g, '');
@@ -433,7 +2204,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
 
               if (isOnline) {
                 // Debug logging removed
-                onlineFavorites.push(_objectSpread({
+                onlineFavorites.push(popup_objectSpread({
                   id: _playerId,
                   name: playerData[_playerId].name || _playerId,
                   sessionName: sessionName === true ? "Unknown Session" : sessionName
@@ -502,8 +2273,6 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         window.liveGameInfo = null;
         window.playerData = {}; // Initialize playerData
 
-        // Function to parse JWT and extract user ID
-
         // --- Dark Mode Functionality ---
 
         // Helper to wait for userManager to be ready before rendering known players
@@ -525,13 +2294,13 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         }
 
         // --- Initial Async Setup --- 
-        _context7.prev = 42;
-        _context7.next = 45;
+        _context8.prev = 42;
+        _context8.next = 45;
         return new Promise(function (resolve) {
           return chrome.storage.local.get(['theme'], resolve);
         });
       case 45:
-        themeResult = _context7.sent;
+        themeResult = _context8.sent;
         if (themeResult && themeResult.theme === 'dark') {
           setDarkMode(true);
           if (darkModeToggle) darkModeToggle.checked = true;
@@ -542,12 +2311,12 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
 
         // Fetch Auth Token and parse User ID
         // console.log('[Popup Init] Requesting Auth Token...');
-        _context7.next = 49;
+        _context8.next = 49;
         return sendMessagePromise({
           type: 'GET_AUTH_TOKEN'
         });
       case 49:
-        tokenResponse = _context7.sent;
+        tokenResponse = _context8.sent;
         if (tokenResponse && tokenResponse.token) {
           // console.log('[Popup Init] Auth Token received.');
           window.currentUserID = parseJwt(tokenResponse.token);
@@ -557,42 +2326,32 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           window.currentUserID = null;
         }
 
-        // Fetch initial player data using userManager
-        _context7.prev = 51;
-        if (!(window.userManager && typeof window.userManager.getAllPlayerData === 'function')) {
-          _context7.next = 58;
-          break;
-        }
-        _context7.next = 55;
-        return window.userManager.getAllPlayerData();
-      case 55:
-        window.playerData = _context7.sent;
-        _context7.next = 60;
+        // Fetch initial player data using getAllPlayerData
+        _context8.prev = 51;
+        _context8.next = 54;
+        return getAllPlayerData();
+      case 54:
+        window.playerData = _context8.sent;
+        _context8.next = 61;
         break;
-      case 58:
-        console.error('[Popup Init] window.userManager.getAllPlayerData is not available. Initializing window.playerData to empty object.');
-        window.playerData = {};
-      case 60:
-        _context7.next = 66;
-        break;
-      case 62:
-        _context7.prev = 62;
-        _context7.t0 = _context7["catch"](51);
-        console.error('[Popup Init] Error loading player data via userManager:', _context7.t0);
+      case 57:
+        _context8.prev = 57;
+        _context8.t0 = _context8["catch"](51);
+        console.error('[Popup Init] Error loading player data:', _context8.t0);
         window.playerData = {}; // Ensure playerData is an empty object on error
-      case 66:
-        _context7.next = 75;
+      case 61:
+        _context8.next = 70;
         break;
-      case 68:
-        _context7.prev = 68;
-        _context7.t1 = _context7["catch"](42);
-        console.error('[Popup Init] Error during initial async setup:', _context7.t1);
+      case 63:
+        _context8.prev = 63;
+        _context8.t1 = _context8["catch"](42);
+        console.error('[Popup Init] Error during initial async setup:', _context8.t1);
         // Ensure defaults are set in case of error
         window.currentUserID = null;
         window.liveGameInfo = null;
         setDarkMode(false);
         if (darkModeToggle) darkModeToggle.checked = false;
-      case 75:
+      case 70:
         // Dark Mode Toggle Logic (no longer needs to be conditional on settings modal elements)
         if (darkModeToggle && typeof darkModeToggle.addEventListener === 'function') {
           darkModeToggle.addEventListener('change', function () {
@@ -610,9 +2369,9 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         accountTabLoaded = false;
         // Tab Button Listeners
         tabButtons.forEach(function (button) {
-          button.addEventListener('click', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+          button.addEventListener('click', /*#__PURE__*/popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee2() {
             var tabName;
-            return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+            return popup_regeneratorRuntime().wrap(function _callee2$(_context2) {
               while (1) switch (_context2.prev = _context2.next) {
                 case 0:
                   tabButtons.forEach(function (btn) {
@@ -631,29 +2390,19 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
                     break;
                   }
                   _context2.next = 8;
-                  return window.fetchAndDisplaySessions(window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : function (id, name, score, notes, isFavorite, callback) {
-                    console.error("userManager.addPlayer is not available. Add operation failed.");
-                    if (callback) callback(false);
-                  }, window.userManager && window.userManager.createUsernameHistoryModal ? window.userManager.createUsernameHistoryModal : function (player, currentPlayerData) {
-                    console.error("userManager.createUsernameHistoryModal is not available.");
-                    return document.createElement('div');
-                  }, window.updateOnlineFavoritesListFunc, sessionListDiv, {
+                  return window.fetchAndDisplaySessions(addPlayer, createUsernameHistoryModal, window.updateOnlineFavoritesListFunc, sessionListDiv, {
                     officialOnly: showOfficialOnly
                   }, function (sessions, finalPlayerData) {
                     latestSessionData = sessions;
                     window.latestSessionData = sessions;
-                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                      window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
-                    }
+                    renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
                   });
                 case 8:
                   _context2.next = 11;
                   break;
                 case 10:
                   // Render known players using existing session data
-                  if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                    window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
-                  }
+                  renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
                 case 11:
                 case "end":
                   return _context2.stop();
@@ -680,8 +2429,8 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
             }, 300);
           });
         }
-        fetchButton.addEventListener('click', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
-          return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+        fetchButton.addEventListener('click', /*#__PURE__*/popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee3() {
+          return popup_regeneratorRuntime().wrap(function _callee3$(_context3) {
             while (1) switch (_context3.prev = _context3.next) {
               case 0:
                 if (sessionListDiv) {
@@ -733,8 +2482,8 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
         if (addPlayerButton) {
           addPlayerButton.innerHTML = '<img src="../icons/addbutton.svg" alt="Add Player" class="button-icon" /> Add';
           addPlayerButton.title = 'Add Player Manually';
-          addPlayerButton.addEventListener('click', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
-            return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+          addPlayerButton.addEventListener('click', /*#__PURE__*/popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee4() {
+            return popup_regeneratorRuntime().wrap(function _callee4$(_context4) {
               while (1) switch (_context4.prev = _context4.next) {
                 case 0:
                   if (window.userManager && typeof window.userManager.editPlayerDetails === 'function') {
@@ -782,13 +2531,13 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
             if (file) {
               // Make the successCallback async to use await inside
               var successCallback = /*#__PURE__*/function () {
-                var _ref6 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(parsedData) {
-                  return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+                var _ref6 = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee5(parsedData) {
+                  return popup_regeneratorRuntime().wrap(function _callee5$(_context5) {
                     while (1) switch (_context5.prev = _context5.next) {
                       case 0:
                         _context5.prev = 0;
                         _context5.next = 3;
-                        return window.replaceAllPlayerDataAndSave(parsedData);
+                        return window.userManager.replaceAllPlayerDataAndSave(parsedData);
                       case 3:
                         // Code that was previously in the inner callback now runs after await
                         importStatusDiv.textContent = 'Player data imported successfully! Reloading list...';
@@ -813,7 +2562,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
                     }
                   }, _callee5, null, [[0, 8]]);
                 }));
-                return function successCallback(_x) {
+                return function successCallback(_x3) {
                   return _ref6.apply(this, arguments);
                 };
               }();
@@ -908,11 +2657,11 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/_asyncToGenerator(/*#
           }
           return false; // For synchronous messages or if not handling this specific message type
         });
-      case 90:
+      case 85:
       case "end":
-        return _context7.stop();
+        return _context8.stop();
     }
-  }, _callee7, null, [[42, 68], [51, 62]]);
+  }, _callee8, null, [[42, 63], [51, 57]]);
 })));
 /******/ })()
 ;
