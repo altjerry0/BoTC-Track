@@ -35027,7 +35027,7 @@ var firebaseConfig = {
 // Other environment-specific configuration can be added here
 var debugLogging = !isProduction; // Enable detailed logs only in development
 //? '234038964353-6dienniai2uaso131mp9o9cm9k8mkagd.apps.googleusercontent.com' // Production client ID
-// : '234038964353-fmvng5skv7bamhgl2f5142pdvclj4du4.apps.googleusercontent.com', // Development client ID
+// : '234038964353-n0d5jf4jfj5cunqlm8el1ull04trvj9v.apps.googleusercontent.com', // Development client ID
 ;// ./src/background.js
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _readOnlyError(r) { throw new TypeError('"' + r + '" is read-only'); }
