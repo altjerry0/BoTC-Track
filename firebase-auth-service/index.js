@@ -11,10 +11,7 @@ const app = express();
 // Robust CORS handling for Chrome extension and localhost
 const allowedOrigins = [
   'chrome-extension://leicmnbiojnfagjnciffpbejagpiaiod',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
+  'chrome-extension://ecmkmfkmljmneefknldphpdjlmgpdhkc',
   'https://botctracker.web.app',
   'https://trackbotc.com',
   'https://www.trackbotc.com',
