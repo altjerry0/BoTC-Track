@@ -1,5 +1,24 @@
-// This is the main script for the popup interface.
-// It orchestrates calls to functions defined in userManager.js and sessionManager.js
+import {
+    loadPlayerData,
+    savePlayerData,
+    getAllPlayerData,
+    addPlayer,
+    createUsernameHistoryModal,
+    updateUsernameHistoryIfNeeded,
+    updateSessionHistoryIfNeeded,
+    getRatingClass,
+    replaceAllPlayerDataAndSave,
+    toggleFavoriteStatus,
+    deletePlayer,
+    handleRefreshUserName,
+    updateUsernameHistory,
+    editPlayerDetails,
+    renderKnownPlayers,
+    fetchAndUpdatePlayerName
+} from './userManager.js';
+
+import { parseJwt } from '../utils/auth.js';
+
 // Globally accessible filter options for the popup
 let currentFilterOptions = { officialOnly: false, hideCompleted: false };
 
@@ -74,35 +93,46 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Utility to keep both variables in sync
     function setLatestSessionData(sessions) {
+        console.debug('[Popup] Setting latest session data:', {
+            type: sessions ? (Array.isArray(sessions) ? 'array' : 'other') : 'null',
+            sessionCount: sessions?.length || 0,
+            firstSession: sessions?.[0],
+            firstSessionUsers: sessions?.[0]?.usersAll?.slice(0, 3)
+        });
         latestSessionData = sessions;
         window.latestSessionData = sessions;
-        // Debug logging removed
     }
     window.setLatestSessionData = setLatestSessionData;
 
     // Expose latestSessionData globally for online player detection
     window.latestSessionData = latestSessionData;
     // Expose fetchOnlinePlayerIds globally for userManager.js
+    // Global function to get online player IDs from latest session data
     window.fetchOnlinePlayerIds = async function() {
-    // Debug logging removed
-    // Debug logging removed
-    if (!window.latestSessionData) {
-        if (!window._fetchOnlinePlayerIdsWarned) {
-            console.warn('[fetchOnlinePlayerIds] Not available: session data is not present.');
-            window._fetchOnlinePlayerIdsWarned = true;
+        // Early validation of session data
+        if (!window.latestSessionData?.length || !Array.isArray(window.latestSessionData)) {
+
+            return new Set();
         }
-        return new Set();
-    }
-    // Debug logging removed
-    // Debug logging removed
-    if (window.userManager && typeof window.userManager.getOnlinePlayerIds === 'function') {
-        const ids = window.userManager.getOnlinePlayerIds(window.latestSessionData);
-        // Debug logging removed
-        // Debug logging removed
-        return ids;
-    }
-    return new Set();
-};
+
+        // Get online IDs using userManager if available
+        if (window.userManager?.getOnlinePlayerIds) {
+            const ids = window.userManager.getOnlinePlayerIds(window.latestSessionData);
+
+            return ids;
+        }
+
+        // Fallback: process session data directly if userManager not available
+        const onlineIds = new Set();
+        window.latestSessionData.forEach(session => {
+            session.usersAll?.forEach(user => {
+                if (user?.id && user.isOnline) {
+                    onlineIds.add(user.id.toString());
+                }
+            });
+        });
+        return onlineIds;
+    };
 
     // Function to update the online favorites list UI
     window.updateOnlineFavoritesListFunc = function(playerData, onlinePlayersObject) {
@@ -269,30 +299,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.liveGameInfo = null; 
     window.playerData = {}; // Initialize playerData
 
-    // Function to parse JWT and extract user ID
-    function parseJwt(token) {
-        if (!token) {
-            console.warn("Attempted to parse a null or empty token.");
-            return null;
-        }
-        try {
-            const base64Url = token.split('.')[1];
-            if (!base64Url) {
-                console.error("Invalid JWT: Missing payload.");
-                return null;
-            }
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            const decodedToken = JSON.parse(jsonPayload);
-            return decodedToken.id || null; 
-        } catch (error) {
-            console.error('Failed to parse JWT:', error);
-            return null;
-        }
-    }
-
     // --- Dark Mode Functionality ---
     function setDarkMode(isDark) {
         if (isDark) {
@@ -310,19 +316,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Helper to wait for userManager to be ready before rendering known players
-    function waitForUserManagerAndRenderKnownPlayers(container, searchTerm, maxRetries = 20, delay = 50) {
-        if (
-            window.userManager &&
-            typeof window.userManager.renderKnownPlayers === 'function' &&
-            typeof window.userManager.getOnlinePlayerIds === 'function'
-        ) {
-            window.userManager.renderKnownPlayers(container, searchTerm);
-        } else if (maxRetries > 0) {
-            setTimeout(() => {
-                waitForUserManagerAndRenderKnownPlayers(container, searchTerm, maxRetries - 1, delay);
-            }, delay);
-        } else {
-            console.error('window.userManager.getOnlinePlayerIds is not available after waiting.');
+    async function waitForUserManagerAndRenderKnownPlayers(container, searchTerm, maxRetries = 20, delay = 50) {
+        try {
+            await renderKnownPlayers(container, searchTerm);
+        } catch (error) {
+            console.error('[Popup Init] Failed to render known players:', error);
+            // Show a user-friendly error message in the container
+            if (container) {
+                container.innerHTML = '<div class="error-message">Failed to load player management. Please try refreshing.</div>';
+            }
         }
     }
 
@@ -367,17 +369,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.currentUserID = null;
         }
 
-        // Fetch initial player data using userManager
+        // Fetch initial player data using getAllPlayerData
         try {
-            if (window.userManager && typeof window.userManager.getAllPlayerData === 'function') {
-                window.playerData = await window.userManager.getAllPlayerData();
-                // console.log('[Popup Init] Player data loaded via userManager.getAllPlayerData(). Count:', Object.keys(window.playerData).length);
-            } else {
-                console.error('[Popup Init] window.userManager.getAllPlayerData is not available. Initializing window.playerData to empty object.');
-                window.playerData = {};
-            }
+            window.playerData = await getAllPlayerData();
+            // console.log('[Popup Init] Player data loaded. Count:', Object.keys(window.playerData).length);
         } catch (error) {
-            console.error('[Popup Init] Error loading player data via userManager:', error);
+            console.error('[Popup Init] Error loading player data:', error);
             window.playerData = {}; // Ensure playerData is an empty object on error
         }
 
@@ -457,30 +454,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (!window.latestSessionData) {
                     // No session data available, fetch it first
                     await window.fetchAndDisplaySessions(
-                        window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : (id, name, score, notes, isFavorite, callback) => {
-                            console.error("userManager.addPlayer is not available. Add operation failed.");
-                            if (callback) callback(false);
-                        },
-                        window.userManager && window.userManager.createUsernameHistoryModal ? window.userManager.createUsernameHistoryModal : (player, currentPlayerData) => {
-                            console.error("userManager.createUsernameHistoryModal is not available.");
-                            return document.createElement('div');
-                        },
+                        addPlayer,
+                        createUsernameHistoryModal,
                         window.updateOnlineFavoritesListFunc,
                         sessionListDiv,
                         { officialOnly: showOfficialOnly },
                         (sessions, finalPlayerData) => {
                             latestSessionData = sessions;
                             window.latestSessionData = sessions;
-                            if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                                window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
-                            }
+                            renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
                         }
                     );
                 } else {
                     // Render known players using existing session data
-                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
-                    }
+                    renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
                 }
             }
         });
@@ -512,16 +499,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         try {
-            const addPlayerFunction = window.userManager && window.userManager.addPlayer ? window.userManager.addPlayer : (id, name, score, notes, isFavorite, callback) => {
-                console.error("userManager.addPlayer is not available. Add operation failed.");
-                if (callback) callback(false);
-            };
-
-            const createUsernameHistoryModalFunction = window.userManager && window.userManager.createUsernameHistoryModal ? window.userManager.createUsernameHistoryModal : (player, currentPlayerData) => {
-                console.error("userManager.createUsernameHistoryModal is not available.");
-                // Potentially return a dummy element or throw error to indicate failure
-                return document.createElement('div'); 
-            };
+            const addPlayerFunction = addPlayer;
+            const createUsernameHistoryModalFunction = createUsernameHistoryModal;
             
             // Check if the function exists on window, if not - try accessing it via a more reliable method
             const fetchAndDisplaySessionsFunc = window.fetchAndDisplaySessions || 
@@ -532,8 +511,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             await fetchAndDisplaySessionsFunc(
-                addPlayerFunction, 
-                createUsernameHistoryModalFunction, 
+                addPlayer,
+                createUsernameHistoryModal,
                 window.updateOnlineFavoritesListFunc,
                 sessionListDiv,
                 currentFilterOptions,
@@ -714,7 +693,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const successCallback = async (parsedData) => { 
                     try {
                         // Await the async function instead of passing a callback
-                        await window.replaceAllPlayerDataAndSave(parsedData); 
+                        await window.userManager.replaceAllPlayerDataAndSave(parsedData); 
                         
                         // Code that was previously in the inner callback now runs after await
                         importStatusDiv.textContent = 'Player data imported successfully! Reloading list...';

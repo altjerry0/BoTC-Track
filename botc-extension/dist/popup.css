@@ -322,11 +322,6 @@ body.dark-mode .player-card {
     border-left-color: var(--online-indicator-color); /* Online players get a specific border color */
 }
 
-.player-card.favorite-player {
-    box-shadow: 0 0 3px 1px gold; /* Subtle glow */
-}
-
-/* Styling for different player roles */
 .player-card.player-playing {
     border-left-color: #10b981; /* Emerald green for active players */
 }

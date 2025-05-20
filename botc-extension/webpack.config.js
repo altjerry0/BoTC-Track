@@ -27,6 +27,14 @@ module.exports = {
       }
     ]
   },
+  resolve: {
+    modules: [path.resolve(__dirname, 'node_modules')],
+    extensions: ['.js', '.mjs'],
+    fallback: {
+      "buffer": false,
+      "crypto": false
+    }
+  },
   optimization: {
     minimize: false // For easier debugging in development
   },

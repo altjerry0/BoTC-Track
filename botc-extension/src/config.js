@@ -19,8 +19,13 @@ export const authConfig = {
 
 // Firebase configuration (same for both environments)
 export const firebaseConfig = {
-  // Your Firebase configuration here
-  // This could also be environment-specific if needed
+  apiKey: "AIzaSyDVk_kuvYQ_JH700jKXrdSpOtcd3DFC9Rs",
+  authDomain: "botctracker.firebaseapp.com",
+  projectId: "botctracker",
+  storageBucket: "botctracker.appspot.com",
+  messagingSenderId: "234038964353",
+  appId: "1:234038964353:web:94c42aa23b68e003fd9d80",
+  measurementId: "G-C4FLY32JKZ"
 };
 
 // Other environment-specific configuration can be added here

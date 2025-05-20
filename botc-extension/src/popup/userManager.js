@@ -6,63 +6,10 @@
  * - User interface for managing players
  */
 
+import { parseJwt } from "../utils/auth.js";
+
 // Store reference to player data
 let allPlayerData = null;
-
-/**
- * Load player data from Chrome storage.
- * Initializes the in-memory cache (allPlayerData) if it's null.
- * @returns {Promise<Object>} A deep copy of the player data object.
- */
-async function loadPlayerData() {
-    return new Promise((resolve, reject) => {
-        chrome.storage.local.get('playerData', (result) => {
-            if (chrome.runtime.lastError) {
-                console.error('[User Manager] Error loading player data:', chrome.runtime.lastError.message);
-                return reject(chrome.runtime.lastError);
-            }
-            const data = result.playerData || {};
-            if (allPlayerData === null) { // Initialize cache on first load
-                allPlayerData = JSON.parse(JSON.stringify(data)); // Deep copy for cache initialization
-            }
-            // Always return a deep copy to prevent external modification of the cache
-            resolve(JSON.parse(JSON.stringify(allPlayerData || data))); 
-        });
-    });
-}
-
-/**
- * Saves player data to both the in-memory cache and chrome.storage.local.
- * @param {Object} playerDataToSave - The player data object to save.
- * @returns {Promise<void>}
- */
-async function savePlayerData(playerDataToSave) {
-    return new Promise((resolve, reject) => {
-        allPlayerData = JSON.parse(JSON.stringify(playerDataToSave)); // Update the in-memory cache with a deep copy
-        chrome.storage.local.set({ playerData: allPlayerData }, () => {
-            if (chrome.runtime.lastError) {
-                console.error('[User Manager] Error saving player data:', chrome.runtime.lastError.message);
-                // Optionally: Display a user-friendly error message here
-                // ModalManager.showNotification("Error saving player data. Changes might not persist.", true, 5000);
-                return reject(chrome.runtime.lastError);
-            }
-            // console.log('[User Manager] Player data saved successfully to storage and cache updated.');
-            resolve();
-        });
-    });
-}
-
-/**
- * Retrieves a deep copy of all player data from the in-memory cache.
- * Loads it from storage if the cache is not yet initialized.
- * @returns {Promise<Object>} A deep copy of the player data.
- */
-async function getAllPlayerData() {
-    if (allPlayerData === null) {
-        await loadPlayerData(); // Ensure cache is initialized
-    }
-    return JSON.parse(JSON.stringify(allPlayerData || {})); // Return deep copy of cache or empty object
-}
 
 /**
  * Load player data from Chrome storage.
@@ -78,7 +25,7 @@ async function loadPlayerData() {
                 resolve({});
             } else {
                 allPlayerData = data.playerData || {};
-                resolve(allPlayerData);
+                resolve(JSON.parse(JSON.stringify(allPlayerData))); // Return deep copy
             }
         });
     });
@@ -91,8 +38,8 @@ async function loadPlayerData() {
  */
 async function savePlayerData(playerData) {
     return new Promise((resolve, reject) => {
-        allPlayerData = playerData; // Update local cache immediately
-        chrome.storage.local.set({ playerData }, () => {
+        allPlayerData = JSON.parse(JSON.stringify(playerData)); // Update cache with deep copy
+        chrome.storage.local.set({ playerData: allPlayerData }, () => {
             if (chrome.runtime.lastError) {
                 console.error("Error saving playerData to storage:", chrome.runtime.lastError.message);
                 reject(chrome.runtime.lastError);
@@ -101,6 +48,18 @@ async function savePlayerData(playerData) {
             }
         });
     });
+}
+
+/**
+ * Retrieves a deep copy of all player data from the in-memory cache.
+ * Loads it from storage if the cache is not yet initialized.
+ * @returns {Promise<Object>} A deep copy of the player data.
+ */
+async function getAllPlayerData() {
+    if (allPlayerData === null) {
+        await loadPlayerData(); // Ensure cache is initialized
+    }
+    return JSON.parse(JSON.stringify(allPlayerData || {})); // Return deep copy of cache or empty object
 }
 
 /**
@@ -247,69 +206,63 @@ function createUsernameHistoryModal(history, currentName) {
  * @returns {number} -1 if a < b, 1 if a > b, 0 if a === b.
  */
 function comparePlayersForSorting(a, b, onlinePlayerIds) {
-    const idA = a[0];
-    const playerAData = a[1];
-    const idB = b[0];
-    const playerBData = b[1];
+    try {
+        // Handle invalid inputs
+        if (!Array.isArray(a) || !Array.isArray(b) || a.length < 2 || b.length < 2) return 0;
+        if (!(onlinePlayerIds instanceof Set)) onlinePlayerIds = new Set();
 
-    const isOnlineA = onlinePlayerIds.has(idA.toString());
-    const isOnlineB = onlinePlayerIds.has(idB.toString());
+        const [idA, playerAData] = a;
+        const [idB, playerBData] = b;
 
-    const isFavoriteA = playerAData.isFavorite || false;
-    const isFavoriteB = playerBData.isFavorite || false;
+        // Handle invalid player data
+        if (!idA || !idB || !playerAData || !playerBData || 
+            typeof playerAData !== 'object' || typeof playerBData !== 'object') {
+            return 0;
+        }
 
-    // Priority 1: Online AND Favorite
-    const aIsOnlineFav = isOnlineA && isFavoriteA;
-    const bIsOnlineFav = isOnlineB && isFavoriteB;
+        // Safely convert IDs to strings and check online status
+        const playerIdA = String(idA || '');
+        const playerIdB = String(idB || '');
+        const isOnlineA = playerIdA && onlinePlayerIds.has(playerIdA);
+        const isOnlineB = playerIdB && onlinePlayerIds.has(playerIdB);
 
-    if (aIsOnlineFav !== bIsOnlineFav) {
-        return aIsOnlineFav ? -1 : 1; // OnlineFav (true) comes before not OnlineFav (false)
-    }
-    if (aIsOnlineFav && bIsOnlineFav) { // Both are Online + Favorite
-        // Sub-sort by rating (desc)
+        const isFavoriteA = playerAData.isFavorite || false;
+        const isFavoriteB = playerBData.isFavorite || false;
+
+        // Priority 1: Online AND Favorite
+        const aIsOnlineFav = isOnlineA && isFavoriteA;
+        const bIsOnlineFav = isOnlineB && isFavoriteB;
+
+        if (aIsOnlineFav !== bIsOnlineFav) {
+            return aIsOnlineFav ? -1 : 1; // OnlineFav (true) comes before not OnlineFav (false)
+        }
+
+        // Priority 2: Online
+        if (isOnlineA !== isOnlineB) {
+            return isOnlineA ? -1 : 1; // Online (true) comes before not Online (false)
+        }
+
+        // Priority 3: Favorite
+        if (isFavoriteA !== isFavoriteB) {
+            return isFavoriteA ? -1 : 1; // Favorite (true) comes before not Favorite (false)
+        }
+
+        // Priority 4: Rating
         const scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
         const scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
         if (scoreA !== scoreB) {
             return scoreB - scoreA; // Higher score first
         }
-        // Then by name (asc)
-        return (playerAData.name || '').localeCompare(playerBData.name || '');
-    }
 
-    // Priority 2: Online (but not favorite, or only one is favorite - handled above)
-    if (isOnlineA !== isOnlineB) {
-        return isOnlineA ? -1 : 1; // Online (true) comes before offline (false)
-    }
+        // Finally, sort by name
+        const nameA = String(playerAData.name || '').toLowerCase();
+        const nameB = String(playerBData.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
 
-    if (isOnlineA) { // Both are Online (but not both Online+Favorite)
-        // Sort by rating (desc)
-        const scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
-        const scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
-        if (scoreA !== scoreB) {
-            return scoreB - scoreA;
-        }
-        // Then by name (asc)
-        return (playerAData.name || '').localeCompare(playerBData.name || '');
+    } catch (error) {
+        console.error('Error comparing players:', error);
+        return 0;
     }
-
-    // Priority 3: Both are Offline
-    // Sort by lastSeenTimestamp (desc - recent first)
-    // Treat null/undefined/0 as very old to push them to the bottom of offline players
-    const lastSeenA = playerAData.lastSeenTimestamp || 0;
-    const lastSeenB = playerBData.lastSeenTimestamp || 0;
-    if (lastSeenA !== lastSeenB) {
-        return lastSeenB - lastSeenA; // More recent (higher timestamp) first
-    }
-
-    // If lastSeen is same (or both unknown), sort by rating (desc)
-    const scoreA = playerAData.score !== undefined && playerAData.score !== null ? Number(playerAData.score) : -Infinity;
-    const scoreB = playerBData.score !== undefined && playerBData.score !== null ? Number(playerBData.score) : -Infinity;
-    if (scoreA !== scoreB) {
-        return scoreB - scoreA;
-    }
-
-    // Finally, by name (asc)
-    return (playerAData.name || '').localeCompare(playerBData.name || '');
 }
 
 /**
@@ -317,22 +270,50 @@ function comparePlayersForSorting(a, b, onlinePlayerIds) {
  * @param {Array|Set|null} sessionData - Active session data or a Set of online IDs.
  * @returns {Set<string>} A Set of player IDs that are currently online.
  */
+/**
+ * Extract online player IDs from session data.
+ * @param {Array} sessionData - Array of session objects from the API
+ * @returns {Set<string>} Set of online player IDs
+ */
 function getOnlinePlayerIds(sessionData) {
-    const onlinePlayerIds = new Set();
-    if (sessionData && Array.isArray(sessionData)) {
+    try {
+        // Validate input
+        if (!Array.isArray(sessionData)) {
+            return new Set();
+        }
+
+        const onlinePlayerIds = new Set();
+
+        // Process each session
         sessionData.forEach(session => {
-            if (session && session.usersAll && Array.isArray(session.usersAll)) {
+            try {
+                // Skip invalid sessions
+                if (!session || !Array.isArray(session.usersAll)) return;
+
+                // Find online users in this session
                 session.usersAll.forEach(user => {
-                    if (user && user.id && user.isOnline) {
-                        onlinePlayerIds.add(user.id.toString());
+                    try {
+                        // Skip invalid users
+                        if (!user || typeof user !== 'object') return;
+                        if (!user.id || user.isOnline !== true) return;
+
+                        // Safely convert ID to string and add to set
+                        const userId = String(user.id);
+                        if (userId) onlinePlayerIds.add(userId);
+                    } catch (userError) {
+                        console.warn('Error processing user in getOnlinePlayerIds:', userError);
                     }
                 });
+            } catch (sessionError) {
+                console.warn('Error processing session in getOnlinePlayerIds:', sessionError);
             }
         });
-    } else if (sessionData instanceof Set) {
-        sessionData.forEach(id => onlinePlayerIds.add(id.toString()));
+
+        return onlinePlayerIds;
+    } catch (error) {
+        console.error('Error in getOnlinePlayerIds:', error);
+        return new Set();
     }
-    return onlinePlayerIds;
 }
 
 /**
@@ -345,22 +326,45 @@ function getOnlinePlayerIds(sessionData) {
  * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
  */
 async function displayKnownPlayers(container, searchTerm = '', playerData, onlinePlayerIds, createUsernameHistoryModalFunc, refreshCallback) {
-    // Debug logging removed
     const lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : ''; // Define lowerSearchTerm here
     container.innerHTML = ''; // Clear previous results
 
     // Filter and then sort the player data
-    const filteredPlayersArray = Object.entries(playerData)
+    // Ensure playerData is an object and convert to entries
+    const entries = typeof playerData === 'object' && playerData !== null ? 
+        Object.entries(playerData) : [];
+
+    const filteredPlayersArray = entries
         .filter(([id, player]) => {
-            const nameMatch = player.name && player.name.toLowerCase().includes(lowerSearchTerm);
-            const notesMatch = player.notes && player.notes.toLowerCase().includes(lowerSearchTerm);
-            const scoreMatch = player.score !== undefined && player.score.toString().toLowerCase().includes(lowerSearchTerm);
-            const idMatch = id.toLowerCase().includes(lowerSearchTerm);
+            // Skip invalid entries
+            if (!id || !player || typeof player !== 'object') return false;
+
+            // Safely convert values to strings for comparison
+            const playerName = String(player.name || '');
+            const playerNotes = String(player.notes || '');
+            const playerId = String(id || '');
+            const playerScore = player.score !== undefined && player.score !== null ? 
+                String(player.score) : '';
+
+            // Match against lowercased strings
+            const nameMatch = playerName.toLowerCase().includes(lowerSearchTerm);
+            const notesMatch = playerNotes.toLowerCase().includes(lowerSearchTerm);
+            const scoreMatch = playerScore.toLowerCase().includes(lowerSearchTerm);
+            const idMatch = playerId.toLowerCase().includes(lowerSearchTerm);
+
             return nameMatch || notesMatch || scoreMatch || idMatch;
         });
 
-    // Sort the filtered array using the new comparison function
-    const sortedPlayersArray = filteredPlayersArray.sort((a, b) => comparePlayersForSorting(a, b, onlinePlayerIds));
+    // Ensure we have valid data before sorting
+    const sortedPlayersArray = Array.isArray(filteredPlayersArray) ?
+        filteredPlayersArray.sort((a, b) => {
+            try {
+                return comparePlayersForSorting(a, b, onlinePlayerIds);
+            } catch (error) {
+                console.error('Error sorting players:', error);
+                return 0; // Keep original order on error
+            }
+        }) : [];
 
     if (sortedPlayersArray.length === 0 && searchTerm) {
         container.innerHTML = '<p>No players match your search.</p>';
@@ -410,7 +414,7 @@ async function displayKnownPlayers(container, searchTerm = '', playerData, onlin
             }
 
             const onlineBadge = document.createElement('span');
-            onlineBadge.classList.add('online-indicator');
+            onlineBadge.classList.add('online-badge');
             onlineBadge.title = 'Online';
             infoContainer.appendChild(onlineBadge);
 
@@ -1224,25 +1228,44 @@ async function renderKnownPlayers(container, searchTerm = '') {
         return;
     }
     // Load the latest player data directly from storage each time
-    const playerData = await loadPlayerData();
+    const playerData = await loadPlayerData() || {};
+
+    // Early validation of player data
+    if (typeof playerData !== 'object') {
+        console.error('Invalid player data format');
+        return;
+    }
+
     // Fetch the latest set of online player IDs
     let onlinePlayerIds = new Set();
     try {
         // Always use window.fetchOnlinePlayerIds for consistency
         if (typeof window.fetchOnlinePlayerIds === 'function') {
-            // Debug logging removed
-            // Debug logging removed
-            onlinePlayerIds = await window.fetchOnlinePlayerIds();
+            const ids = await window.fetchOnlinePlayerIds();
+            // Ensure we have a valid Set
+            onlinePlayerIds = ids instanceof Set ? ids : new Set();
         } else {
             console.warn("window.fetchOnlinePlayerIds function not found.");
         }
     } catch (error) {
         console.error("Error fetching online player IDs in renderKnownPlayers:", error);
+        // Continue with empty Set on error
     }
 
-    // Use the existing display function, passing the loaded data and necessary callbacks
-    // Pass the onlinePlayerIds Set instead of sessionData
-    await displayKnownPlayers(container, searchTerm, playerData, onlinePlayerIds, createUsernameHistoryModal, () => renderKnownPlayers(container, searchTerm));
+    // Use the existing display function with validated data
+    try {
+        await displayKnownPlayers(
+            container,
+            searchTerm || '',
+            playerData,
+            onlinePlayerIds,
+            typeof createUsernameHistoryModal === 'function' ? createUsernameHistoryModal : null,
+            () => renderKnownPlayers(container, searchTerm)
+        );
+    } catch (error) {
+        console.error('Error displaying known players:', error);
+        container.innerHTML = '<p>Error displaying player list. Please try again.</p>';
+    }
 }
 
 /**
@@ -1316,28 +1339,49 @@ async function fetchAndUpdatePlayerName(playerId, refreshListCallback) {
     }
 }
 
-// Expose functions to the window object for use by other modules
+// Export functions to window for non-module access
 window.userManager = {
-    loadPlayerData, // Primarily for internal use or specific scenarios
-    savePlayerData, // For direct save if needed, though addPlayer handles its own saves
-    getAllPlayerData, // Preferred method for external modules to get a safe copy of data
+    getAllPlayerData,
+    loadPlayerData,
+    savePlayerData,
     addPlayer,
-    replaceAllPlayerDataAndSave,
     updateUsernameHistoryIfNeeded,
     updateSessionHistoryIfNeeded,
-    getRatingClass, // Already on window, but good for namespacing
+    createUsernameHistoryModal,
+    displayKnownPlayers,
+    renderKnownPlayers,
+    editPlayerDetails,
     deletePlayer,
     toggleFavoriteStatus,
-    editPlayerDetails,
     handleRefreshUserName,
     fetchAndUpdatePlayerName,
-    renderKnownPlayers, // To allow popup.js to trigger re-renders of the user management tab
-    createUsernameHistoryModal, // Expose for sessionManager
-    getOnlinePlayerIds // Add this function for online player detection
+    replaceAllPlayerDataAndSave
+};
+
+// Export functions as a module
+export {
+    loadPlayerData,
+    savePlayerData,
+    getAllPlayerData,
+    formatTimestamp,
+    formatTimeSince,
+    createUsernameHistoryModal,
+    displayKnownPlayers,
+    addPlayer,
+    updateUsernameHistoryIfNeeded,
+    updateSessionHistoryIfNeeded,
+    getRatingClass,
+    replaceAllPlayerDataAndSave,
+    toggleFavoriteStatus,
+    deletePlayer,
+    handleRefreshUserName,
+    updateUsernameHistory,
+    editPlayerDetails,
+    renderKnownPlayers,
+    fetchAndUpdatePlayerName
 };
 
 // Make getRatingClass globally available as other modules might use it directly
-// and it's a pure utility function.
 if (typeof window.getRatingClass === 'undefined') {
     window.getRatingClass = getRatingClass;
 }

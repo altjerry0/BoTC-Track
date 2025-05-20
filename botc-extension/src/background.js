@@ -1,10 +1,26 @@
-// --- Firebase Initialization (v1.1.5 Cloud Sync Groundwork) ---
+// --- Firebase Initialization (v1.1.7 Chrome Web Store Compliance) ---
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, signOut, onAuthStateChanged } from "firebase/auth";
-import { authConfig, isProduction, debugLogging } from "./config.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth, signInWithCustomToken } from "firebase/auth/web-extension";
+import { parseJwt } from "./utils/auth.js";
+import { authConfig, firebaseConfig, isProduction, debugLogging } from "./config.js";
 
-// TODO: Replace with your actual Firebase config
+// Initialize Firebase with minimal config
+const app = initializeApp(firebaseConfig);
+
+// Initialize Firestore and Auth
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Set up auth state observer
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    console.log('[BG Auth] User signed in:', user.uid);
+  } else {
+    console.log('[BG Auth] User signed out');
+  }
+});
+
 // Google OAuth Web Client ID is now imported from config.js
 const GOOGLE_OAUTH_WEB_CLIENT_ID = authConfig.clientId;
 
@@ -14,44 +30,176 @@ if (debugLogging) {
     console.log(`[BG] Using OAuth client ID: ${GOOGLE_OAUTH_WEB_CLIENT_ID}`);
 }
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDVk_kuvYQ_JH700jKXrdSpOtcd3DFC9Rs",
-    authDomain: "botctracker.firebaseapp.com",
-    projectId: "botctracker",
-    storageBucket: "botctracker.firebasestorage.app",
-    messagingSenderId: "234038964353",
-    appId: "1:234038964353:web:94c42aa23b68e003fd9d80",
-    measurementId: "G-C4FLY32JKZ"
-};
+// Firebase Auth API URL for token exchange (using direct Functions URL to avoid CORS issues)
+const FIREBASE_AUTH_SERVICE_URL = "https://us-central1-botctracker.cloudfunctions.net/api";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+/**
+ * Authenticates with Google via Chrome Identity API, then exchanges the token
+ * with our secure authentication service to get a Firebase custom token
+ * @returns {Promise<Object>} User credentials and profile information
+ */
+async function authenticateWithGoogleAndFirebase() {
+  return new Promise((resolve, reject) => {
+    // First authenticate with Google Identity API to get a token
+    chrome.identity.getAuthToken({ interactive: true }, async (googleToken) => {
+      if (chrome.runtime.lastError) {
+        console.error('[BG Auth] Chrome identity error:', chrome.runtime.lastError);
+        reject(chrome.runtime.lastError);
+        return;
+      }
+      
+      try {
+        console.log('[BG Auth] Got Google token from Chrome Identity API');
+        
+        // Get Google user info for display purposes
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            'Authorization': 'Bearer ' + googleToken
+          }
+        });
+        
+        if (!userInfoResponse.ok) {
+          throw new Error('Failed to fetch user info: ' + userInfoResponse.statusText);
+        }
+        
+        const googleUserInfo = await userInfoResponse.json();
+        console.log('[BG Auth] Got Google user info:', googleUserInfo.email);
+        
+        // Exchange the Google token for a Firebase custom token using our secure service
+        console.log('[BG Auth] Exchanging Google token for Firebase custom token');
+        const exchangeResponse = await fetch(`${FIREBASE_AUTH_SERVICE_URL}/auth/exchange-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ googleToken })
+        });
+        
+        if (!exchangeResponse.ok) {
+          const errorData = await exchangeResponse.json();
+          throw new Error('Token exchange failed: ' + (errorData.error || exchangeResponse.statusText));
+        }
+        
+        const { token: firebaseCustomToken, user: firebaseUserInfo } = await exchangeResponse.json();
+        console.log('[BG Auth] Got Firebase custom token');
+        
+        // Sign in to Firebase with the custom token and wait for auth state
+        const userCredential = await signInWithCustomToken(auth, firebaseCustomToken);
+        
+        // Wait for the auth state to be ready
+        await new Promise((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+              unsubscribe();
+              resolve();
+            }
+          });
+        });
+        
+        // Get the current user after auth state is ready
+        const firebaseUser = auth.currentUser;
+        if (!firebaseUser) {
+          throw new Error('Failed to get Firebase user after sign in');
+        }
+        
+        // Store the tokens and user info
+        const authUser = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || googleUserInfo.email,
+          displayName: firebaseUser.displayName || googleUserInfo.name,
+          photoURL: firebaseUser.photoURL || googleUserInfo.picture
+        };
+        
+        // Create the user profile data
+        const userProfileData = {
+          uid: firebaseUser.uid,
+          googleId: googleUserInfo.sub,
+          email: googleUserInfo.email || firebaseUser.email,
+          displayName: googleUserInfo.name || firebaseUser.displayName,
+          photoURL: googleUserInfo.picture || firebaseUser.photoURL,
+          lastSignIn: new Date().toISOString()
+        };
+        
+        // Store in chrome.storage for persistence
+        await chrome.storage.local.set({
+          googleAuthToken: googleToken,
+          firebaseCustomToken: firebaseCustomToken,
+          authUser: userProfileData
+        });
+        console.log('[BG Auth] Stored auth data in Chrome storage');
+        
+        // Notify any listening popup/content scripts that we have new auth data
+        try {
+          chrome.runtime.sendMessage({ type: 'AUTH_STATE_CHANGED', payload: userProfileData });
+        } catch (error) {
+          console.warn('[BG Auth] Could not notify listeners:', error);
+        }
+        
+        console.log('[BG Auth] Authentication successful with Firebase UID:', firebaseUser.uid);
+        
+        // Create/update the user document in Firestore
+        await ensureUserDocumentExists(firebaseUser.uid, userProfileData);
+        
+        // Return the auth data
+        resolve({
+          firebaseUser: firebaseUser,
+          googleUser: googleUserInfo,
+          profile: userProfileData
+        });
+      } catch (error) {
+        console.error('[BG Auth] Error in authentication flow:', error);
+        reject(error);
+      }
+    });
+  });
+}
 
 // Firestore sync functions
 
 /**
  * Ensures the user document exists in Firestore
- * @param {string} userId - The authenticated user ID
- * @param {Object} userData - Basic user profile data
+ * @param {string} firebaseUid - The Firebase UID from proper authentication
+ * @param {Object} userProfile - Full user profile data
  * @returns {Promise<void>}
  */
-async function ensureUserDocumentExists(userId, userData) {
-    if (!userId) {
-        console.error('[Firestore] Cannot create user document: No user ID provided');
-        return;
+async function ensureUserDocumentExists(firebaseUid, userProfile) {
+  if (!firebaseUid) {
+    console.error('[Firestore] Cannot create user document: No Firebase UID provided');
+    return;
+  }
+
+  try {
+    // Get the current Firebase user
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.error('[Firestore] Cannot create user document: No authenticated user');
+      return;
     }
-    
-    try {
-        const userDocRef = doc(db, 'users', userId);
+
+    // Verify the user ID matches
+    if (currentUser.uid !== firebaseUid) {
+      console.error('[Firestore] Current user ID does not match provided UID');
+      return;
+    }
+
+    console.log('[Firestore] Working with user document ID:', firebaseUid);
+        
+        // Use the Firebase UID as the document ID in Firestore
+        // This ensures compatibility with existing data and security rules
+        const userDocRef = doc(db, 'users', firebaseUid);
         const userDoc = await getDoc(userDocRef);
         
         if (!userDoc.exists()) {
+            console.log('[Firestore] Document does not exist, creating new one');
             // Create the user document if it doesn't exist
             await setDoc(userDocRef, {
                 profile: {
-                    email: userData.email || null,
-                    displayName: userData.displayName || null,
+                    uid: firebaseUid,
+                    googleId: userProfile.googleId,
+                    email: userProfile.email || null,
+                    displayName: userProfile.displayName || null,
+                    photoURL: userProfile.photoURL || null,
+                    lastSignIn: new Date().toISOString(),
                     lastSyncTimestamp: serverTimestamp()
                 },
                 // Initialize with empty player data
@@ -61,9 +209,17 @@ async function ensureUserDocumentExists(userId, userData) {
                     data: {}
                 }
             });
-            console.log('[Firestore] Created new user document for:', userId);
+            console.log('[Firestore] Created new user document for:', firebaseUid);
         } else {
-            console.log('[Firestore] User document already exists for:', userId);
+            console.log('[Firestore] Document exists, updating');
+            // Update profile info if needed
+            await setDoc(userDocRef, {
+                profile: {
+                    lastSignIn: new Date().toISOString(),
+                    lastSyncTimestamp: serverTimestamp()
+                }
+            }, { merge: true });
+            console.log('[Firestore] Updated existing user document for:', firebaseUid);
         }
     } catch (error) {
         console.error('[Firestore] Error ensuring user document exists:', error);
@@ -211,31 +367,74 @@ async function syncPlayerData(userId) {
     }
 }
 
-// Listen for auth state changes and handle Firestore initialization
-onAuthStateChanged(auth, (user) => {
+/**
+ * Signs out the current user from both Firebase and Google
+ * @returns {Promise<void>}
+ */
+async function signOutUser() {
+  try {
+    // First sign out from Firebase
+    await auth.signOut();
+    console.log('[BG Auth] Signed out from Firebase');
+
+    // Get the current Google token to revoke it
+    const { googleAuthToken } = await chrome.storage.local.get('googleAuthToken');
+    if (googleAuthToken) {
+      // Revoke the Google OAuth token
+      await fetch(`https://accounts.google.com/o/oauth2/revoke?token=${googleAuthToken}`);
+      // Remove the token from Chrome's identity API
+      await new Promise((resolve, reject) => {
+        chrome.identity.removeCachedAuthToken({ token: googleAuthToken }, () => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve();
+          }
+        });
+      });
+      console.log('[BG Auth] Revoked Google token');
+    }
+
+    // Clear all auth data from storage
+    await chrome.storage.local.remove([
+      'googleAuthToken',
+      'firebaseCustomToken',
+      'authUser'
+    ]);
+    console.log('[BG Auth] Cleared auth data');
+
+    // Notify any listening popup/content scripts that we've signed out
+    chrome.runtime.sendMessage({ type: 'AUTH_STATE_CHANGED', payload: null });
+
+    return true;
+  } catch (error) {
+    console.error('[BG Auth] Error during sign out:', error);
+    throw error;
+  }
+}
+
+/**
+ * Checks if the user is authenticated by looking at storage
+ * @returns {Promise<Object|null>} The authenticated user or null
+ */
+async function checkAuthState() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get('authUser', (result) => {
+      if (result && result.authUser && result.authUser.uid) {
+        console.log('[BG Auth] User is authenticated:', result.authUser.uid);
+        resolve(result.authUser);
+      } else {
+        console.log('[BG Auth] No authenticated user found');
+        resolve(null);
+      }
+    });
+  });
+}
+
+// Initialize by checking auth state
+checkAuthState().then(user => {
   if (user) {
-    console.log("[Firebase] User signed in:", user.uid, user.email);
-    
-    // Store the authenticated user info in storage for access across contexts
-    chrome.storage.local.set({ 'authUser': { 
-      uid: user.uid,
-      email: user.email || null,
-      displayName: user.displayName || null
-    }}, () => {
-      console.log("[Firebase] Auth user info saved to storage");
-    });
-    
-    // Ensure user document exists in Firestore
-    ensureUserDocumentExists(user.uid, {
-        email: user.email,
-        displayName: user.displayName
-    });
-    
-    // No automatic sync - will be done on demand
-  } else {
-    console.log("[Firebase] User signed out");
-    // Clear auth user from storage when signed out
-    chrome.storage.local.remove('authUser');
+    console.log("[Auth] User is signed in:", user.uid, user.email);
   }
 });
 
@@ -339,6 +538,21 @@ async function fetchCloudDataToLocal() {
 
 // --- Message Listener from Content Script or Popup ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    // Handle auth token requests
+    if (request.type === 'GET_AUTH_TOKEN') {
+      // Get the current Firebase user's ID token
+      if (auth.currentUser) {
+        auth.currentUser.getIdToken(true).then(token => {
+          sendResponse({ token: `Bearer ${token}` });
+        }).catch(error => {
+          console.error('[BG Auth] Error getting ID token:', error);
+          sendResponse({ token: null });
+        });
+      } else {
+        sendResponse({ token: null });
+      }
+      return true; // Will respond asynchronously
+    }
     // Firebase Auth: Handle login/logout requests from popup
     if (request.type === 'LOGIN_WITH_GOOGLE') {
         console.log('[BG Auth] Login with Google requested');
@@ -355,108 +569,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'AUTH_TAB_LOGIN') {
         console.log('[BG Auth] Login requested from auth tab');
         
-        // Use Chrome's identity API directly instead of Firebase popup
-        // This uses the OAuth flow defined in the manifest.json
-        chrome.identity.getAuthToken({ interactive: true }, function(token) {
-            if (chrome.runtime.lastError) {
-                console.error('[BG Auth] Chrome identity error:', chrome.runtime.lastError);
-                sendResponse({ 
-                    success: false, 
-                    error: chrome.runtime.lastError.message 
-                });
-                return;
-            }
-            
-            // Get user info using the token
-            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to fetch user info: ' + response.statusText);
-                }
-                return response.json();
-            })
-            .then(userInfo => {
-                console.log('[BG Auth] Got user info:', userInfo);
-                
-                // Create a credential from the access token
-                const credential = GoogleAuthProvider.credential(null, token);
-                
-                // Sign in to Firebase with the credential
-                return signInWithCredential(auth, credential).then(result => {
-                    console.log('[Firebase] Successfully signed in with credential:', result.user.uid);
-                    
-                    // Create a user object including Firebase UID
-                    const userData = {
-                        uid: result.user.uid,
-                        email: userInfo.email,
-                        displayName: userInfo.name,
-                        photoURL: userInfo.picture
-                    };
-                    
-                    // Store the token for later use
-                    return chrome.storage.local.set({ 
-                        googleAuthToken: token,
-                        authUser: userData
-                    }).then(() => {
-                        // Ensure user document exists in Firestore
-                        return ensureUserDocumentExists(result.user.uid, {
-                            email: userInfo.email,
-                            displayName: userInfo.name
-                        }).then(() => {
-                            sendResponse({ 
-                                success: true, 
-                                user: userData
-                            });
+        // Use our improved authentication function with proper Firebase Auth
+        authenticateWithGoogleAndFirebase()
+            .then(result => {
+                // Ensure user document exists in Firestore using Firebase UID
+                return ensureUserDocumentExists(result.firebaseUser.uid, result.profile)
+                    .then(() => {
+                        // Respond with success and user data
+                        sendResponse({
+                            success: true,
+                            user: {
+                                uid: result.firebaseUser.uid,
+                                email: result.firebaseUser.email || result.googleUser.email,
+                                displayName: result.firebaseUser.displayName || result.googleUser.name,
+                                photoURL: result.firebaseUser.photoURL || result.googleUser.picture
+                            }
                         });
                     });
-                });
-
             })
             .catch(error => {
-                console.error('[BG Auth] Error getting user info:', error);
-                sendResponse({ 
-                    success: false, 
-                    error: error.message 
+                console.error('[BG Auth] Error in authentication flow:', error);
+                sendResponse({
+                    success: false,
+                    error: error.message || 'Authentication failed'
                 });
             });
-        });
         
         return true; // async
     }
     if (request.type === 'LOGOUT') {
-        // Get the current token and revoke it
-        chrome.storage.local.get('googleAuthToken', (result) => {
-            const token = result.googleAuthToken;
-            if (token) {
-                // Revoke the token with Google
-                chrome.identity.removeCachedAuthToken({ token }, () => {
-                    console.log('[BG Auth] Auth token cache cleared');
-                });
-                
-                // Optional: Call Google's revocation endpoint
-                fetch(`https://accounts.google.com/o/oauth2/revoke?token=${token}`, {
-                    method: 'GET'
-                }).catch(error => {
-                    console.warn('[BG Auth] Error revoking token with Google:', error);
-                    // Continue with logout even if revocation fails
-                });
-            }
-            
-            // Remove auth data from storage
-            chrome.storage.local.remove(['authUser', 'googleAuthToken'], () => {
-                if (chrome.runtime.lastError) {
-                    console.error('[BG Auth] Error removing auth data from storage:', chrome.runtime.lastError);
-                    sendResponse({ success: false, error: chrome.runtime.lastError.message });
-                    return;
-                }
-                console.log('[BG Auth] User signed out (auth data removed from storage)');
+        // Use our new signOutUser function
+        signOutUser()
+            .then(() => {
                 sendResponse({ success: true });
+            })
+            .catch(error => {
+                console.error('[BG Auth] Error signing out:', error);
+                sendResponse({ success: false, error: error.message || 'Logout failed' });
             });
-        });
         return true; // async
     }
 
@@ -525,32 +675,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: true });
             } catch (error) {
                 console.error('[BG Push] Error pushing to Firestore:', error);
-                sendResponse({ success: false, error: error.message });
-            }
-        });
-        return true; // Indicate asynchronous response
-    } else if (request.type === 'FETCH_FROM_CLOUD') {
-        // Manual fetch of remote data from Firestore
-        chrome.storage.local.get('authUser', async (result) => {
-            const authUser = result.authUser;
-            if (!authUser || !authUser.uid) {
-                sendResponse({ success: false, error: 'User not authenticated' });
-                return;
-            }
-            
-            try {
-                const remoteData = await loadPlayerDataFromFirestore(authUser.uid);
-                if (remoteData) {
-                    // Save to local storage
-                    chrome.storage.local.set({ playerData: remoteData }, () => {
-                        console.log('[BG Fetch] Player data fetched from Firestore and saved locally');
-                        sendResponse({ success: true, data: remoteData });
-                    });
-                } else {
-                    sendResponse({ success: false, error: 'No data found in cloud' });
-                }
-            } catch (error) {
-                console.error('[BG Fetch] Error fetching from Firestore:', error);
                 sendResponse({ success: false, error: error.message });
             }
         });
@@ -672,7 +796,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             console.error("[BG Popup Fetch] API returned 200 OK but with an error payload:", sessionsData.error);
                             sendResponse({ error: sessionsData.error });
                         } else {
-                            sendResponse({ sessions: sessionsData });
+                            // Process session data to ensure online status is properly set
+                            const processedSessions = sessionsData.map(session => {
+                                if (session.usersAll && Array.isArray(session.usersAll)) {
+                                    session.usersAll = session.usersAll.map(user => ({
+                                        ...user,
+                                        // Ensure isOnline is a boolean
+                                        isOnline: user.isOnline === true || user.isOnline === 'true'
+                                    }));
+                                }
+                                return session;
+                            });
+
+
+                            sendResponse({ sessions: processedSessions });
                         }
                     })
                     .catch(error => {
