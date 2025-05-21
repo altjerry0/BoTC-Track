@@ -325,33 +325,73 @@ function getOnlinePlayerIds(sessionData) {
  * @param {Function} createUsernameHistoryModalFunc - Function to create the history modal.
  * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
  */
+/**
+ * Displays known players in the specified container, filtered by search term (including score conditions) and indicating online status.
+ * Supports queries like 'score > 2', 'score <= 4', 'score = 3', etc., combined with regular text search.
+ * @param {HTMLElement} container - The container element to display players in.
+ * @param {string} [searchTerm=''] - Optional search term to filter players.
+ * @param {Object} playerData - The player data object.
+ * @param {Set<string>} onlinePlayerIds - A Set containing the IDs of currently online players.
+ * @param {Function} createUsernameHistoryModalFunc - Function to create the history modal.
+ * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
+ */
 async function displayKnownPlayers(container, searchTerm = '', playerData, onlinePlayerIds, createUsernameHistoryModalFunc, refreshCallback) {
-    const lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : ''; // Define lowerSearchTerm here
-    container.innerHTML = ''; // Clear previous results
-
+    // --- Score filter parsing ---
+    function parseScoreFilter(input) {
+        // e.g. score > 2, score <= 4, score=3, score==3
+        const regex = /score\s*(<=|>=|=|==|<|>)\s*(\d+)/i;
+        const match = input.match(regex);
+        if (!match) return null;
+        let [, op, value] = match;
+        if (op === '=') op = '==';
+        return { op, value: parseInt(value, 10), raw: match[0] };
+    }
+    function evaluateScore(score, op, value) {
+        if (typeof score === 'string') score = parseInt(score, 10);
+        if (typeof score !== 'number' || isNaN(score)) return false;
+        switch (op) {
+            case '>': return score > value;
+            case '<': return score < value;
+            case '>=': return score >= value;
+            case '<=': return score <= value;
+            case '==': return score === value;
+            default: return false;
+        }
+    }
+    // Parse score filter and remove it from the search term for text search
+    let scoreFilter = null;
+    let textSearch = searchTerm || '';
+    if (searchTerm) {
+        scoreFilter = parseScoreFilter(searchTerm);
+        if (scoreFilter) {
+            // Remove the score filter part from the text search
+            textSearch = textSearch.replace(scoreFilter.raw, '').trim();
+        }
+    }
+    const lowerSearchTerm = textSearch ? textSearch.toLowerCase() : '';
+    container.innerHTML = '';
     // Filter and then sort the player data
-    // Ensure playerData is an object and convert to entries
     const entries = typeof playerData === 'object' && playerData !== null ? 
         Object.entries(playerData) : [];
-
     const filteredPlayersArray = entries
         .filter(([id, player]) => {
             // Skip invalid entries
             if (!id || !player || typeof player !== 'object') return false;
-
-            // Safely convert values to strings for comparison
+            // Score filter
+            if (scoreFilter) {
+                const playerScore = player.score !== undefined && player.score !== null ? parseInt(player.score, 10) : null;
+                if (!evaluateScore(playerScore, scoreFilter.op, scoreFilter.value)) return false;
+            }
+            // Text search
+            if (!lowerSearchTerm) return true; // If only score filter, pass
             const playerName = String(player.name || '');
             const playerNotes = String(player.notes || '');
             const playerId = String(id || '');
-            const playerScore = player.score !== undefined && player.score !== null ? 
-                String(player.score) : '';
-
-            // Match against lowercased strings
+            const playerScoreStr = player.score !== undefined && player.score !== null ? String(player.score) : '';
             const nameMatch = playerName.toLowerCase().includes(lowerSearchTerm);
             const notesMatch = playerNotes.toLowerCase().includes(lowerSearchTerm);
-            const scoreMatch = playerScore.toLowerCase().includes(lowerSearchTerm);
+            const scoreMatch = playerScoreStr.toLowerCase().includes(lowerSearchTerm);
             const idMatch = playerId.toLowerCase().includes(lowerSearchTerm);
-
             return nameMatch || notesMatch || scoreMatch || idMatch;
         });
 

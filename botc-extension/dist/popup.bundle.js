@@ -374,6 +374,16 @@ function getOnlinePlayerIds(sessionData) {
  * @param {Function} createUsernameHistoryModalFunc - Function to create the history modal.
  * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
  */
+/**
+ * Displays known players in the specified container, filtered by search term (including score conditions) and indicating online status.
+ * Supports queries like 'score > 2', 'score <= 4', 'score = 3', etc., combined with regular text search.
+ * @param {HTMLElement} container - The container element to display players in.
+ * @param {string} [searchTerm=''] - Optional search term to filter players.
+ * @param {Object} playerData - The player data object.
+ * @param {Set<string>} onlinePlayerIds - A Set containing the IDs of currently online players.
+ * @param {Function} createUsernameHistoryModalFunc - Function to create the history modal.
+ * @param {Function} refreshCallback - Callback to refresh the list after edits or favorite changes.
+ */
 function displayKnownPlayers(_x2) {
   return _displayKnownPlayers.apply(this, arguments);
 }
@@ -393,6 +403,10 @@ function _displayKnownPlayers() {
       onlinePlayerIds,
       createUsernameHistoryModalFunc,
       refreshCallback,
+      parseScoreFilter,
+      evaluateScore,
+      scoreFilter,
+      textSearch,
       lowerSearchTerm,
       entries,
       filteredPlayersArray,
@@ -401,16 +415,57 @@ function _displayKnownPlayers() {
     return _regeneratorRuntime().wrap(function _callee4$(_context4) {
       while (1) switch (_context4.prev = _context4.next) {
         case 0:
+          evaluateScore = function _evaluateScore(score, op, value) {
+            if (typeof score === 'string') score = parseInt(score, 10);
+            if (typeof score !== 'number' || isNaN(score)) return false;
+            switch (op) {
+              case '>':
+                return score > value;
+              case '<':
+                return score < value;
+              case '>=':
+                return score >= value;
+              case '<=':
+                return score <= value;
+              case '==':
+                return score === value;
+              default:
+                return false;
+            }
+          };
+          parseScoreFilter = function _parseScoreFilter(input) {
+            // e.g. score > 2, score <= 4, score=3, score==3
+            var regex = /score\s*(<=|>=|=|==|<|>)\s*(\d+)/i;
+            var match = input.match(regex);
+            if (!match) return null;
+            var _match = _slicedToArray(match, 3),
+              op = _match[1],
+              value = _match[2];
+            if (op === '=') op = '==';
+            return {
+              op: op,
+              value: parseInt(value, 10),
+              raw: match[0]
+            };
+          };
           searchTerm = _args4.length > 1 && _args4[1] !== undefined ? _args4[1] : '';
           playerData = _args4.length > 2 ? _args4[2] : undefined;
           onlinePlayerIds = _args4.length > 3 ? _args4[3] : undefined;
           createUsernameHistoryModalFunc = _args4.length > 4 ? _args4[4] : undefined;
-          refreshCallback = _args4.length > 5 ? _args4[5] : undefined;
-          lowerSearchTerm = searchTerm ? searchTerm.toLowerCase() : ''; // Define lowerSearchTerm here
-          container.innerHTML = ''; // Clear previous results
-
+          refreshCallback = _args4.length > 5 ? _args4[5] : undefined; // --- Score filter parsing ---
+          // Parse score filter and remove it from the search term for text search
+          scoreFilter = null;
+          textSearch = searchTerm || '';
+          if (searchTerm) {
+            scoreFilter = parseScoreFilter(searchTerm);
+            if (scoreFilter) {
+              // Remove the score filter part from the text search
+              textSearch = textSearch.replace(scoreFilter.raw, '').trim();
+            }
+          }
+          lowerSearchTerm = textSearch ? textSearch.toLowerCase() : '';
+          container.innerHTML = '';
           // Filter and then sort the player data
-          // Ensure playerData is an object and convert to entries
           entries = _typeof(playerData) === 'object' && playerData !== null ? Object.entries(playerData) : [];
           filteredPlayersArray = entries.filter(function (_ref) {
             var _ref2 = _slicedToArray(_ref, 2),
@@ -418,17 +473,20 @@ function _displayKnownPlayers() {
               player = _ref2[1];
             // Skip invalid entries
             if (!id || !player || _typeof(player) !== 'object') return false;
-
-            // Safely convert values to strings for comparison
+            // Score filter
+            if (scoreFilter) {
+              var playerScore = player.score !== undefined && player.score !== null ? parseInt(player.score, 10) : null;
+              if (!evaluateScore(playerScore, scoreFilter.op, scoreFilter.value)) return false;
+            }
+            // Text search
+            if (!lowerSearchTerm) return true; // If only score filter, pass
             var playerName = String(player.name || '');
             var playerNotes = String(player.notes || '');
             var playerId = String(id || '');
-            var playerScore = player.score !== undefined && player.score !== null ? String(player.score) : '';
-
-            // Match against lowercased strings
+            var playerScoreStr = player.score !== undefined && player.score !== null ? String(player.score) : '';
             var nameMatch = playerName.toLowerCase().includes(lowerSearchTerm);
             var notesMatch = playerNotes.toLowerCase().includes(lowerSearchTerm);
-            var scoreMatch = playerScore.toLowerCase().includes(lowerSearchTerm);
+            var scoreMatch = playerScoreStr.toLowerCase().includes(lowerSearchTerm);
             var idMatch = playerId.toLowerCase().includes(lowerSearchTerm);
             return nameMatch || notesMatch || scoreMatch || idMatch;
           }); // Ensure we have valid data before sorting
@@ -441,19 +499,19 @@ function _displayKnownPlayers() {
             }
           }) : [];
           if (!(sortedPlayersArray.length === 0 && searchTerm)) {
-            _context4.next = 13;
+            _context4.next = 18;
             break;
           }
           container.innerHTML = '<p>No players match your search.</p>';
           return _context4.abrupt("return");
-        case 13:
+        case 18:
           if (!(sortedPlayersArray.length === 0)) {
-            _context4.next = 16;
+            _context4.next = 21;
             break;
           }
           container.innerHTML = '<p>No players known. Add some!</p>';
           return _context4.abrupt("return");
-        case 16:
+        case 21:
           // For each player, create a card
           sortedPlayersArray.forEach(function (_ref3) {
             var _ref4 = _slicedToArray(_ref3, 2),
@@ -634,7 +692,7 @@ function _displayKnownPlayers() {
             card.appendChild(buttonContainer);
             container.appendChild(card);
           });
-        case 17:
+        case 22:
         case "end":
           return _context4.stop();
       }
