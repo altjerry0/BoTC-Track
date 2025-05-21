@@ -1,11 +1,11 @@
-**Current Version:** `1.1.7` | **Chrome Web Store Version:** `1.1.7` (or as per current store status)
+**Current Version:** `1.1.9` | **Chrome Web Store Version:** `1.1.7` (or as per current store status)
 
 
 # BotC Player Tracker Chrome Extension
 
 This Chrome extension tracks and rates players in Blood on the Clocktower (BotC) games, helping you recognize familiar players across sessions and track username changes. It now features **robust cloud synchronization** of your player data using Google Sign-In and a secure Firebase backend.
 
-> **Key Features in v1.1.7:**
+> **Key Features in v1.1.9:**
 > - **Cloud Data Synchronization**: Securely sync your player ratings, notes, and history across devices using Google Sign-In and Firebase Firestore.
 > - **Chrome Web Store Compliant Authentication**: Utilizes the Chrome Identity API and a dedicated [authentication service](./firebase-auth-service/README.md) for secure sign-in without external script loading.
 > - **Enhanced Player Role Distinction**: Clear badges for Players, Storytellers, and Spectators.
@@ -67,7 +67,7 @@ This method allows you to install a specific version from GitHub, which might be
 ## Features
 
 *   **Cloud Synchronization**: Securely sync your player data (ratings, notes, history, favorites) across multiple devices using Google Sign-In. Data is stored in your private space in Firebase Firestore.
-*   **Session Tracking & Player Identification**: Fetches active `botc.app` game sessions and identifies players. Known players are highlighted within session details.
+*   **Session Tracking & Player Identification**: Fetches active `botc.app` game sessions. Known players are visually distinguished within session player lists by their rating, and **favorite players are now prominently highlighted** for easy recognition.
 *   **Enhanced Session Highlighting (Popup Interface)**:
     *   **Current Tab Game**: Sessions matching the game currently open in your active `botc.app/play` tab are highlighted with a distinct blue glow.
     *   **User's Active Games**: Sessions where your logged-in user is a participant are highlighted with an orange glow and sorted to the top of the list.
@@ -76,7 +76,7 @@ This method allows you to install a specific version from GitHub, which might be
 *   **Player Score Indicators**: Displays visual indicators (+ for scores 4-5, ● for score 3, - for scores 1-2) in each session header on the "Sessions" tab. These show an aggregate count of known players in that session categorized by their recorded scores, providing a quick summary of the perceived player quality in a game (e.g., "+2 ●1 -1").
 *   **Player Data Management**:
     *   **Rating & Notes**: Assign a 1-5 score and add private text notes to each player.
-    *   **Favorite Players**: Mark players as favorites for quick identification.
+    *   **Favorite Players**: Mark players as favorites for quick identification (highlights them in session lists and the 'Manage Users' tab).
     *   **Manual Add/Edit**: Manually add new players or edit existing player details (score, notes).
     *   **Refresh Player Name**: Update a player's name directly from `botc.app` via a button on their user card. Old names are saved to history.
 *   **Username History**: Tracks changes to player usernames over time, accessible via a history icon.

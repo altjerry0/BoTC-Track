@@ -26,12 +26,52 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Request current game info from background script
     chrome.runtime.sendMessage({ type: 'GET_CURRENT_GAME_INFO' }, function(response) {
         if (response && response.gameInfo) {
-            // Debug logging removed
             window.liveGameInfo = response.gameInfo;
         } else {
-            // Debug logging removed
             window.liveGameInfo = null;
         }
+        // Potentially refresh UI elements that depend on liveGameInfo here
+    });
+
+    // Function to parse botc.app authToken and set window.currentUserID
+    const setBotcGamePlayerId = (token) => {
+        let actualToken = token;
+        if (typeof token === 'string' && token.toLowerCase().startsWith('bearer ')) {
+            actualToken = token.substring(7); // Remove "Bearer " (7 characters)
+        }
+
+        const parsedToken = window.parseMyCustomBotcJwt(actualToken);
+
+        if (parsedToken && parsedToken.id) { 
+            window.currentUserID = String(parsedToken.id); 
+        } else if (parsedToken && parsedToken.user_id) { 
+            window.currentUserID = String(parsedToken.user_id); 
+        } else if (parsedToken && parsedToken.sub) { 
+            window.currentUserID = String(parsedToken.sub); 
+        } else {
+            window.currentUserID = null;
+            if (actualToken) { // Only warn if there was a token to parse
+                console.warn('[Popup] Failed to parse botc.app authToken or find ID field (id, user_id, sub). Token payload:', parsedToken);
+            }
+        }
+        // If UI elements depend on currentUserID, refresh them here
+    };
+
+    // Attempt to load botc.app authToken from storage and set currentUserID (for game context)
+    chrome.storage.local.get('authToken', function(data) {
+        if (data.authToken) {
+            setBotcGamePlayerId(data.authToken);
+        } else {
+            window.currentUserID = null; // Ensure it's null if no token
+        }
+    });
+
+    // Listen for botc.app token updates from background script
+    chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+        if (message.type === 'TOKEN_ACQUIRED' || message.type === 'TOKEN_UPDATED') { // Listen for token updates
+            setBotcGamePlayerId(message.token);
+        }
+        return false; 
     });
 
     // Assign core utility functions to window object IMMEDIATELY
@@ -58,8 +98,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         });
     };
-
-    window.parseJwt = parseJwt;
 
     // Button and Controls References
     const fetchButton = document.getElementById('fetchButton');
@@ -93,12 +131,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Utility to keep both variables in sync
     function setLatestSessionData(sessions) {
-        console.debug('[Popup] Setting latest session data:', {
-            type: sessions ? (Array.isArray(sessions) ? 'array' : 'other') : 'null',
-            sessionCount: sessions?.length || 0,
-            firstSession: sessions?.[0],
-            firstSessionUsers: sessions?.[0]?.usersAll?.slice(0, 3)
-        });
         latestSessionData = sessions;
         window.latestSessionData = sessions;
     }
@@ -136,12 +168,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Function to update the online favorites list UI
     window.updateOnlineFavoritesListFunc = function(playerData, onlinePlayersObject) {
-        // Debug logging removed
-        
-        // CRITICAL DEBUG - Log the entire player data structure
-        // Debug logging removed
-        // Debug logging removed
-        
         const onlineFavoritesListDiv = document.getElementById('onlineFavoritesList');
         const onlineFavoritesCountSpan = document.getElementById('onlineFavoritesCount');
         
@@ -179,23 +205,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.warn('[updateOnlineFavoritesListFunc] onlinePlayersObject is invalid or empty');
         }
         
-        // Debug logging removed
-        
-        // DEBUG: Print sample of the first few player entries
-        // Debug logging removed
-        let count = 0;
-        for (const playerId in playerData) {
-            if (count < 3) {
-                // Debug logging removed
-                // Check explicitly for the isFavorite property
-                // Debug logging removed
-                // Debug logging removed
-                count++;
-            } else {
-                break;
-            }
-        }
-        
         // Find all favorite players
         for (const playerId in playerData) {
             // Extra safety check
@@ -206,7 +215,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             if (isFavorite) {
                 favoriteCount++;
-                // Debug logging removed
                 
                 // Get the numeric version of the player ID
                 const numericPlayerId = playerId.replace(/\D/g, '');
@@ -224,10 +232,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     sessionName = onlinePlayersByNumericId[numericPlayerId];
                 }
                 
-                // Debug logging removed
-                
                 if (isOnline) {
-                    // Debug logging removed
                     onlineFavorites.push({
                         id: playerId,
                         name: playerData[playerId].name || playerId,
@@ -237,8 +242,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
         }
-        
-        // Debug logging removed
         
         // Update count display
         onlineFavoritesCountSpan.textContent = onlineFavorites.length;
@@ -291,104 +294,35 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else {
             onlineFavoritesListDiv.innerHTML = '<p>No favorite players currently online.</p>';
         }
-        // Debug logging removed
     };
 
     // Global scope for popup lifecycle
-    window.currentUserID = null;
+    window.currentUserID = null; // This will be the botc.app game player ID
     window.liveGameInfo = null; 
     window.playerData = {}; // Initialize playerData
 
     // --- Dark Mode Functionality ---
     function setDarkMode(isDark) {
-        if (isDark) {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
+        document.body.classList.toggle('dark-mode', isDark);
+        if (darkModeToggle) {
+            darkModeToggle.checked = isDark;
         }
-        // Save preference
-        const themeToSave = isDark ? 'dark' : 'light';
-        chrome.storage.local.set({ theme: themeToSave }, function() {
-            if (chrome.runtime.lastError) {
-                console.error('Error saving theme preference:', chrome.runtime.lastError);
-            }
-        });
+        chrome.storage.local.set({ theme: isDark ? 'dark' : 'light' });
     }
 
-    // Helper to wait for userManager to be ready before rendering known players
-    async function waitForUserManagerAndRenderKnownPlayers(container, searchTerm, maxRetries = 20, delay = 50) {
-        try {
-            await renderKnownPlayers(container, searchTerm);
-        } catch (error) {
-            console.error('[Popup Init] Failed to render known players:', error);
-            // Show a user-friendly error message in the container
-            if (container) {
-                container.innerHTML = '<div class="error-message">Failed to load player management. Please try refreshing.</div>';
-            }
-        }
-    }
-
-    // --- Search Input Listener (User Management Tab) ---
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
-            }
-            searchTimeout = setTimeout(() => {
-                if (document.getElementById('userManagement').classList.contains('active')) {
-                    waitForUserManagerAndRenderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
-                }
-            }, 300);
-        });
-    } else {
-        console.warn('Search input element not found.');
-    }
-
-    // --- Initial Async Setup --- 
-    try {
-
-        // Load theme preference first (synchronous parts + async storage)
-        const themeResult = await new Promise((resolve) => chrome.storage.local.get(['theme'], resolve));
-        if (themeResult && themeResult.theme === 'dark') {
+    // Load saved theme preference or default to dark mode
+    chrome.storage.local.get('theme', function(data) {
+        if (data.theme === 'dark') {
             setDarkMode(true);
-            if (darkModeToggle) darkModeToggle.checked = true;
+        } else if (data.theme === 'light') {
+            setDarkMode(false);
         } else {
-            setDarkMode(false); 
-            if (darkModeToggle) darkModeToggle.checked = false;
+            // Default to dark mode if no theme is set
+            setDarkMode(true);
         }
+    });
 
-        // Fetch Auth Token and parse User ID
-        // console.log('[Popup Init] Requesting Auth Token...');
-        const tokenResponse = await sendMessagePromise({ type: 'GET_AUTH_TOKEN' });
-        if (tokenResponse && tokenResponse.token) {
-            // console.log('[Popup Init] Auth Token received.');
-            window.currentUserID = parseJwt(tokenResponse.token);
-            // console.log('[Popup Init] Parsed User ID:', window.currentUserID);
-        } else {
-            console.warn('[Popup Init] No Auth Token received from background.');
-            window.currentUserID = null;
-        }
-
-        // Fetch initial player data using getAllPlayerData
-        try {
-            window.playerData = await getAllPlayerData();
-            // console.log('[Popup Init] Player data loaded. Count:', Object.keys(window.playerData).length);
-        } catch (error) {
-            console.error('[Popup Init] Error loading player data:', error);
-            window.playerData = {}; // Ensure playerData is an empty object on error
-        }
-
-    } catch (error) {
-        console.error('[Popup Init] Error during initial async setup:', error);
-        // Ensure defaults are set in case of error
-        window.currentUserID = null;
-        window.liveGameInfo = null;
-        setDarkMode(false); 
-        if (darkModeToggle) darkModeToggle.checked = false;
-    }
-
-    // Dark Mode Toggle Logic (no longer needs to be conditional on settings modal elements)
-    if (darkModeToggle && typeof darkModeToggle.addEventListener === 'function') {
+    if (darkModeToggle) {
         darkModeToggle.addEventListener('change', function() {
             setDarkMode(this.checked);
         });
@@ -401,7 +335,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Function to show a specific tab
     function showTab(tabName) {
-        // Debug logging removed
         document.querySelectorAll('.tab-content').forEach(tab => {
             if (tab.id === tabName || (tabName === 'account' && tab.id === 'accountTab')) {
                 tab.style.display = 'block';
@@ -475,7 +408,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Function to refresh the session display
     async function refreshDisplayedSessions() {
-        // console.log('[Popup] Refreshing displayed sessions...');
         if (loadingIndicator) loadingIndicator.style.display = 'block';
         if (sessionListDiv) sessionListDiv.innerHTML = ''; // Clear previous sessions
         if (fetchStatsSpan) fetchStatsSpan.textContent = ''; // Clear previous stats
@@ -491,7 +423,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             try {
                 const playerDataResponse = await sendMessagePromise({ type: 'GET_PLAYER_DATA' });
                 window.playerData = (playerDataResponse && playerDataResponse.playerData) ? playerDataResponse.playerData : {};
-                // console.log('[Popup] Fallback playerData load completed during refresh.');
             } catch (err) {
                 console.error('[Popup] Error during fallback playerData load:', err);
                 window.playerData = {}; // Ensure it's at least an empty object
@@ -514,7 +445,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 addPlayer,
                 createUsernameHistoryModal,
                 window.updateOnlineFavoritesListFunc,
-                sessionListDiv,
+                sessionListDiv, 
                 currentFilterOptions,
                 (sessions, error) => { // onCompleteCallback
                     if (loadingIndicator) loadingIndicator.style.display = 'none';
@@ -522,7 +453,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         console.error("[Popup] Error reported by fetchAndDisplaySessions:", error);
                         if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>Failed to display sessions: ${error}</p>`;
                     } else {
-                        // console.log("[Popup] Sessions displayed/updated.");
                         latestSessionData = sessions; // Store the latest session data
                         // After sessions are rendered, update the user management tab if it's active
                         // This ensures player statuses (e.g., online) are current
@@ -791,16 +721,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add listener for live game info updates from background script
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.type === 'LIVE_GAME_INFO_UPDATED') {
-            // console.log('[Popup] Received LIVE_GAME_INFO_UPDATED:', JSON.stringify(request.payload, null, 2));
             const oldLiveGameInfoString = JSON.stringify(window.liveGameInfo);
             window.liveGameInfo = request.payload;
             const newLiveGameInfoString = JSON.stringify(window.liveGameInfo);
 
             if (newLiveGameInfoString !== oldLiveGameInfoString) {
-                console.log('[Popup] Live game info has changed. Refreshing session display.');
+                console.log('Live game info has changed. Refreshing session display.');
                 refreshDisplayedSessions();
             } else {
-                console.log('[Popup] Live game info received, but no change detected. No refresh needed.');
+                console.log('Live game info received, but no change detected. No refresh needed.');
             }
             // sendResponse({status: "Popup processed LIVE_GAME_INFO_UPDATED"}); // Optional: send response if needed
             return true; // Keep channel open for potential async response, good practice
@@ -808,3 +737,35 @@ document.addEventListener('DOMContentLoaded', async function() {
         return false; // For synchronous messages or if not handling this specific message type
     });
 });
+
+// Helper function to parse JWT
+window.parseMyCustomBotcJwt = function(token) {
+    if (!token || typeof token !== 'string') {
+        return null;
+    }
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            return null;
+        }
+        const base64Url = parts[1];
+        
+        let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        // Pad base64 string if necessary
+        switch (base64.length % 4) {
+            case 2: base64 += '=='; break;
+            case 3: base64 += '='; break;
+        }
+
+        const decodedAtob = atob(base64); // Use atob for base64 decoding
+        // Convert binary string to percent-encoded characters
+        const jsonPayload = decodeURIComponent(decodedAtob.split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        const parsed = JSON.parse(jsonPayload);
+        return parsed; // Ensure it returns the whole parsed object
+    } catch (e) {
+        console.error("[Popup] Failed to parse JWT. Token:", token, "Error:", e.message);
+        return null;
+    }
+};

@@ -336,6 +336,11 @@ body.dark-mode .player-card {
     opacity: 0.60; /* Slightly faded appearance */
 }
 
+.player-card.player-favorite {
+    border: 2px solid gold;
+    box-shadow: 0 0 5px gold;
+}
+
 /* The existing storyteller-badge is used in the HTML instead of ::before content */
 
 .player-info {

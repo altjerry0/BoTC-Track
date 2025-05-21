@@ -5,13 +5,14 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-21.
 # BotC Player Tracker Extension - Changelog
 ---
 
+
 ## [v1.1.8] - 2025-05-21
+### Fixed
+- **Current Game Detection**: Resolved an issue where the extension failed to detect if the user was part of a live game session. This was due to incorrect parsing of the `botc.app` JWT and a function scope problem that caused an older parsing logic to be used. The JWT is now correctly parsed for the player's game ID, ensuring accurate detection.
+- **Favorite Player Highlighting**: Ensured that players marked as 'favorite' are now correctly highlighted with a distinct style (e.g., gold border) within the player lists of active game sessions on the 'Sessions' tab. This restores a previously broken visual cue.
+
 ### Changed
-- **Firebase Auth Service:** Upgraded the external authentication service (`auth.trackbotc.com`):
-  - Migrated from Firebase Cloud Functions 1st Generation to 2nd Generation for improved performance, scalability, and concurrency handling.
-  - Updated runtime environment from Node.js 20 to Node.js 22.
-  - Ensured necessary IAM permissions (specifically `iam.serviceAccounts.signBlob` via the `Service Account Token Creator` role) are correctly configured for the 2nd Gen function's service account to allow custom token creation.
-  - Updated service deployment scripts and configurations (`firebase.json`, `package.json`, `index.js`) to support 2nd Gen functions.
+- **Default Theme**: Dark mode is now the default theme for the extension. Users can still toggle to light mode.
 
 ## [v1.1.7] - 2025-05-20
 ### Fixed

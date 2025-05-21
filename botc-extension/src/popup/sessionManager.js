@@ -142,6 +142,11 @@ function createPlayerCard(
     
     playerCard.classList.add('player-card'); // Add base class
 
+    // Add favorite class if applicable
+    if (isKnown && knownPlayer.isFavorite) {
+        playerCard.classList.add('player-favorite');
+    }
+
     // Add rating class using the one from userManager.js
     const ratingClass = isKnown && window.getRatingClass ? window.getRatingClass(knownPlayer.score) : 'rating-unknown';
     playerCard.classList.add(ratingClass);
