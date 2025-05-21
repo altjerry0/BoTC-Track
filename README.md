@@ -29,6 +29,7 @@ Regularly exporting your data is a good habit!
 ## Table of Contents
 
 - [Installation](#installation)
+- [Cross-Browser Compatibility](#cross-browser-compatibility)
 - [Features](#features)
 - [Authentication Service](#authentication-service)
 - [Usage Guidelines](#usage-guidelines)
@@ -66,6 +67,40 @@ This method allows you to install a specific version from GitHub, which might be
 4.  The extension should now be loaded. Pin it to your toolbar for easy access.
 
 (For developers looking to load directly from source code, see the [Developer Setup / Loading from Source](#developer-setup--loading-from-source) section below.)
+
+## Cross-Browser Compatibility
+
+The extension primarily targets Chrome, but also works in other Chromium-based browsers with some specific setup requirements.
+
+### Brave Browser Support
+
+Brave's enhanced privacy features can interfere with OAuth authentication. To ensure proper authentication in Brave, you need to create a separate Web Application OAuth client:
+
+1. **Create a Web Application OAuth Client**:
+   - Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   - Create a new OAuth 2.0 Client ID
+   - Select "Web application" type (not Chrome Extension)
+   - For "Authorized JavaScript origins" add: `https://[YOUR_EXTENSION_ID].chromiumapp.org`
+   - For "Authorized redirect URIs" add: `https://[YOUR_EXTENSION_ID].chromiumapp.org/`
+   - Replace `[YOUR_EXTENSION_ID]` with your extension ID (e.g., `leicmnbiojnfagjnciffpbejagpiaiod`)
+
+2. **Update the Configuration**:
+   - Open `src/config.js` in the extension folder
+   - Replace the placeholder `braveClientId` value with your new Web Application client ID:
+   ```javascript
+   braveClientId: "YOUR_WEB_APPLICATION_CLIENT_ID",
+   ```
+   - Save the file and rebuild the extension with `npm run build`
+
+3. **Troubleshooting Brave Authentication**:
+   - If you still encounter authentication issues in Brave, try:
+     - Disabling Shields for the OAuth sign-in page
+     - Checking browser console logs for specific errors
+     - Ensuring you're using the correct extension ID in your redirect URI
+
+### Other Chromium Browsers
+
+Microsoft Edge and other Chromium-based browsers should work without additional configuration.
 
 ## Features
 

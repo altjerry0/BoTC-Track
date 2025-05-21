@@ -35005,11 +35005,18 @@ registerAuth("WebExtension" /* ClientPlatform.WEB_EXTENSION */);
 // Detect environment: When running in the Chrome Web Store, there is no 'key' field in the manifest
 var isProduction = !chrome.runtime.getManifest().key;
 
-// OAuth configuration - get client ID from manifest to ensure consistency
+// OAuth configuration - with separate client IDs for different browsers
 var authConfig = {
-  // Use the client ID from the manifest.json to avoid inconsistencies
-  clientId: chrome.runtime.getManifest().oauth2.client_id,
-  // OAuth scopes (same for both environments)
+  // Chrome Extension client ID (from manifest.json)
+  chromeClientId: chrome.runtime.getManifest().oauth2.client_id,
+  // Web Application client ID for Brave - needs to be created in Google Cloud Console
+  // TODO: Replace this placeholder with your Web Application OAuth client ID
+  braveClientId: "234038964353-3rfnfsdh051r8g9aqrl4h7uo9f9c339u.apps.googleusercontent.com",
+  // For backward compatibility (used in places where we haven't updated code yet)
+  get clientId() {
+    return this.chromeClientId;
+  },
+  // OAuth scopes (same for all environments)
   scopes: ["https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
 };
 
@@ -35075,10 +35082,125 @@ if (debugLogging) {
 var FIREBASE_AUTH_SERVICE_URL = "https://us-central1-botctracker.cloudfunctions.net/api";
 
 /**
+ * Detects if the current browser is Brave
+ * @returns {boolean} True if the browser is Brave
+ */
+function isBraveBrowser() {
+  // Method 1: Check for the navigator.brave object and isBrave method
+  if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
+    return navigator.brave.isBrave();
+  }
+
+  // Method 2: Check for Brave in the user agent (less reliable but fallback)
+  return /brave/i.test(navigator.userAgent);
+}
+
+/**
+ * Gets an auth token from Google using the appropriate method for the current browser
+ * @param {boolean} interactive - Whether to show interactive auth dialogs
+ * @returns {Promise<string>} The Google auth token
+ */
+function getGoogleAuthToken() {
+  return _getGoogleAuthToken.apply(this, arguments);
+}
+/**
  * Authenticates with Google via Chrome Identity API, then exchanges the token
  * with our secure authentication service to get a Firebase custom token
  * @returns {Promise<Object>} User credentials and profile information
  */
+function _getGoogleAuthToken() {
+  _getGoogleAuthToken = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+    var interactive,
+      isBrave,
+      _args2 = arguments;
+    return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+      while (1) switch (_context2.prev = _context2.next) {
+        case 0:
+          interactive = _args2.length > 0 && _args2[0] !== undefined ? _args2[0] : true;
+          isBrave = isBraveBrowser();
+          console.log('[BG Auth] Browser detected as:', isBrave ? 'Brave' : 'Other (Chrome/Edge)');
+          _context2.prev = 3;
+          if (!(isBrave && authConfig.braveClientId !== 'YOUR_WEB_APPLICATION_CLIENT_ID')) {
+            _context2.next = 11;
+            break;
+          }
+          // For Brave, use launchWebAuthFlow with the Web Application client ID
+          console.log('[BG Auth] Using Brave-specific OAuth flow with Web Application client ID');
+          _context2.next = 8;
+          return new Promise(function (resolve, reject) {
+            try {
+              var redirectURL = chrome.identity.getRedirectURL();
+              console.log('[BG Auth] Redirect URL:', redirectURL);
+
+              // Construct the auth URL with necessary parameters
+              var authURL = "https://accounts.google.com/o/oauth2/auth?" + "client_id=".concat(authConfig.braveClientId, "&") + "redirect_uri=".concat(encodeURIComponent(redirectURL), "&") + "response_type=token&" + "scope=".concat(encodeURIComponent(authConfig.scopes.join(' ')));
+              chrome.identity.launchWebAuthFlow({
+                url: authURL,
+                interactive: interactive
+              }, function (responseUrl) {
+                if (chrome.runtime.lastError) {
+                  console.error('[BG Auth] WebAuthFlow error:', chrome.runtime.lastError);
+                  return reject(chrome.runtime.lastError);
+                }
+                if (!responseUrl) {
+                  return reject(new Error('No response URL returned from auth flow'));
+                }
+                try {
+                  // Extract access token from response URL hash fragment
+                  var hashParams = new URLSearchParams(new URL(responseUrl).hash.substring(1));
+                  var token = hashParams.get('access_token');
+                  if (!token) {
+                    return reject(new Error('No access token found in response'));
+                  }
+                  console.log('[BG Auth] Successfully obtained token via WebAuthFlow');
+                  resolve(token);
+                } catch (error) {
+                  console.error('[BG Auth] Error parsing response URL:', error);
+                  reject(error);
+                }
+              });
+            } catch (error) {
+              console.error('[BG Auth] Error in WebAuthFlow setup:', error);
+              reject(error);
+            }
+          });
+        case 8:
+          return _context2.abrupt("return", _context2.sent);
+        case 11:
+          // For Chrome, Edge or if the braveClientId hasn't been set, use standard getAuthToken
+          console.log('[BG Auth] Using chrome.identity.getAuthToken for authentication');
+          _context2.next = 14;
+          return new Promise(function (resolve, reject) {
+            chrome.identity.getAuthToken({
+              interactive: interactive
+            }, function (token) {
+              if (chrome.runtime.lastError) {
+                console.error('[BG Auth] Auth error:', chrome.runtime.lastError);
+                reject(chrome.runtime.lastError);
+              } else {
+                console.log('[BG Auth] Successfully obtained token');
+                resolve(token);
+              }
+            });
+          });
+        case 14:
+          return _context2.abrupt("return", _context2.sent);
+        case 15:
+          _context2.next = 21;
+          break;
+        case 17:
+          _context2.prev = 17;
+          _context2.t0 = _context2["catch"](3);
+          console.error('[BG Auth] Authentication failed:', _context2.t0);
+          throw _context2.t0;
+        case 21:
+        case "end":
+          return _context2.stop();
+      }
+    }, _callee2, null, [[3, 17]]);
+  }));
+  return _getGoogleAuthToken.apply(this, arguments);
+}
 function authenticateWithGoogleAndFirebase() {
   return _authenticateWithGoogleAndFirebase.apply(this, arguments);
 } // Firestore sync functions
@@ -35090,174 +35212,144 @@ function authenticateWithGoogleAndFirebase() {
  */
 function _authenticateWithGoogleAndFirebase() {
   _authenticateWithGoogleAndFirebase = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+    var googleToken, userInfoResponse, googleUserInfo, exchangeResponse, errorData, _yield$exchangeRespon, firebaseCustomToken, firebaseUserInfo, userCredential, firebaseUser, authUser, userProfileData;
     return _regeneratorRuntime().wrap(function _callee3$(_context3) {
       while (1) switch (_context3.prev = _context3.next) {
         case 0:
-          return _context3.abrupt("return", new Promise(function (resolve, reject) {
-            // First authenticate with Google Identity API to get a token
-            chrome.identity.getAuthToken({
-              interactive: true
-            }, /*#__PURE__*/function () {
-              var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(googleToken) {
-                var userInfoResponse, googleUserInfo, exchangeResponse, errorData, _yield$exchangeRespon, firebaseCustomToken, firebaseUserInfo, userCredential, firebaseUser, authUser, userProfileData;
-                return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-                  while (1) switch (_context2.prev = _context2.next) {
-                    case 0:
-                      if (!chrome.runtime.lastError) {
-                        _context2.next = 4;
-                        break;
-                      }
-                      console.error('[BG Auth] Chrome identity error:', chrome.runtime.lastError);
-                      reject(chrome.runtime.lastError);
-                      return _context2.abrupt("return");
-                    case 4:
-                      _context2.prev = 4;
-                      console.log('[BG Auth] Got Google token from Chrome Identity API');
+          _context3.prev = 0;
+          _context3.next = 3;
+          return getGoogleAuthToken(true);
+        case 3:
+          googleToken = _context3.sent;
+          _context3.next = 6;
+          return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: {
+              'Authorization': 'Bearer ' + googleToken
+            }
+          });
+        case 6:
+          userInfoResponse = _context3.sent;
+          if (userInfoResponse.ok) {
+            _context3.next = 9;
+            break;
+          }
+          throw new Error('Failed to fetch user info: ' + userInfoResponse.statusText);
+        case 9:
+          _context3.next = 11;
+          return userInfoResponse.json();
+        case 11:
+          googleUserInfo = _context3.sent;
+          console.log('[BG Auth] Got Google user info:', googleUserInfo.email);
 
-                      // Get Google user info for display purposes
-                      _context2.next = 8;
-                      return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                        headers: {
-                          'Authorization': 'Bearer ' + googleToken
-                        }
-                      });
-                    case 8:
-                      userInfoResponse = _context2.sent;
-                      if (userInfoResponse.ok) {
-                        _context2.next = 11;
-                        break;
-                      }
-                      throw new Error('Failed to fetch user info: ' + userInfoResponse.statusText);
-                    case 11:
-                      _context2.next = 13;
-                      return userInfoResponse.json();
-                    case 13:
-                      googleUserInfo = _context2.sent;
-                      console.log('[BG Auth] Got Google user info:', googleUserInfo.email);
+          // Exchange the Google token for a Firebase custom token using our secure service
+          console.log('[BG Auth] Exchanging Google token for Firebase custom token');
+          _context3.next = 16;
+          return fetch("".concat(FIREBASE_AUTH_SERVICE_URL, "/auth/exchange-token"), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              googleToken: googleToken
+            })
+          });
+        case 16:
+          exchangeResponse = _context3.sent;
+          if (exchangeResponse.ok) {
+            _context3.next = 22;
+            break;
+          }
+          _context3.next = 20;
+          return exchangeResponse.json();
+        case 20:
+          errorData = _context3.sent;
+          throw new Error('Token exchange failed: ' + (errorData.error || exchangeResponse.statusText));
+        case 22:
+          _context3.next = 24;
+          return exchangeResponse.json();
+        case 24:
+          _yield$exchangeRespon = _context3.sent;
+          firebaseCustomToken = _yield$exchangeRespon.token;
+          firebaseUserInfo = _yield$exchangeRespon.user;
+          console.log('[BG Auth] Got Firebase custom token');
 
-                      // Exchange the Google token for a Firebase custom token using our secure service
-                      console.log('[BG Auth] Exchanging Google token for Firebase custom token');
-                      _context2.next = 18;
-                      return fetch("".concat(FIREBASE_AUTH_SERVICE_URL, "/auth/exchange-token"), {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                          googleToken: googleToken
-                        })
-                      });
-                    case 18:
-                      exchangeResponse = _context2.sent;
-                      if (exchangeResponse.ok) {
-                        _context2.next = 24;
-                        break;
-                      }
-                      _context2.next = 22;
-                      return exchangeResponse.json();
-                    case 22:
-                      errorData = _context2.sent;
-                      throw new Error('Token exchange failed: ' + (errorData.error || exchangeResponse.statusText));
-                    case 24:
-                      _context2.next = 26;
-                      return exchangeResponse.json();
-                    case 26:
-                      _yield$exchangeRespon = _context2.sent;
-                      firebaseCustomToken = _yield$exchangeRespon.token;
-                      firebaseUserInfo = _yield$exchangeRespon.user;
-                      console.log('[BG Auth] Got Firebase custom token');
+          // Sign in to Firebase with the custom token and wait for auth state
+          _context3.next = 30;
+          return signInWithCustomToken(auth, firebaseCustomToken);
+        case 30:
+          userCredential = _context3.sent;
+          _context3.next = 33;
+          return new Promise(function (resolve) {
+            var unsubscribe = auth.onAuthStateChanged(function (user) {
+              if (user) {
+                unsubscribe();
+                resolve();
+              }
+            });
+          });
+        case 33:
+          // Get the current user after auth state is ready
+          firebaseUser = auth.currentUser;
+          if (firebaseUser) {
+            _context3.next = 36;
+            break;
+          }
+          throw new Error('Failed to get Firebase user after sign in');
+        case 36:
+          // Store the tokens and user info
+          authUser = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || googleUserInfo.email,
+            displayName: firebaseUser.displayName || googleUserInfo.name,
+            photoURL: firebaseUser.photoURL || googleUserInfo.picture
+          }; // Create the user profile data
+          userProfileData = {
+            uid: firebaseUser.uid,
+            googleId: googleUserInfo.sub,
+            email: googleUserInfo.email || firebaseUser.email,
+            displayName: googleUserInfo.name || firebaseUser.displayName,
+            photoURL: googleUserInfo.picture || firebaseUser.photoURL,
+            lastSignIn: new Date().toISOString()
+          }; // Store in chrome.storage for persistence
+          _context3.next = 40;
+          return chrome.storage.local.set({
+            googleAuthToken: googleToken,
+            firebaseCustomToken: firebaseCustomToken,
+            authUser: userProfileData
+          });
+        case 40:
+          console.log('[BG Auth] Stored auth data in Chrome storage');
 
-                      // Sign in to Firebase with the custom token and wait for auth state
-                      _context2.next = 32;
-                      return signInWithCustomToken(auth, firebaseCustomToken);
-                    case 32:
-                      userCredential = _context2.sent;
-                      _context2.next = 35;
-                      return new Promise(function (resolve) {
-                        var unsubscribe = auth.onAuthStateChanged(function (user) {
-                          if (user) {
-                            unsubscribe();
-                            resolve();
-                          }
-                        });
-                      });
-                    case 35:
-                      // Get the current user after auth state is ready
-                      firebaseUser = auth.currentUser;
-                      if (firebaseUser) {
-                        _context2.next = 38;
-                        break;
-                      }
-                      throw new Error('Failed to get Firebase user after sign in');
-                    case 38:
-                      // Store the tokens and user info
-                      authUser = {
-                        uid: firebaseUser.uid,
-                        email: firebaseUser.email || googleUserInfo.email,
-                        displayName: firebaseUser.displayName || googleUserInfo.name,
-                        photoURL: firebaseUser.photoURL || googleUserInfo.picture
-                      }; // Create the user profile data
-                      userProfileData = {
-                        uid: firebaseUser.uid,
-                        googleId: googleUserInfo.sub,
-                        email: googleUserInfo.email || firebaseUser.email,
-                        displayName: googleUserInfo.name || firebaseUser.displayName,
-                        photoURL: googleUserInfo.picture || firebaseUser.photoURL,
-                        lastSignIn: new Date().toISOString()
-                      }; // Store in chrome.storage for persistence
-                      _context2.next = 42;
-                      return chrome.storage.local.set({
-                        googleAuthToken: googleToken,
-                        firebaseCustomToken: firebaseCustomToken,
-                        authUser: userProfileData
-                      });
-                    case 42:
-                      console.log('[BG Auth] Stored auth data in Chrome storage');
+          // Notify any listening popup/content scripts that we have new auth data
+          try {
+            chrome.runtime.sendMessage({
+              type: 'AUTH_STATE_CHANGED',
+              payload: userProfileData
+            });
+          } catch (error) {
+            console.warn('[BG Auth] Could not notify listeners:', error);
+          }
+          console.log('[BG Auth] Authentication successful with Firebase UID:', firebaseUser.uid);
 
-                      // Notify any listening popup/content scripts that we have new auth data
-                      try {
-                        chrome.runtime.sendMessage({
-                          type: 'AUTH_STATE_CHANGED',
-                          payload: userProfileData
-                        });
-                      } catch (error) {
-                        console.warn('[BG Auth] Could not notify listeners:', error);
-                      }
-                      console.log('[BG Auth] Authentication successful with Firebase UID:', firebaseUser.uid);
-
-                      // Create/update the user document in Firestore
-                      _context2.next = 47;
-                      return ensureUserDocumentExists(firebaseUser.uid, userProfileData);
-                    case 47:
-                      // Return the auth data
-                      resolve({
-                        firebaseUser: firebaseUser,
-                        googleUser: googleUserInfo,
-                        profile: userProfileData
-                      });
-                      _context2.next = 54;
-                      break;
-                    case 50:
-                      _context2.prev = 50;
-                      _context2.t0 = _context2["catch"](4);
-                      console.error('[BG Auth] Error in authentication flow:', _context2.t0);
-                      reject(_context2.t0);
-                    case 54:
-                    case "end":
-                      return _context2.stop();
-                  }
-                }, _callee2, null, [[4, 50]]);
-              }));
-              return function (_x8) {
-                return _ref2.apply(this, arguments);
-              };
-            }());
-          }));
-        case 1:
+          // Create/update the user document in Firestore
+          _context3.next = 45;
+          return ensureUserDocumentExists(firebaseUser.uid, userProfileData);
+        case 45:
+          return _context3.abrupt("return", {
+            firebaseUser: firebaseUser,
+            googleUser: googleUserInfo,
+            profile: userProfileData
+          });
+        case 48:
+          _context3.prev = 48;
+          _context3.t0 = _context3["catch"](0);
+          console.error('[BG Auth] Authentication failed:', _context3.t0);
+          throw _context3.t0;
+        case 52:
         case "end":
           return _context3.stop();
       }
-    }, _callee3);
+    }, _callee3, null, [[0, 48]]);
   }));
   return _authenticateWithGoogleAndFirebase.apply(this, arguments);
 }
