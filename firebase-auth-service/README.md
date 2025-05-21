@@ -4,7 +4,7 @@ This service provides a secure way for the BotC Tracker Chrome Extension to auth
 
 ## Overview
 
-This service acts as a middleware between the Chrome Extension and Firebase Authentication. Its primary responsibilities are:
+This service acts as a middleware between the Chrome Extension and Firebase Authentication. It is built using Node.js (runtime version 22) and Express, hosted as a Firebase Cloud Function (2nd Generation). Its primary responsibilities are:
 
 1.  **Receiving Google Tokens**: Accepts Google OAuth tokens obtained by the Chrome Extension via the Chrome Identity API.
 2.  **Token Exchange**: Securely validates the Google token and exchanges it for a Firebase custom token using the Firebase Admin SDK.
@@ -21,7 +21,7 @@ This approach eliminates the need for external script loading in the extension (
     *   Compliant with Chrome Web Store policies regarding authentication.
 
 2.  **BotC Tracker Auth Service (This Service - `auth.trackbotc.com`)**
-    *   A custom Node.js/Express application hosted as a Firebase Cloud Function.
+    *   A custom Node.js/Express application (Node.js 22) hosted as a Firebase Cloud Function (2nd Generation).
     *   Handles the secure exchange of Google OAuth tokens for Firebase custom tokens.
     *   Validates incoming tokens and interacts with the Firebase Admin SDK.
 
@@ -158,8 +158,11 @@ _For a visual representation, see the detailed diagram below._
 
 ## Development Notes
 
+*   This service must be deployed to the `auth.trackbotc.com` subdomain
+*   Ensure all API keys and secrets are properly managed
+*   Monitor usage and implement scaling as needed
 *   This service is typically deployed to a dedicated URL like `auth.yourdomain.com` (e.g., `auth.trackbotc.com`) and configured in the Chrome extension as the token exchange endpoint.
-*   Ensure Firebase Cloud Function configurations (region, runtime, memory, timeout) are appropriate for the expected load.
+*   Ensure Firebase Cloud Function (2nd Gen) configurations (region, runtime `nodejs22`, memory, timeout, concurrency) are appropriate for the expected load. These are configured in `firebase.json` and within `index.js` using `setGlobalOptions` and `onRequest` parameters.
 
 ## Secure Authentication Flow
 
@@ -186,10 +189,3 @@ Chrome Extension                  Auth Service                Firebase
 | for Firestore  |                                         |                |
 |                |                                         |                |
 +----------------+                                         +----------------+
-```
-
-## Development Notes
-
-- This service must be deployed to the `auth.trackbotc.com` subdomain
-- Ensure all API keys and secrets are properly managed
-- Monitor usage and implement scaling as needed

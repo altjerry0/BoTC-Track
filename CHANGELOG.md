@@ -1,9 +1,17 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-19.
+This CHANGELOG.md was last updated by Cascade on 2025-05-21.
 -->
 
 # BotC Player Tracker Extension - Changelog
 ---
+
+## [v1.1.8] - 2025-05-21
+### Changed
+- **Firebase Auth Service:** Upgraded the external authentication service (`auth.trackbotc.com`):
+  - Migrated from Firebase Cloud Functions 1st Generation to 2nd Generation for improved performance, scalability, and concurrency handling.
+  - Updated runtime environment from Node.js 20 to Node.js 22.
+  - Ensured necessary IAM permissions (specifically `iam.serviceAccounts.signBlob` via the `Service Account Token Creator` role) are correctly configured for the 2nd Gen function's service account to allow custom token creation.
+  - Updated service deployment scripts and configurations (`firebase.json`, `package.json`, `index.js`) to support 2nd Gen functions.
 
 ## [v1.1.7] - 2025-05-20
 ### Fixed
