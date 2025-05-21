@@ -18,6 +18,3 @@ This file tracks active bugs and planned future enhancements for the BotC Player
 *   [ ] *Uniform row height in session list (handle long game names)*
 *   [X] *Shared Player Lists (Teams/Groups via Firebase)*
 *   [ ] *Automated Tagging/Categorization of players based on roles (if data becomes available)*
-
----
-*Please add new items to the relevant sections. Mark items with `[x]` when completed or closed.*
