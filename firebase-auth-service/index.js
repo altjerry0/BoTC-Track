@@ -1,4 +1,5 @@
-const functions = require('firebase-functions/v1');
+const {onRequest} = require("firebase-functions/v2/https");
+const {setGlobalOptions} = require("firebase-functions/v2");
 const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
@@ -60,18 +61,11 @@ app.use((err, req, res, next) => {
 });
 
 // Initialize Firebase Admin SDK
-// Note: In production, use environment variables or secret management
-try {
-  const serviceAccount = require('./service-account-key.json');
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://botctracker.firebaseio.com"
-  });
-} catch (error) {
-  console.error('Error initializing Firebase Admin SDK:', error);
-  // If running in Cloud Functions, use the default credentials
-  admin.initializeApp();
-}
+admin.initializeApp();
+
+// Set global options for all v2 functions (e.g., region)
+// Supported regions: https://firebase.google.com/docs/functions/locations
+setGlobalOptions({ region: 'us-central1' });
 
 /**
  * Endpoint to exchange a Google token for a Firebase custom token
@@ -158,12 +152,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Export the Express app as a Firebase Function
-// Attempting v1 specific syntax for runtime options
-exports.api = functions
-  .region('us-central1')
-  .runWith({
-    timeoutSeconds: 15
-    // memory: '256MB' // Example if you needed to set memory
-  })
-  .https.onRequest(app);
+// Export the Express app as a 2nd Gen Firebase Function
+exports.api = onRequest(
+  { // Runtime options specific to this function
+    timeoutSeconds: 15,
+    // memory: "256MiB", // Example: set memory if needed (e.g., 128MiB, 256MiB, 512MiB)
+    // concurrency: 80,   // Example: set concurrency (default is 80)
+  },
+  app // Your express app
+);

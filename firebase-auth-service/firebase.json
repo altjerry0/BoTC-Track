@@ -24,7 +24,8 @@
   },
   "functions": {
     "source": ".",
-    "runtime": "nodejs20",
+    "runtime": "nodejs22",
+    "gen": 2,
     "ignore": [
       ".firebase/**",
       ".firebaserc",
