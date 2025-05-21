@@ -403,6 +403,17 @@ body.dark-mode .player-card {
     margin-bottom: 4px; 
 }
 
+.player-notes {
+    font-size: 0.9em; /* Consistent with meta-info */
+    color: var(--notes-text-color, var(--subtle-text-color)); /* Use a specific var or fallback */
+    margin-top: 4px;
+    margin-bottom: 4px;
+    white-space: pre-wrap; /* Allows normal wrapping for spaced text and preserves line breaks */
+    overflow-wrap: break-word; /* Crucial: breaks long words if they would overflow */
+    word-break: break-all; /* More aggressive: can break words anywhere to prevent overflow. Good for URLs/long strings. */
+    /* Ensure it's not inheriting text-overflow: ellipsis or white-space: nowrap from a parent inadvertently */
+}
+
 .player-card.rating-5 { 
     border-left-color: #31c48d; /* Green */
 }
@@ -983,10 +994,10 @@ body.dark-mode .username-history-item {
     margin-left: 10px;
 }
 
-.player-notes {
-    font-size: 0.9em;
-    color: var(--subtle-text-color);
-    margin-top: 4px;
+.player-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0; /* Prevent actions container from shrinking */
 }
 
 .header-controls {

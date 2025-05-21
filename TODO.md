@@ -5,8 +5,11 @@ This file tracks active bugs and planned future enhancements for the BotC Player
 ## Current Bugs
 
 *   [x] Favorites are not highlighted correctly in the UI.
-*   [x] Current game detection fails - Player ID from botc.app JWT was not being correctly parsed and assigned due to an older function version taking precedence. Corrected JWT parsing and ensured correct function scope. (Fixed v1.2.1)
+*   [x] Current game detection fails - Player ID from botc.app JWT was not being correctly parsed and assigned due to an older function version taking precedence. Corrected JWT parsing and ensured correct function scope. (Fixed v1.1.8)
 *   [x] Updating user information (e.g., notes, rating) doesn't always immediately refresh the user list or session views, even though the data is saved.
+    *   [x] Session modal updates now trigger targeted UI refresh for the card and dependent views (Online Favs, User Mngmt List). (Fixed v1.1.10)
+    *   Broader player management UI refresh (add/edit/delete/favorite from User Management) improved in v1.1.9.
+*   [x] Long, unbroken player notes in User Management could overflow their container. (Fixed v1.1.10)
 
 ## Future Features
 

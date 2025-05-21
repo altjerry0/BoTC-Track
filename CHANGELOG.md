@@ -5,22 +5,19 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-21.
 # BotC Player Tracker Extension - Changelog
 ---
 
-
-## [v1.1.9] - 2025-05-22
-### Improved
+## [v1.1.8] - 2025-05-21
+### Fixed
+- **Current Game Detection**: Resolved an issue where the extension failed to detect if the user was part of a live game session. This was due to incorrect parsing of the `botc.app` JWT and a function scope problem that caused an older parsing logic to be used. The JWT is now correctly parsed for the player's game ID, ensuring accurate detection.
+- **Favorite Player Highlighting**: Ensured that players marked as 'favorite' are now correctly highlighted with a distinct style (e.g., gold border) within the player lists of active game sessions on the 'Sessions' tab. This restores a previously broken visual cue.
+- **Targeted UI Refresh for Session Player Updates**: When adding or updating player details (score, notes) from the modal within a session player card, the UI now performs a more targeted refresh. Only the specific player card being edited is re-rendered directly, and other dependent views (Online Favorites, User Management list if active) are updated without causing a full flash or collapse of the main Sessions list. This provides a smoother user experience.
 - **Live UI Updates for Player Management**: Significantly enhanced the responsiveness of the UI when managing players. Adding, editing, deleting, or changing the favorite status of a player now triggers an immediate and comprehensive refresh of all relevant views, including the 'Known Players' list, 'Online Favorites', and player details within active sessions. This ensures data consistency across the extension without requiring manual refreshes.
     - Implemented a centralized `refreshAllViews` function in `popup.js` to handle UI updates holistically.
     - Integrated `refreshAllViews` into the `toggleFavoriteStatus` function in `userManager.js`.
     - Updated the "Add Player", "Edit Player", and "Delete Player" workflows to utilize the new refresh mechanism, providing a seamless user experience.
 
-
-## [v1.1.8] - 2025-05-21
-### Fixed
-- **Current Game Detection**: Resolved an issue where the extension failed to detect if the user was part of a live game session. This was due to incorrect parsing of the `botc.app` JWT and a function scope problem that caused an older parsing logic to be used. The JWT is now correctly parsed for the player's game ID, ensuring accurate detection.
-- **Favorite Player Highlighting**: Ensured that players marked as 'favorite' are now correctly highlighted with a distinct style (e.g., gold border) within the player lists of active game sessions on the 'Sessions' tab. This restores a previously broken visual cue.
-
 ### Changed
 - **Default Theme**: Dark mode is now the default theme for the extension. Users can still toggle to light mode.
+- **Player Notes Display**: Long, unbroken player notes (e.g., 'AAAAA...') in the User Management tab now correctly wrap within the player card. Previously, such notes could overflow their container.
 
 ## [v1.1.7] - 2025-05-20
 ### Fixed
@@ -348,3 +345,12 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-21.
 - Corrected various initial setup issues and minor bugs.
 
 ---
+
+## [v1.1.10] - 2025-05-21
+### Fixed
+- User Management: Correctly display 'Last seen: Never' for players with no valid last seen timestamp, instead of a far-past date.
+
+## [v1.1.11] - 2025-05-21
+### Fixed
+- Popup Script: Resolved a `ReferenceError: error is not defined` in `popup.js` by ensuring the `fetchAndDisplaySessions` callback consistently handles an error parameter.
+- CSV Export: Prevented `csvManager.js` warning "Export called with no data" by adding a check in `popup.js` to ensure player data exists before attempting to export. Users are now alerted if there's no data to export.

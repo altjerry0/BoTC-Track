@@ -813,7 +813,7 @@ async function fetchAndDisplaySessions(
                 createUsernameHistoryModalFunc,
                 updateOnlineFavoritesListFunc
             );
-            if (onCompleteCallback) onCompleteCallback([]); // Indicate successful fetch (of no sessions)
+            if (onCompleteCallback) onCompleteCallback([], null); // MODIFIED: data, error
             return;
         }
 
@@ -881,7 +881,7 @@ async function fetchAndDisplaySessions(
             // Ensure callback is executed after the current execution stack clears,
             // allowing checkHistoryAndRender to initiate its asynchronous operations.
             Promise.resolve().then(() => {
-                 if (onCompleteCallback) onCompleteCallback(backendSessions);
+                 if (onCompleteCallback) onCompleteCallback(backendSessions, null); // MODIFIED: data, error
             });
         }
     });

@@ -462,7 +462,7 @@ async function displayKnownPlayers(container, searchTerm = '', playerData, onlin
                 separator.style.marginRight = '5px';
                 metaInfoContainer.appendChild(separator);
             }
-            const lastSeenTextContent = formatTimeSince(player.lastSeenTimestamp);
+            const lastSeenTextContent = player.lastSeenTimestamp && player.lastSeenTimestamp > 0 ? formatTimeSince(player.lastSeenTimestamp) : 'Never';
             const lastSeenElement = document.createElement('span');
             lastSeenElement.textContent = `Last seen: ${lastSeenTextContent}`;
             lastSeenElement.className = 'last-seen-text'; 

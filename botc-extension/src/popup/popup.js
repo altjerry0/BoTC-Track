@@ -392,13 +392,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                         window.updateOnlineFavoritesListFunc,
                         sessionListDiv,
                         { officialOnly: showOfficialOnly },
-                        (sessions, finalPlayerData) => {
-                            latestSessionData = sessions;
-                            window.latestSessionData = sessions;
-                            if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                                window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                        (sessionsData, errorData) => { 
+                            if (loadingIndicator) loadingIndicator.style.display = 'none';
+                            if (errorData) {
+                                console.error("[Popup] Error reported by fetchAndDisplaySessions (filter change):", errorData);
+                                if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>Failed to display sessions: ${errorData}</p>`;
                             } else {
-                                console.error("User manager or renderKnownPlayers function not available.");
+                                // Success path for filter change
+                                latestSessionData = sessionsData;
+                                window.latestSessionData = sessionsData; // Update global
+                                if (document.getElementById('userManagement').classList.contains('active') && 
+                                    window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                                    const knownPlayersDiv = document.getElementById('knownPlayers');
+                                    const searchInput = document.getElementById('userSearch');
+                                    window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                                } else if (document.getElementById('userManagement').classList.contains('active')) {
+                                    console.error("User management tab active, but userManager or renderKnownPlayers not available (filter change).");
+                                }
                             }
                         }
                     );
@@ -425,8 +435,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Ensure window.playerData is populated. It should be by the time this is called after initial setup.
         // If called before initial setup, it might be empty, which sessionManager now handles with a warning.
-        if (!window.playerData) {
-            console.warn('[Popup] refreshDisplayedSessions called but window.playerData is not yet initialized.');
+        // MODIFIED Condition: Check if playerData is falsy OR an empty object.
+        if (!window.playerData || Object.keys(window.playerData).length === 0) { 
+            console.warn('[Popup] refreshDisplayedSessions: window.playerData is empty or not initialized. Attempting fallback load.');
             // Attempt to load it now as a fallback - ideally, popup.js structure ensures it's loaded prior.
             try {
                 const playerDataResponse = await sendMessagePromise({ type: 'GET_PLAYER_DATA' });
@@ -453,21 +464,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 addPlayer,
                 createUsernameHistoryModal,
                 window.updateOnlineFavoritesListFunc,
-                sessionListDiv, 
+                sessionListDiv,
                 currentFilterOptions,
-                (sessions, finalPlayerData) => { // onCompleteCallback
+                (sessionsData, errorData) => { 
                     if (loadingIndicator) loadingIndicator.style.display = 'none';
-                    if (error) {
-                        console.error("[Popup] Error reported by fetchAndDisplaySessions:", error);
-                        if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>Failed to display sessions: ${error}</p>`;
+                    if (errorData) {
+                        console.error("[Popup] Error reported by fetchAndDisplaySessions (main load):", errorData);
+                        if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>Failed to display sessions: ${errorData}</p>`;
                     } else {
-                        latestSessionData = sessions; // Store the latest session data
-                        // After sessions are rendered, update the user management tab if it's active
-                        // This ensures player statuses (e.g., online) are current
+                        // Success path for main load
+                        latestSessionData = sessionsData;
+                        window.latestSessionData = sessionsData; // Update global
                         if (document.getElementById('userManagement').classList.contains('active') && 
                             window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                            // Use the existing renderKnownPlayers function instead of undefined refreshUserManagementTab
+                            const knownPlayersDiv = document.getElementById('knownPlayers');
+                            const searchInput = document.getElementById('userSearch');
                             window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                        } else if (document.getElementById('userManagement').classList.contains('active')) {
+                            console.error("User manager or renderKnownPlayers function not available (main load).");
                         }
                     }
                 }
@@ -490,6 +504,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         try {
             const currentPlayerData = await window.userManager.getAllPlayerData();
+            window.playerData = currentPlayerData; // EXPLICITLY UPDATE window.playerData
+
             const onlinePlayerIds = await window.fetchOnlinePlayerIds(); // Returns a Set of IDs
 
             // Reconstruct onlinePlayersObject (maps ID to session name or true) for favorites list
@@ -574,8 +590,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 2. Refresh Known Players list (User Management tab, if active)
             const userManagementTab = document.getElementById('userManagement');
-            const knownPlayersDiv = document.getElementById('knownPlayers'); // Ensure it's defined (usually at top of DOMContentLoaded)
-            const searchInput = document.getElementById('userSearch'); // Ensure it's defined
+            const knownPlayersDiv = document.getElementById('knownPlayers'); // ensure it's defined
+            const searchInput = document.getElementById('userSearch'); // ensure it's defined
 
             if (userManagementTab && userManagementTab.classList.contains('active') && knownPlayersDiv) {
                 console.log("[Popup] Refreshing Known Players list (targeted).");
@@ -637,8 +653,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.updateOnlineFavoritesListFunc,
             sessionListDiv, 
             { officialOnly: showOfficialOnly }, 
-            (sessions, finalPlayerData) => { 
-                setLatestSessionData(sessions);
+            (sessionsData, errorData) => { 
                 if (loadingIndicator) loadingIndicator.style.display = 'none';
                 if (sessionListDiv) sessionListDiv.style.display = 'block'; 
                 // --- Force re-render of User Management tab if active ---
@@ -726,9 +741,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (exportPlayersButton) {
         exportPlayersButton.addEventListener('click', () => {
             if (typeof window.exportPlayerDataCSV === 'function') { 
-                // Assuming exportPlayerDataCSV uses window.playerData internally or we pass it
-                // Let's assume it uses window.playerData for now.
-                window.exportPlayerDataCSV(window.playerData); 
+                // Check if playerData has content before exporting
+                if (window.playerData && Object.keys(window.playerData).length > 0) {
+                    window.exportPlayerDataCSV(window.playerData); 
+                } else {
+                    console.warn('[Popup] Export button clicked, but no player data to export.');
+                    ModalManager.showAlert('No Data', 'There is no player data to export.');
+                }
             } else {
                 console.error('Export function (window.exportPlayerDataCSV) not found.'); 
                 ModalManager.showAlert('Error', 'Export functionality is currently unavailable.');
