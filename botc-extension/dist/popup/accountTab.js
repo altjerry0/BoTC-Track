@@ -16,6 +16,27 @@ const RATE_LIMIT = {
 };
 
 function initAccountTab() {
+    // --- Extension Version Display ---
+    let versionDiv = document.getElementById('extensionVersion');
+    if (!versionDiv) {
+        versionDiv = document.createElement('div');
+        versionDiv.id = 'extensionVersion';
+        versionDiv.style.fontSize = '12px';
+        versionDiv.style.color = '#888';
+        versionDiv.style.marginTop = '18px';
+        // Insert at the bottom of the account tab
+        setTimeout(() => {
+            const tab = document.getElementById('accountTab');
+            if (tab) tab.appendChild(versionDiv);
+        }, 0);
+    }
+    const manifest = chrome.runtime.getManifest();
+    if (manifest && manifest.version) {
+        versionDiv.textContent = `Extension Version: v${manifest.version}`;
+    } else {
+        versionDiv.textContent = '';
+    }
+
     // Initialize the account tab UI elements
     // Basic account elements
     accountTab = document.getElementById('accountTab');
