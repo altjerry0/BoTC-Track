@@ -21,6 +21,13 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-19.
   - Chrome Identity API handles Google authentication (no external scripts)
   - Custom auth service at auth.trackbotc.com manages token exchange
   - Secure Firebase authentication with custom tokens
+- **Documentation:**
+  - Updated root `README.md` to reflect current features, including cloud sync, the new authentication model, and updated screenshots.
+  - Consolidated authentication service documentation by merging `docs/auth-service.md` into `firebase-auth-service/README.md`.
+  - Cleaned up `TODO.md` to focus on current bugs and future features.
+
+### Added
+- **Shared Player Lists (Teams/Groups via Firebase)**: Implemented functionality for users to share player lists. *(Marked as complete based on TODO update)*
 
 ### Fixed
 - **Online Player Detection:** Fixed issues with online player tracking:
@@ -142,35 +149,6 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-19.
 - **UI Enhancements - User Management & General:**
     - Normalized the appearance and size of action buttons (Favorite, Edit, History, Refresh Username, Delete) in the 'Known Players' list for better visual consistency.
     - Ensured the "Add Player Manually" button aligns with the updated button styling.
-    - Adjusted styling for various buttons to use consistent padding, icon sizing, and hover effects across the extension.
-- **Modal Theming**: Updated modal CSS to correctly use theme variables, ensuring proper display in both light and dark modes.
-- **Active Session Highlighting**: Sessions where the logged-in user is participating (present in `usersAll`) are now prioritized:
-    - These sessions are sorted to appear at the top of the session list.
-    - The session card header receives a "glow" effect for visual distinction.
-    - This involved updating JWT parsing in `popup.js` (already present), modifying `sessionManager.js` for sorting and class application based on `usersAll`, and updating `popup.css` for the glow effect.
-- **Session Sorting**: Refined session list sorting logic. Sessions where the logged-in user is participating (`active-user-session`) are now given higher priority than sessions matching the current game tab (`current-tab-game-session`). Both are prioritized over other sessions, which are sorted by creation date.
-- **Username Handling**: Implemented a fallback mechanism to fetch usernames directly via the user API (`/backend/user/{id}`) if the username is missing from the primary session API data (`/api/session`). This improves robustness in displaying player names.
-
-### Internal
-- **Code Cleanup**: Removed numerous debug `console.log` statements across various files (`popup.js`, `sessionManager.js`, `userManager.js`, `background.js`, `play_page_observer.js`, `modal.js`) to improve performance and reduce console noise.
-
-## [v1.1.1] - 2025-05-09
-
-### Added
-- Enhanced user list sorting in 'Manage Users' tab:
-  - Online favorite players are now prioritized at the top.
-  - Subsequent sorting is by player rating (descending).
-  - Offline players are sorted by 'last seen' time (most recent first), then by rating.
-- **Dynamic Export Filename**: CSV export filenames now include a `YYYYMMDD` datestamp and the count of users being exported (e.g., `botc_player_data_20250509_12users.csv`).
-- **Player Score Indicators**: Added visual indicators (+, ●, -) to session headers in the 'Active Games' tab, showing an aggregate count of good (score 4-5), neutral (score 3), and bad (score 1-2) rated players within each session. Indicators are displayed in the order: good, neutral, bad.
-
-### Changed
-- **UI Overhaul: Modal Implementation**:
-    - Replaced all native browser `prompt()` and `alert()` popups with a unified, custom modal system (`ModalManager`).
-    - Affects player creation, editing, deletion confirmation, score/notes input from session cards, and various notifications (e.g., data export/import status, data clearing).
-    - Provides a consistent dark-theme UI and improved user experience for all interactive dialogs.
-- **UI Enhancement (User Management Controls):**
-    - Updated 'Add Player Manually', 'Export Players (CSV)', and 'Import Players (CSV)' buttons to include text labels ('Add', 'Export', 'Import') next to their icons for improved clarity. (Reverted icon-only design for these specific buttons).
     - These buttons now use standard button styling, with icons spaced appropriately from text.
     - The 'Clear All Player Data' button is now positioned to the far right of the control bar.
     - Reduced margins between other buttons in the user management control bar for a more compact layout.

@@ -1,19 +1,19 @@
-**Current Version (local):** `1.1.7` | **Chrome Web Store Version:** `1.1.3` (Pending `1.1.7` Review)
+**Current Version:** `1.1.7` | **Chrome Web Store Version:** `1.1.7` (or as per current store status)
 
 
 # BotC Player Tracker Chrome Extension
 
-This Chrome extension tracks and rates players in Blood on the Clocktower (BotC) games, helping you recognize familiar players across sessions and track username changes.
+This Chrome extension tracks and rates players in Blood on the Clocktower (BotC) games, helping you recognize familiar players across sessions and track username changes. It now features **robust cloud synchronization** of your player data using Google Sign-In and a secure Firebase backend.
 
-> **Now Available (v1.1.7):**
-> - Chrome Web Store compliant authentication system using Chrome Identity API
-> - Completely removed external script loading for better security and compliance
-> - Enhanced player role distinction with clear badges for Players, Storytellers, and Spectators
-> - Improved user management with enhanced player validation
-> - Optimized cloud data synchronization using Firestore
+> **Key Features in v1.1.7:**
+> - **Cloud Data Synchronization**: Securely sync your player ratings, notes, and history across devices using Google Sign-In and Firebase Firestore.
+> - **Chrome Web Store Compliant Authentication**: Utilizes the Chrome Identity API and a dedicated [authentication service](./firebase-auth-service/README.md) for secure sign-in without external script loading.
+> - **Enhanced Player Role Distinction**: Clear badges for Players, Storytellers, and Spectators.
+> - **Comprehensive User Management**: Includes improved player validation, username history, and direct name refresh capabilities.
 
 ⚠️ **Important: Back Up Your Player Data!** ⚠️
 
+While cloud sync provides a robust way to keep your data, maintaining local backups via the export feature is still a good practice.
 Your player ratings, notes, and history are stored locally by this extension. If you uninstall the extension, this data will be **permanently deleted** by Chrome.
 
 🛡️ **To keep your data safe or transfer it to another computer:**
@@ -27,6 +27,7 @@ Regularly exporting your data is a good habit!
 
 - [Installation](#installation)
 - [Features](#features)
+- [Authentication Service](#authentication-service)
 - [Usage Guidelines](#usage-guidelines)
 - [Project Structure](#project-structure)
 - [Developer Setup / Loading from Source](#developer-setup--loading-from-source)
@@ -65,12 +66,12 @@ This method allows you to install a specific version from GitHub, which might be
 
 ## Features
 
+*   **Cloud Synchronization**: Securely sync your player data (ratings, notes, history, favorites) across multiple devices using Google Sign-In. Data is stored in your private space in Firebase Firestore.
 *   **Session Tracking & Player Identification**: Fetches active `botc.app` game sessions and identifies players. Known players are highlighted within session details.
-*   **Cloud Sync (Coming v1.1.5+)**: Sync your player data securely to the cloud and across devices with Google Sign-In (Firebase Firestore backend).
 *   **Enhanced Session Highlighting (Popup Interface)**:
-    *   **Current Tab Game**: Sessions matching the game currently open in your active `botc.app/play` tab are highlighted with a distinct blue glow. This helps quickly locate the session you're viewing or interacting with.
-    *   **User's Active Games**: Sessions where your logged-in user is a participant (based on backend data) are highlighted with an orange glow, making it easy to see your games. **These sessions are also sorted to appear at the very top of the list.**
-    *   **Combined Highlight**: If a session is both the current tab's game AND one you are participating in, it receives a combined visual cue (e.g., blue outer glow with an orange inner inset glow).
+    *   **Current Tab Game**: Sessions matching the game currently open in your active `botc.app/play` tab are highlighted with a distinct blue glow.
+    *   **User's Active Games**: Sessions where your logged-in user is a participant are highlighted with an orange glow and sorted to the top of the list.
+    *   **Combined Highlight**: If a session is both the current tab's game AND one you are participating in, it receives a combined visual cue.
     *   These highlights are theme-aware and adjust for dark mode.
 *   **Player Score Indicators**: Displays visual indicators (+ for scores 4-5, ● for score 3, - for scores 1-2) in each session header on the "Sessions" tab. These show an aggregate count of known players in that session categorized by their recorded scores, providing a quick summary of the perceived player quality in a game (e.g., "+2 ●1 -1").
 *   **Player Data Management**:
@@ -93,6 +94,12 @@ This method allows you to install a specific version from GitHub, which might be
     *   Import player data from a previously saved CSV file.
 *   **Player Search**: Search players in the "Manage Users" tab by current/previous usernames, notes, or score.
 *   **Dark Mode**: A user-toggleable dark theme for the popup interface.
+
+## Authentication Service
+
+The BotC Player Tracker uses a dedicated backend service for handling authentication securely and in compliance with Chrome Web Store policies. This service manages the exchange of Google OAuth tokens (obtained via the Chrome Identity API) for Firebase custom tokens, allowing the extension to interact with Firebase services without embedding sensitive credentials or requiring broad external script permissions.
+
+For detailed information on the authentication architecture, flow, and setup (if you intend to self-host or contribute to this part of the system), please refer to the [BotC Tracker Firebase Authentication Service README](./firebase-auth-service/README.md).
 
 ## Usage Guidelines
 
@@ -133,9 +140,12 @@ BoTC-Track (repository root)
 │   │       ├── popup.css        # Styles
 │   │       ├── userManager.js   # Module for player data CRUD, history, search
 │   │       ├── sessionManager.js# Module for fetching, processing, displaying session data
-│   │       └── csvManager.js    # Module for CSV import/export functionality
+│   │       ├── csvManager.js    # Module for CSV import/export functionality
+│   │       └── modalManager.js  # Module for managing custom modal dialogs
 │   ├── manifest.json            # Extension configuration and permissions
-│   └── rules.json               # DeclarativeNetRequest rules (if used for adblocking/modifying requests)
+│   └── rules.json               # DeclarativeNetRequest rules (if used)
+├── firebase-auth-service/     # Backend authentication service (Firebase Cloud Function)
+│   └── README.md              # README for the auth service
 ├── .gitignore
 ├── CHANGELOG.md
 ├── README.md                # Main project README (this file)
@@ -156,11 +166,15 @@ BoTC-Track (repository root)
    - This will install Firebase, Webpack, and other required packages
 
 3. **Build the Extension**
-   - Run `npx webpack --mode=production` to bundle the JavaScript files
-   - This will create bundled files in the `dist/` directory, particularly `background.bundle.js`
-   - *Note: You must rebuild with this command whenever you make changes to files that are part of the Webpack build*
+   - Run `npx webpack --mode=production` (or `npm run build`) to bundle the JavaScript files.
+   - This will create bundled files in the `botc-extension/dist/` directory, particularly `background.bundle.js`.
+   - *Note: You must rebuild with this command whenever you make changes to files that are part of the Webpack build (e.g., `background.js`, or any files it imports).*
 
-- v1.1.5+ uses Firebase and Firestore for cloud sync. All Firebase modules are bundled using Webpack for Manifest V3 compatibility. See TODO.md for setup steps and requirements.
+- **Cloud Sync Setup (Firebase)**:
+  - To use the cloud sync features during development, you will need to set up your own Firebase project.
+  - Configure `firebase-config.js` (if not automatically handled by a bundled config) with your Firebase project details.
+  - Ensure your Firebase project has Google Sign-In enabled as an authentication provider and Firestore enabled.
+  - You may also need to deploy or emulate the [authentication service](./firebase-auth-service/README.md) if you are not using the production one.
 
 These instructions are for developers or users who want to load the extension directly from the source code.
 
@@ -198,13 +212,13 @@ This project uses GitHub Actions to automate the creation of release ZIP files.
 Here's a glimpse of the extension in action:
 
 **Sessions Tab:**
-![Sessions Tab Screenshot](docs/botcrater-1.PNG)
+![Sessions Tab Screenshot](docs/newbotc-1.PNG)
 
 **Manage Users Tab:**
-![Manage Users Tab Screenshot](docs/botcrater-2.PNG)
+![Manage Users Tab Screenshot](docs/newbotc-2.PNG)
 
-**Username History:**
-![Username History](docs/botcrater-3.PNG)
+**Players Dropdown:**
+![Players Dropdown](docs/newbotc-3.PNG)
 
 ## Future Improvements
 
