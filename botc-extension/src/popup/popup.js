@@ -739,17 +739,22 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // --- Export/Import Buttons ---
     if (exportPlayersButton) {
-        exportPlayersButton.addEventListener('click', () => {
-            if (typeof window.exportPlayerDataCSV === 'function') { 
-                // Check if playerData has content before exporting
-                if (window.playerData && Object.keys(window.playerData).length > 0) {
-                    window.exportPlayerDataCSV(window.playerData); 
-                } else {
-                    console.warn('[Popup] Export button clicked, but no player data to export.');
-                    ModalManager.showAlert('No Data', 'There is no player data to export.');
+        exportPlayersButton.addEventListener('click', async () => {
+            if (typeof window.userManager?.loadPlayerData === 'function' && typeof window.exportPlayerDataCSV === 'function') {
+                try {
+                    const latestPlayerData = await window.userManager.loadPlayerData();
+                    if (latestPlayerData && Object.keys(latestPlayerData).length > 0) {
+                        window.exportPlayerDataCSV(latestPlayerData);
+                    } else {
+                        console.warn('[Popup] Export button clicked, but no player data to export.');
+                        ModalManager.showAlert('No Data', 'There is no player data to export.');
+                    }
+                } catch (err) {
+                    console.error('[Popup] Failed to load player data for export:', err);
+                    ModalManager.showAlert('Error', 'Failed to load player data for export.');
                 }
             } else {
-                console.error('Export function (window.exportPlayerDataCSV) not found.'); 
+                console.error('Export function (window.exportPlayerDataCSV) or userManager.loadPlayerData not found.');
                 ModalManager.showAlert('Error', 'Export functionality is currently unavailable.');
             }
         });
