@@ -503,8 +503,7 @@ async function displayKnownPlayers(container, searchTerm = '', playerData, onlin
         favoriteButton.title = player.isFavorite ? 'Unfavorite Player' : 'Favorite Player';
         favoriteButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleFavoriteStatus(id, favoriteButton, player); // Pass player object
-            // No need to call refreshCallback here if toggleFavoriteStatus handles UI update
+            toggleFavoriteStatus(id, favoriteButton, player, refreshCallback); // Pass player object and the refreshCallback
         });
         buttonContainer.appendChild(favoriteButton);
 
@@ -515,7 +514,7 @@ async function displayKnownPlayers(container, searchTerm = '', playerData, onlin
         editButton.title = 'Edit Player';
         editButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            editPlayerDetails(id);
+            editPlayerDetails(id, false, refreshCallback); // Pass 'refreshCallback' to 'editPlayerDetails'
         });
         buttonContainer.appendChild(editButton);
 
@@ -864,8 +863,9 @@ async function replaceAllPlayerDataAndSave(newData, callback) {
  * @param {string} playerId - The ID of the player.
  * @param {HTMLElement} buttonElement - The button element to update.
  * @param {Object} [playerObject] - Optional: The player object, to update its isFavorite status directly for immediate UI feedback.
+ * @param {Function} [callback] - Optional callback to execute after saving.
  */
-async function toggleFavoriteStatus(playerId, buttonElement, playerObject) {
+async function toggleFavoriteStatus(playerId, buttonElement, playerObject, callback) {
     const playerData = await loadPlayerData();
 
     if (!playerData[playerId]) {
@@ -883,15 +883,14 @@ async function toggleFavoriteStatus(playerId, buttonElement, playerObject) {
 
     // Update button text/appearance
     if (buttonElement) {
-        buttonElement.textContent = playerData[playerId].isFavorite ? '★ Unfavorite' : '☆ Favorite';
+        buttonElement.innerHTML = playerData[playerId].isFavorite ? '★' : '☆';
+        buttonElement.title = playerData[playerId].isFavorite ? 'Unfavorite Player' : 'Favorite Player';
         buttonElement.classList.toggle('favorite-active', playerData[playerId].isFavorite);
     }
-    // Trigger a refresh of the list or relevant UI part
-    // This needs to be handled by the caller or a passed-in refresh function
-    // For now, assume popup.js handles refresh via its own mechanisms after this callback if needed
-    // If a global refresh function is available, call it here:
-    // e.g., if (typeof refreshUserManagementTab === 'function') refreshUserManagementTab();
-    // Or, more robustly, the function that calls toggleFavoriteStatus should handle refresh.
+    // Call the callback if provided
+    if (typeof callback === 'function') {
+        callback();
+    }
 }
 
 /**

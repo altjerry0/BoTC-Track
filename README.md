@@ -7,6 +7,7 @@ This Chrome extension tracks and rates players in Blood on the Clocktower (BotC)
 
 > **Key Features in v1.1.9:**
 > - **Cloud Data Synchronization**: Securely sync your player ratings, notes, and history across devices using Google Sign-In and Firebase Firestore.
+> - **Live UI Updates for Player Management**: Player additions, edits, deletions, and favorite status changes now instantly refresh all relevant UI sections.
 > - **Chrome Web Store Compliant Authentication**: Utilizes the Chrome Identity API and a dedicated [authentication service](./firebase-auth-service/README.md) for secure sign-in without external script loading.
 > - **Enhanced Player Role Distinction**: Clear badges for Players, Storytellers, and Spectators.
 > - **Comprehensive User Management**: Includes improved player validation, username history, and direct name refresh capabilities.
@@ -75,6 +76,7 @@ This method allows you to install a specific version from GitHub, which might be
     *   These highlights are theme-aware and adjust for dark mode.
 *   **Player Score Indicators**: Displays visual indicators (+ for scores 4-5, ● for score 3, - for scores 1-2) in each session header on the "Sessions" tab. These show an aggregate count of known players in that session categorized by their recorded scores, providing a quick summary of the perceived player quality in a game (e.g., "+2 ●1 -1").
 *   **Player Data Management**:
+    *   **Live UI Updates**: Adding, editing, deleting, or toggling a player's favorite status now immediately refreshes all relevant UI components (Known Players list, Online Favorites, session details) for a seamless experience.
     *   **Rating & Notes**: Assign a 1-5 score and add private text notes to each player.
     *   **Favorite Players**: Mark players as favorites for quick identification (highlights them in session lists and the 'Manage Users' tab).
     *   **Manual Add/Edit**: Manually add new players or edit existing player details (score, notes).

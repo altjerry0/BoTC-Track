@@ -455,7 +455,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 window.updateOnlineFavoritesListFunc,
                 sessionListDiv, 
                 currentFilterOptions,
-                (sessions, error) => { // onCompleteCallback
+                (sessions, finalPlayerData) => { // onCompleteCallback
                     if (loadingIndicator) loadingIndicator.style.display = 'none';
                     if (error) {
                         console.error("[Popup] Error reported by fetchAndDisplaySessions:", error);
@@ -467,7 +467,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (document.getElementById('userManagement').classList.contains('active') && 
                             window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
                             // Use the existing renderKnownPlayers function instead of undefined refreshUserManagementTab
-                            window.userManager.renderKnownPlayers(knownPlayersDiv, userSearchInput ? userSearchInput.value : '');
+                            window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
                         }
                     }
                 }
@@ -478,6 +478,123 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>A critical error occurred: ${error.message}</p>`;
         }
     }
+
+    // --- Central UI Refresh Function ---
+    async function refreshAllViews(initiatingAction) {
+        console.log(`[Popup] refreshAllViews called, initiated by: ${initiatingAction || 'unknown'}`);
+        if (!window.userManager || typeof window.userManager.getAllPlayerData !== 'function' ||
+            typeof window.userManager.renderKnownPlayers !== 'function') {
+            console.error("[Popup] User manager not fully available for refreshAllViews.");
+            return;
+        }
+
+        try {
+            const currentPlayerData = await window.userManager.getAllPlayerData();
+            const onlinePlayerIds = await window.fetchOnlinePlayerIds(); // Returns a Set of IDs
+
+            // Reconstruct onlinePlayersObject (maps ID to session name or true) for favorites list
+            const onlinePlayersObjectForFavorites = {};
+            if (window.latestSessionData && onlinePlayerIds.size > 0) {
+                window.latestSessionData.forEach(session => {
+                    session.usersAll?.forEach(user => {
+                        if (user?.id && onlinePlayerIds.has(user.id.toString())) {
+                            onlinePlayersObjectForFavorites[user.id.toString()] = session.name || true;
+                        }
+                    });
+                });
+            }
+
+            // 1. Refresh Known Players list (User Management tab)
+            // Check if the User Management tab is active before re-rendering it.
+            const userManagementTab = document.getElementById('userManagement');
+            const knownPlayersDiv = document.getElementById('knownPlayers'); // ensure it's defined
+            const searchInput = document.getElementById('userSearch'); // ensure it's defined
+
+            if (userManagementTab && userManagementTab.classList.contains('active') && knownPlayersDiv) {
+                console.log("[Popup] Refreshing Known Players list.");
+                // renderKnownPlayers expects: container, searchTerm, playerData, onlinePlayerIds (Set), createUsernameHistoryModalFunc, refreshCallback
+                // We need to ensure createUsernameHistoryModal and a suitable refresh callback (e.g., refreshAllViews itself, or a limited version) are passed if needed by displayKnownPlayers' actions.
+                // For now, assuming renderKnownPlayers handles its own internal action callbacks or we address that separately.
+                window.userManager.renderKnownPlayers(
+                    knownPlayersDiv, 
+                    searchInput ? searchInput.value.trim() : '', 
+                    currentPlayerData, 
+                    onlinePlayerIds,
+                    window.userManager.createUsernameHistoryModal, // Pass the actual function
+                    refreshAllViews // Pass refreshAllViews for actions within player cards
+                );
+            }
+
+            // 2. Refresh Online Favorites list
+            if (typeof window.updateOnlineFavoritesListFunc === 'function') {
+                console.log("[Popup] Refreshing Online Favorites list.");
+                window.updateOnlineFavoritesListFunc(currentPlayerData, onlinePlayersObjectForFavorites);
+            }
+
+            // 3. Refresh Sessions list
+            if (typeof refreshDisplayedSessions === 'function') {
+                console.log("[Popup] Refreshing Sessions list.");
+                // Consider if refreshDisplayedSessions needs currentPlayerData for player-specific highlights/info in session cards
+                await refreshDisplayedSessions(); 
+            }
+            console.log("[Popup] refreshAllViews completed.");
+        } catch (error) {
+            console.error("[Popup] Error during refreshAllViews:", error);
+        }
+    }
+    window.refreshAllViews = refreshAllViews; // Expose globally if needed by other modules or for easier debugging
+
+    // --- Targeted UI Refresh Function (excluding full session list re-render) ---
+    async function refreshDependentViews(updatedPlayerId) {
+        try {
+            console.log(`[Popup] Refreshing dependent views for player ID: ${updatedPlayerId}`);
+            const currentPlayerData = await window.userManager.getAllPlayerData();
+            // window.playerData in popup.js scope is updated by userManager.getAllPlayerData if it's designed to do so,
+            // or we can set it explicitly: window.playerData = currentPlayerData;
+
+            const onlinePlayerIds = await window.fetchOnlinePlayerIds();
+
+            // Prepare onlinePlayersObject for favorites list
+            let onlinePlayersObjectForFavorites = {};
+            if (window.latestSessionData && Array.isArray(window.latestSessionData)) {
+                window.latestSessionData.forEach(session => {
+                    session.usersAll?.forEach(user => {
+                        if (user?.id && onlinePlayerIds.has(user.id.toString())) {
+                            onlinePlayersObjectForFavorites[user.id.toString()] = session.name || true;
+                        }
+                    });
+                });
+            }
+
+            // 1. Refresh Online Favorites list
+            if (typeof window.updateOnlineFavoritesListFunc === 'function') {
+                console.log("[Popup] Refreshing Online Favorites list (targeted).");
+                window.updateOnlineFavoritesListFunc(currentPlayerData, onlinePlayersObjectForFavorites);
+            }
+
+            // 2. Refresh Known Players list (User Management tab, if active)
+            const userManagementTab = document.getElementById('userManagement');
+            const knownPlayersDiv = document.getElementById('knownPlayers'); // Ensure it's defined (usually at top of DOMContentLoaded)
+            const searchInput = document.getElementById('userSearch'); // Ensure it's defined
+
+            if (userManagementTab && userManagementTab.classList.contains('active') && knownPlayersDiv) {
+                console.log("[Popup] Refreshing Known Players list (targeted).");
+                // Note: renderKnownPlayers might need the updatedPlayerData directly
+                window.userManager.renderKnownPlayers(
+                    knownPlayersDiv,
+                    searchInput ? searchInput.value.trim() : '',
+                    currentPlayerData, // Pass the fresh data
+                    onlinePlayerIds,
+                    window.userManager.createUsernameHistoryModal,
+                    window.refreshAllViews // Actions on these cards still use full refresh for now
+                );
+            }
+            console.log(`[Popup] refreshDependentViews for player ID: ${updatedPlayerId} completed.`);
+        } catch (error) {
+            console.error(`[Popup] Error during refreshDependentViews for player ID: ${updatedPlayerId}:`, error);
+        }
+    }
+    window.refreshDependentViews = refreshDependentViews; // Expose globally
 
     // --- Initialize Event Listeners ---
 
@@ -596,13 +713,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         addPlayerButton.addEventListener('click', async () => {
             if (window.userManager && typeof window.userManager.editPlayerDetails === 'function') {
-                window.userManager.editPlayerDetails(null, true, () => {
-                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
-                    } else {
-                        console.error("User manager or renderKnownPlayers function not available for callback.");
-                    }
-                });
+                window.userManager.editPlayerDetails(null, true, window.refreshAllViews);
             } else {
                 console.error("window.userManager.editPlayerDetails is not available.");
             }

@@ -291,47 +291,54 @@ function createPlayerCard(
                         }
                     }
 
-                    // Retrieve current player data to preserve favorite status
                     const currentPlayerDetails = playerData[user.id];
                     const isCurrentlyFavorite = currentPlayerDetails ? currentPlayerDetails.isFavorite : false;
 
-                    // Call addPlayerFunc to save the data
                     try {
+                        // Step 1: Save data without an immediate broad UI callback from userManager.addPlayer
                         await addPlayerFunc(
                             user.id,
-                            user.username, // Use user.username from session context
-                            score, 
+                            user.username,
+                            score,
                             notes,
-                            isCurrentlyFavorite, // Preserve favorite status
-                            (updatedPlayer) => {
-                                if (updatedPlayer) {
-                                    // Re-render this specific player card or the whole list if simpler
-                                    // For now, let's assume a full list refresh might be handled by a broader mechanism
-                                    // or that renderSessions might be called again.
-                                    // We could also update the card directly if we have its reference.
-                                    // Debug logging removed
-                                    ModalManager.showAlert('Success', `Player ${user.name || user.id} details saved.`);
-                                    // Potentially refresh the session list or just this card
-                                    if (typeof window.fetchAndDisplaySessions === 'function') {
-                                        // This might be too broad, ideally just re-render the known players list if it's visible
-                                        // and update this specific card's display.
-                                        // For now, just log and show success.
-                                    }
-                                    // Re-render the known players list if the tab is active
-                                    const knownPlayersContainer = document.getElementById('knownPlayersList');
-                                    if (knownPlayersContainer) {
-                                        window.userManager.renderKnownPlayers(knownPlayersContainer);
-                                    }
-                                }
-                            } // Pass the existing UI update callback
+                            isCurrentlyFavorite,
+                            null // Pass null as updateUICallback
                         );
+
+                        // Step 2: Fetch all player data again to get the absolute latest for this card and dependent views
+                        const allLatestPlayerData = await window.userManager.getAllPlayerData();
+                        
+                        // Step 3: Re-create this specific player card with the new data and replace it in the DOM
+                        // The 'playerCard' variable here refers to the existing card DOM element.
+                        if (playerCard.parentNode) {
+                            const newCardElement = createPlayerCard(
+                                user,                       // Original user object from session
+                                allLatestPlayerData,        // Fresh full player dataset for rendering
+                                session,                    // Original session object
+                                addPlayerFunc,              // Original function reference for addPlayer
+                                createUsernameHistoryModalFunc, // Original function reference for history modal
+                                isPlaying,                  // Original isPlaying status for this card
+                                isStoryteller,              // Original isStoryteller status
+                                isSpectator                 // Original isSpectator status
+                            );
+                            playerCard.parentNode.replaceChild(newCardElement, playerCard);
+                        } else {
+                            console.warn("[SessionManager] Player card for update not found in DOM. Cannot perform targeted card refresh.");
+                        }
+
+                        // Step 4: Refresh other dependent views (Online Favorites, User Management Tab if active)
+                        if (window.refreshDependentViews) {
+                            window.refreshDependentViews(user.id);
+                        }
+
+                        ModalManager.showAlert('Success', `Player ${user.username || user.id} details saved.`);
                     } catch (error) {
-                        console.error('Error saving player details from session modal:', error);
+                        console.error('Error saving player details from session modal (targeted refresh):', error);
                         ModalManager.showAlert('Error', 'Could not save player details. Please try again.');
-                        return; // Do not proceed to success message if save failed
+                        return; // Keep modal open if save or refresh fails
                     }
 
-                    ModalManager.closeModal(); // Close after successful save
+                    ModalManager.closeModal(); // Close modal only after successful operations
                 },
                 closesModal: false // Handle close explicitly
             }
@@ -502,7 +509,7 @@ async function checkHistoryAndRender(
  * @param {HTMLElement} resultDiv - Container for results.
  * @param {Object} options - Display options.
  * @param {Function} addPlayer - Function to add a player.
- * @param {Function} createUsernameHistoryModal - Function to create the history modal.
+ * @param {Function} createUsernameHistoryModal - Function to create the username history modal.
  */
 function renderSessions(
     sessions,
