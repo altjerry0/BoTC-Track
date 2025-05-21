@@ -5,6 +5,10 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-21.
 # BotC Player Tracker Extension - Changelog
 ---
 
+## [v1.1.9] - 2025-05-21
+### Fixed
+- Player export (CSV) now always uses the latest player data from storage at the time of export, preventing stale or out-of-date exports. This ensures any changes made to player data after popup load are accurately reflected in the exported file.
+
 ## [v1.1.8] - 2025-05-21
 ### Fixed
 - **Current Game Detection**: Resolved an issue where the extension failed to detect if the user was part of a live game session. This was due to incorrect parsing of the `botc.app` JWT and a function scope problem that caused an older parsing logic to be used. The JWT is now correctly parsed for the player's game ID, ensuring accurate detection.
