@@ -5,12 +5,21 @@
 // Detect environment: When running in the Chrome Web Store, there is no 'key' field in the manifest
 export const isProduction = !chrome.runtime.getManifest().key;
 
-// OAuth configuration - get client ID from manifest to ensure consistency
+// OAuth configuration - with separate client IDs for different browsers
 export const authConfig = {
-  // Use the client ID from the manifest.json to avoid inconsistencies
-  clientId: chrome.runtime.getManifest().oauth2.client_id,
+  // Chrome Extension client ID (from manifest.json)
+  chromeClientId: chrome.runtime.getManifest().oauth2.client_id,
+  
+  // Web Application client ID for Brave - needs to be created in Google Cloud Console
+  // TODO: Replace this placeholder with your Web Application OAuth client ID
+  braveClientId: "234038964353-3rfnfsdh051r8g9aqrl4h7uo9f9c339u.apps.googleusercontent.com",
+  
+  // For backward compatibility (used in places where we haven't updated code yet)
+  get clientId() {
+    return this.chromeClientId;
+  },
 
-  // OAuth scopes (same for both environments)
+  // OAuth scopes (same for all environments)
   scopes: [
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile"
