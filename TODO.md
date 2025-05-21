@@ -4,6 +4,7 @@ This file tracks active bugs and planned future enhancements for the BotC Player
 
 ## Current Bugs
 
+*   [ ] Verify username updates and history tracking - ensure usernames are being properly updated when new data is fetched and username history is being maintained correctly
 *   [ ] Player export function uses stale data - should fetch latest data from localStorage at time of export
 *   [x] Favorites are not highlighted correctly in the UI.
 *   [x] Current game detection fails - Player ID from botc.app JWT was not being correctly parsed and assigned due to an older function version taking precedence. Corrected JWT parsing and ensured correct function scope. (Fixed v1.1.8)
