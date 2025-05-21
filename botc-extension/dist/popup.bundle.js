@@ -2267,14 +2267,22 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                   }, function (sessions, finalPlayerData) {
                     latestSessionData = sessions;
                     window.latestSessionData = sessions;
-                    renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                      window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                    } else {
+                      console.error("User manager or renderKnownPlayers function not available.");
+                    }
                   });
                 case 8:
                   _context2.next = 11;
                   break;
                 case 10:
                   // Render known players using existing session data
-                  renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                  if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                    window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                  } else {
+                    console.error("User manager or renderKnownPlayers function not available.");
+                  }
                 case 11:
                 case "end":
                   return _context2.stop();
@@ -2296,7 +2304,11 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
             }
             searchTimeout = setTimeout(function () {
               if (document.getElementById('userManagement').classList.contains('active')) {
-                waitForUserManagerAndRenderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+                if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                  window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
+                } else {
+                  console.error("User manager or renderKnownPlayers function not available for search.");
+                }
               }
             }, 300);
           });
@@ -2327,7 +2339,11 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                   // --- Force re-render of User Management tab if active ---
                   var userManagementTab = document.getElementById('userManagement');
                   if (userManagementTab && userManagementTab.classList.contains('active')) {
-                    waitForUserManagerAndRenderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                      window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                    } else {
+                      console.error("User manager or renderKnownPlayers function not available on fetch complete.");
+                    }
                   }
                 });
               case 5:
@@ -2363,7 +2379,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                       if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
                         window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput.value.trim());
                       } else {
-                        console.error("window.userManager.renderKnownPlayers is not available for callback.");
+                        console.error("User manager or renderKnownPlayers function not available for callback.");
                       }
                     });
                   } else {
@@ -2416,7 +2432,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                         if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
                           window.userManager.renderKnownPlayers(knownPlayersDiv, ''); // Re-render with empty search
                         } else {
-                          console.error("window.userManager.renderKnownPlayers is not available for callback after clearing data.");
+                          console.error("User manager or renderKnownPlayers function not available for callback after clearing data.");
                         }
                         refreshDisplayedSessions(); // Refresh session display as well
                         _context5.next = 14;
@@ -2468,7 +2484,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                     if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
                       window.userManager.renderKnownPlayers(knownPlayersDiv, ''); // Re-render with empty search
                     } else {
-                      console.error("window.userManager.renderKnownPlayers is not available for callback after clearing data.");
+                      console.error("User manager or renderKnownPlayers function not available for callback after clearing data.");
                     }
                     refreshDisplayedSessions(); // Refresh session display as well
                   } else {
