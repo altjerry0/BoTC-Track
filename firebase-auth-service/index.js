@@ -20,7 +20,7 @@ const allowedOrigins = [
 ];
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('CORS check for origin:', origin);
+    // console.log('CORS check for origin:', origin);
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -38,9 +38,9 @@ app.options('/auth/exchange-token', cors(corsOptions));
 
 // Log all requests to help debug CORS issues
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  console.log('Origin:', req.headers.origin);
-  console.log('Headers:', req.headers);
+  // console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  // console.log('Origin:', req.headers.origin);
+  // console.log('Headers:', req.headers);
   next();
 });
 
@@ -139,7 +139,7 @@ app.get('/health', (req, res) => {
 // Using Firebase Functions v3 syntax with explicit region and runtime options
 exports.api = functions
   .runWith({
-    timeoutSeconds: 180
+    timeoutSeconds: 15
   })
   .region('us-central1')
   .https.onRequest(app);
