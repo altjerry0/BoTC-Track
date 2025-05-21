@@ -4,7 +4,8 @@ This file tracks active bugs and planned future enhancements for the BotC Player
 
 ## Current Bugs
 
-*   [ ] Player export function uses stale data - should fetch latest data from localStorage at time of export
+*   [ ] Verify username updates and history tracking - ensure usernames are being properly updated when new data is fetched and username history is being maintained correctly
+*   [x] Player export function used stale data – now fetches latest data from storage at time of export (Fixed v1.1.9). Export is now robust to changes made after popup load.
 *   [x] Favorites are not highlighted correctly in the UI.
 *   [x] Current game detection fails - Player ID from botc.app JWT was not being correctly parsed and assigned due to an older function version taking precedence. Corrected JWT parsing and ensured correct function scope. (Fixed v1.1.8)
 *   [x] Updating user information (e.g., notes, rating) doesn't always immediately refresh the user list or session views, even though the data is saved.

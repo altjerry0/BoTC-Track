@@ -1764,10 +1764,10 @@ var currentFilterOptions = {
   officialOnly: false,
   hideCompleted: false
 };
-document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee9() {
+document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee0() {
   var setBotcGamePlayerId, fetchButton, officialOnlyCheckbox, searchInput, exportPlayersButton, importPlayersButton, importFileInput, importStatusDiv, addPlayerButton, clearAllPlayerDataButton, darkModeToggle, sessionListDiv, loadingIndicator, knownPlayersDiv, onlineFavoritesListDiv, onlineFavoritesCountSpan, openInTabButton, fetchStatsSpan, tabButtons, tabContents, latestSessionData, showOfficialOnly, searchTimeout, setLatestSessionData, setDarkMode, showTab, accountTabLoaded, loadAccountTabScript, refreshDisplayedSessions, _refreshDisplayedSessions, refreshAllViews, _refreshAllViews, refreshDependentViews, _refreshDependentViews, applySessionFilters, openInTabBtn;
-  return popup_regeneratorRuntime().wrap(function _callee9$(_context9) {
-    while (1) switch (_context9.prev = _context9.next) {
+  return popup_regeneratorRuntime().wrap(function _callee0$(_context0) {
+    while (1) switch (_context0.prev = _context0.next) {
       case 0:
         applySessionFilters = function _applySessionFilters() {
           if (!window.renderSessions) {
@@ -1805,21 +1805,21 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
           });
         };
         _refreshDependentViews = function _refreshDependentView2() {
-          _refreshDependentViews = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee8(updatedPlayerId) {
+          _refreshDependentViews = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee9(updatedPlayerId) {
             var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv4, _searchInput4;
-            return popup_regeneratorRuntime().wrap(function _callee8$(_context8) {
-              while (1) switch (_context8.prev = _context8.next) {
+            return popup_regeneratorRuntime().wrap(function _callee9$(_context9) {
+              while (1) switch (_context9.prev = _context9.next) {
                 case 0:
-                  _context8.prev = 0;
+                  _context9.prev = 0;
                   console.log("[Popup] Refreshing dependent views for player ID: ".concat(updatedPlayerId));
-                  _context8.next = 4;
+                  _context9.next = 4;
                   return window.userManager.getAllPlayerData();
                 case 4:
-                  currentPlayerData = _context8.sent;
-                  _context8.next = 7;
+                  currentPlayerData = _context9.sent;
+                  _context9.next = 7;
                   return window.fetchOnlinePlayerIds();
                 case 7:
-                  onlinePlayerIds = _context8.sent;
+                  onlinePlayerIds = _context9.sent;
                   // Prepare onlinePlayersObject for favorites list
                   onlinePlayersObjectForFavorites = {};
                   if (window.latestSessionData && Array.isArray(window.latestSessionData)) {
@@ -1852,17 +1852,17 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                     );
                   }
                   console.log("[Popup] refreshDependentViews for player ID: ".concat(updatedPlayerId, " completed."));
-                  _context8.next = 21;
+                  _context9.next = 21;
                   break;
                 case 18:
-                  _context8.prev = 18;
-                  _context8.t0 = _context8["catch"](0);
-                  console.error("[Popup] Error during refreshDependentViews for player ID: ".concat(updatedPlayerId, ":"), _context8.t0);
+                  _context9.prev = 18;
+                  _context9.t0 = _context9["catch"](0);
+                  console.error("[Popup] Error during refreshDependentViews for player ID: ".concat(updatedPlayerId, ":"), _context9.t0);
                 case 21:
                 case "end":
-                  return _context8.stop();
+                  return _context9.stop();
               }
-            }, _callee8, null, [[0, 18]]);
+            }, _callee9, null, [[0, 18]]);
           }));
           return _refreshDependentViews.apply(this, arguments);
         };
@@ -1870,29 +1870,29 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
           return _refreshDependentViews.apply(this, arguments);
         };
         _refreshAllViews = function _refreshAllViews3() {
-          _refreshAllViews = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee7(initiatingAction) {
+          _refreshAllViews = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee8(initiatingAction) {
             var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv3, _searchInput3;
-            return popup_regeneratorRuntime().wrap(function _callee7$(_context7) {
-              while (1) switch (_context7.prev = _context7.next) {
+            return popup_regeneratorRuntime().wrap(function _callee8$(_context8) {
+              while (1) switch (_context8.prev = _context8.next) {
                 case 0:
                   console.log("[Popup] refreshAllViews called, initiated by: ".concat(initiatingAction || 'unknown'));
                   if (!(!window.userManager || typeof window.userManager.getAllPlayerData !== 'function' || typeof window.userManager.renderKnownPlayers !== 'function')) {
-                    _context7.next = 4;
+                    _context8.next = 4;
                     break;
                   }
                   console.error("[Popup] User manager not fully available for refreshAllViews.");
-                  return _context7.abrupt("return");
+                  return _context8.abrupt("return");
                 case 4:
-                  _context7.prev = 4;
-                  _context7.next = 7;
+                  _context8.prev = 4;
+                  _context8.next = 7;
                   return window.userManager.getAllPlayerData();
                 case 7:
-                  currentPlayerData = _context7.sent;
+                  currentPlayerData = _context8.sent;
                   window.playerData = currentPlayerData; // EXPLICITLY UPDATE window.playerData
-                  _context7.next = 11;
+                  _context8.next = 11;
                   return window.fetchOnlinePlayerIds();
                 case 11:
-                  onlinePlayerIds = _context7.sent;
+                  onlinePlayerIds = _context8.sent;
                   // Returns a Set of IDs
                   // Reconstruct onlinePlayersObject (maps ID to session name or true) for favorites list
                   onlinePlayersObjectForFavorites = {};
@@ -1931,26 +1931,26 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
 
                   // 3. Refresh Sessions list
                   if (!(typeof refreshDisplayedSessions === 'function')) {
-                    _context7.next = 23;
+                    _context8.next = 23;
                     break;
                   }
                   console.log("[Popup] Refreshing Sessions list.");
                   // Consider if refreshDisplayedSessions needs currentPlayerData for player-specific highlights/info in session cards
-                  _context7.next = 23;
+                  _context8.next = 23;
                   return refreshDisplayedSessions();
                 case 23:
                   console.log("[Popup] refreshAllViews completed.");
-                  _context7.next = 29;
+                  _context8.next = 29;
                   break;
                 case 26:
-                  _context7.prev = 26;
-                  _context7.t0 = _context7["catch"](4);
-                  console.error("[Popup] Error during refreshAllViews:", _context7.t0);
+                  _context8.prev = 26;
+                  _context8.t0 = _context8["catch"](4);
+                  console.error("[Popup] Error during refreshAllViews:", _context8.t0);
                 case 29:
                 case "end":
-                  return _context7.stop();
+                  return _context8.stop();
               }
-            }, _callee7, null, [[4, 26]]);
+            }, _callee8, null, [[4, 26]]);
           }));
           return _refreshAllViews.apply(this, arguments);
         };
@@ -1958,10 +1958,10 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
           return _refreshAllViews.apply(this, arguments);
         };
         _refreshDisplayedSessions = function _refreshDisplayedSess2() {
-          _refreshDisplayedSessions = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee6() {
+          _refreshDisplayedSessions = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee7() {
             var playerDataResponse, addPlayerFunction, createUsernameHistoryModalFunction, fetchAndDisplaySessionsFunc;
-            return popup_regeneratorRuntime().wrap(function _callee6$(_context6) {
-              while (1) switch (_context6.prev = _context6.next) {
+            return popup_regeneratorRuntime().wrap(function _callee7$(_context7) {
+              while (1) switch (_context7.prev = _context7.next) {
                 case 0:
                   if (loadingIndicator) loadingIndicator.style.display = 'block';
                   if (sessionListDiv) sessionListDiv.innerHTML = ''; // Clear previous sessions
@@ -1974,38 +1974,38 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                   // If called before initial setup, it might be empty, which sessionManager now handles with a warning.
                   // MODIFIED Condition: Check if playerData is falsy OR an empty object.
                   if (!(!window.playerData || Object.keys(window.playerData).length === 0)) {
-                    _context6.next = 17;
+                    _context7.next = 17;
                     break;
                   }
                   console.warn('[Popup] refreshDisplayedSessions: window.playerData is empty or not initialized. Attempting fallback load.');
                   // Attempt to load it now as a fallback - ideally, popup.js structure ensures it's loaded prior.
-                  _context6.prev = 6;
-                  _context6.next = 9;
+                  _context7.prev = 6;
+                  _context7.next = 9;
                   return sendMessagePromise({
                     type: 'GET_PLAYER_DATA'
                   });
                 case 9:
-                  playerDataResponse = _context6.sent;
+                  playerDataResponse = _context7.sent;
                   window.playerData = playerDataResponse && playerDataResponse.playerData ? playerDataResponse.playerData : {};
-                  _context6.next = 17;
+                  _context7.next = 17;
                   break;
                 case 13:
-                  _context6.prev = 13;
-                  _context6.t0 = _context6["catch"](6);
-                  console.error('[Popup] Error during fallback playerData load:', _context6.t0);
+                  _context7.prev = 13;
+                  _context7.t0 = _context7["catch"](6);
+                  console.error('[Popup] Error during fallback playerData load:', _context7.t0);
                   window.playerData = {}; // Ensure it's at least an empty object
                 case 17:
-                  _context6.prev = 17;
+                  _context7.prev = 17;
                   addPlayerFunction = addPlayer;
                   createUsernameHistoryModalFunction = createUsernameHistoryModal; // Check if the function exists on window, if not - try accessing it via a more reliable method
                   fetchAndDisplaySessionsFunc = window.fetchAndDisplaySessions || typeof sessionManager !== 'undefined' && sessionManager.fetchAndDisplaySessions;
                   if (fetchAndDisplaySessionsFunc) {
-                    _context6.next = 23;
+                    _context7.next = 23;
                     break;
                   }
                   throw new Error('fetchAndDisplaySessions function not found. SessionManager may not be fully loaded.');
                 case 23:
-                  _context6.next = 25;
+                  _context7.next = 25;
                   return fetchAndDisplaySessionsFunc(addPlayer, createUsernameHistoryModal, window.updateOnlineFavoritesListFunc, sessionListDiv, currentFilterOptions, function (sessionsData, errorData) {
                     if (loadingIndicator) loadingIndicator.style.display = 'none';
                     if (errorData) {
@@ -2025,19 +2025,19 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                     }
                   });
                 case 25:
-                  _context6.next = 32;
+                  _context7.next = 32;
                   break;
                 case 27:
-                  _context6.prev = 27;
-                  _context6.t1 = _context6["catch"](17);
-                  console.error("[Popup] Critical error calling fetchAndDisplaySessions:", _context6.t1);
+                  _context7.prev = 27;
+                  _context7.t1 = _context7["catch"](17);
+                  console.error("[Popup] Critical error calling fetchAndDisplaySessions:", _context7.t1);
                   if (loadingIndicator) loadingIndicator.style.display = 'none';
-                  if (sessionListDiv) sessionListDiv.innerHTML = "<p class='error-message'>A critical error occurred: ".concat(_context6.t1.message, "</p>");
+                  if (sessionListDiv) sessionListDiv.innerHTML = "<p class='error-message'>A critical error occurred: ".concat(_context7.t1.message, "</p>");
                 case 32:
                 case "end":
-                  return _context6.stop();
+                  return _context7.stop();
               }
-            }, _callee6, null, [[6, 13], [17, 27]]);
+            }, _callee7, null, [[6, 13], [17, 27]]);
           }));
           return _refreshDisplayedSessions.apply(this, arguments);
         };
@@ -2562,20 +2562,46 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
 
         // --- Export/Import Buttons ---
         if (exportPlayersButton) {
-          exportPlayersButton.addEventListener('click', function () {
-            if (typeof window.exportPlayerDataCSV === 'function') {
-              // Check if playerData has content before exporting
-              if (window.playerData && Object.keys(window.playerData).length > 0) {
-                window.exportPlayerDataCSV(window.playerData);
-              } else {
-                console.warn('[Popup] Export button clicked, but no player data to export.');
-                ModalManager.showAlert('No Data', 'There is no player data to export.');
+          exportPlayersButton.addEventListener('click', /*#__PURE__*/popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee5() {
+            var _window$userManager2;
+            var latestPlayerData;
+            return popup_regeneratorRuntime().wrap(function _callee5$(_context5) {
+              while (1) switch (_context5.prev = _context5.next) {
+                case 0:
+                  if (!(typeof ((_window$userManager2 = window.userManager) === null || _window$userManager2 === void 0 ? void 0 : _window$userManager2.loadPlayerData) === 'function' && typeof window.exportPlayerDataCSV === 'function')) {
+                    _context5.next = 14;
+                    break;
+                  }
+                  _context5.prev = 1;
+                  _context5.next = 4;
+                  return window.userManager.loadPlayerData();
+                case 4:
+                  latestPlayerData = _context5.sent;
+                  if (latestPlayerData && Object.keys(latestPlayerData).length > 0) {
+                    window.exportPlayerDataCSV(latestPlayerData);
+                  } else {
+                    console.warn('[Popup] Export button clicked, but no player data to export.');
+                    ModalManager.showAlert('No Data', 'There is no player data to export.');
+                  }
+                  _context5.next = 12;
+                  break;
+                case 8:
+                  _context5.prev = 8;
+                  _context5.t0 = _context5["catch"](1);
+                  console.error('[Popup] Failed to load player data for export:', _context5.t0);
+                  ModalManager.showAlert('Error', 'Failed to load player data for export.');
+                case 12:
+                  _context5.next = 16;
+                  break;
+                case 14:
+                  console.error('Export function (window.exportPlayerDataCSV) or userManager.loadPlayerData not found.');
+                  ModalManager.showAlert('Error', 'Export functionality is currently unavailable.');
+                case 16:
+                case "end":
+                  return _context5.stop();
               }
-            } else {
-              console.error('Export function (window.exportPlayerDataCSV) not found.');
-              ModalManager.showAlert('Error', 'Export functionality is currently unavailable.');
-            }
-          });
+            }, _callee5, null, [[1, 8]]);
+          })));
         } else {
           console.warn('Export players button not found.');
         }
@@ -2588,12 +2614,12 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
             if (file) {
               // Make the successCallback async to use await inside
               var successCallback = /*#__PURE__*/function () {
-                var _ref6 = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee5(parsedData) {
-                  return popup_regeneratorRuntime().wrap(function _callee5$(_context5) {
-                    while (1) switch (_context5.prev = _context5.next) {
+                var _ref7 = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee6(parsedData) {
+                  return popup_regeneratorRuntime().wrap(function _callee6$(_context6) {
+                    while (1) switch (_context6.prev = _context6.next) {
                       case 0:
-                        _context5.prev = 0;
-                        _context5.next = 3;
+                        _context6.prev = 0;
+                        _context6.next = 3;
                         return window.userManager.replaceAllPlayerDataAndSave(parsedData);
                       case 3:
                         // Code that was previously in the inner callback now runs after await
@@ -2604,23 +2630,23 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                           console.error("User manager or renderKnownPlayers function not available for callback after clearing data.");
                         }
                         refreshDisplayedSessions(); // Refresh session display as well
-                        _context5.next = 14;
+                        _context6.next = 14;
                         break;
                       case 8:
-                        _context5.prev = 8;
-                        _context5.t0 = _context5["catch"](0);
-                        console.error('Error processing imported data:', _context5.t0);
+                        _context6.prev = 8;
+                        _context6.t0 = _context6["catch"](0);
+                        console.error('Error processing imported data:', _context6.t0);
                         importStatusDiv.textContent = 'Error saving imported data. Check console.';
                         importStatusDiv.className = 'import-status-message error';
                         importStatusDiv.style.display = 'block';
                       case 14:
                       case "end":
-                        return _context5.stop();
+                        return _context6.stop();
                     }
-                  }, _callee5, null, [[0, 8]]);
+                  }, _callee6, null, [[0, 8]]);
                 }));
                 return function successCallback(_x3) {
-                  return _ref6.apply(this, arguments);
+                  return _ref7.apply(this, arguments);
                 };
               }();
               window.importPlayerDataCSV(file, successCallback, function (message, isError) {
@@ -2715,9 +2741,9 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
         });
       case 63:
       case "end":
-        return _context9.stop();
+        return _context0.stop();
     }
-  }, _callee9);
+  }, _callee0);
 })));
 
 // Helper function to parse JWT
