@@ -36,13 +36,13 @@ This approach eliminates the need for external script loading in the extension (
 graph LR
     A[User in Chrome Extension] -- Initiates Sign-In --> B(Chrome Identity API);
     B -- Returns Google OAuth Token --> A;
-    A -- Sends Google Token --> C{"BotC Tracker Auth Service\n(auth.trackbotc.com)"};
-    C -- "Validates Google Token & \nRequests Custom Token" --> D(Firebase Admin SDK);
+    A -- Sends Google Token --> C{"BotC Tracker Auth Service&#10;(auth.trackbotc.com)"};
+    C -- "Validates Google Token & &#10;Requests Custom Token" --> D(Firebase Admin SDK);
     D -- Returns Firebase Custom Token --> C;
     C -- Returns Firebase Custom Token --> A;
     A -- Signs in with Custom Token --> E(Firebase Authentication);
     E -- Establishes User Session --> A;
-    A -- Accesses --> F{"Firebase Firestore/RTDB\nwith Auth Session"};
+    A -- Accesses --> F{"Firebase Firestore/RTDB&#10;with Auth Session"};
 ```
 
 _For a visual representation, see the detailed diagram below._
