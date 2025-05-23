@@ -35037,6 +35037,12 @@ var debugLogging = !isProduction; // Enable detailed logs only in development
 // : '234038964353-n0d5jf4jfj5cunqlm8el1ull04trvj9v.apps.googleusercontent.com', // Development client ID
 ;// ./src/background.js
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function _readOnlyError(r) { throw new TypeError('"' + r + '" is read-only'); }
 function background_ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? background_ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : background_ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
@@ -35047,6 +35053,7 @@ function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyri
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 // --- Firebase Initialization (v1.1.7 Chrome Web Store Compliance) ---
+// Version 1.2.1 - Added username refresh queue system
 
 
 
@@ -35109,24 +35116,24 @@ function getGoogleAuthToken() {
  * @returns {Promise<Object>} User credentials and profile information
  */
 function _getGoogleAuthToken() {
-  _getGoogleAuthToken = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+  _getGoogleAuthToken = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
     var interactive,
       isBrave,
-      _args2 = arguments;
-    return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-      while (1) switch (_context2.prev = _context2.next) {
+      _args3 = arguments;
+    return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+      while (1) switch (_context3.prev = _context3.next) {
         case 0:
-          interactive = _args2.length > 0 && _args2[0] !== undefined ? _args2[0] : true;
+          interactive = _args3.length > 0 && _args3[0] !== undefined ? _args3[0] : true;
           isBrave = isBraveBrowser();
           console.log('[BG Auth] Browser detected as:', isBrave ? 'Brave' : 'Other (Chrome/Edge)');
-          _context2.prev = 3;
+          _context3.prev = 3;
           if (!(isBrave && authConfig.braveClientId !== 'YOUR_WEB_APPLICATION_CLIENT_ID')) {
-            _context2.next = 11;
+            _context3.next = 11;
             break;
           }
           // For Brave, use launchWebAuthFlow with the Web Application client ID
           console.log('[BG Auth] Using Brave-specific OAuth flow with Web Application client ID');
-          _context2.next = 8;
+          _context3.next = 8;
           return new Promise(function (resolve, reject) {
             try {
               var redirectURL = chrome.identity.getRedirectURL();
@@ -35165,11 +35172,11 @@ function _getGoogleAuthToken() {
             }
           });
         case 8:
-          return _context2.abrupt("return", _context2.sent);
+          return _context3.abrupt("return", _context3.sent);
         case 11:
           // For Chrome, Edge or if the braveClientId hasn't been set, use standard getAuthToken
           console.log('[BG Auth] Using chrome.identity.getAuthToken for authentication');
-          _context2.next = 14;
+          _context3.next = 14;
           return new Promise(function (resolve, reject) {
             chrome.identity.getAuthToken({
               interactive: interactive
@@ -35184,20 +35191,20 @@ function _getGoogleAuthToken() {
             });
           });
         case 14:
-          return _context2.abrupt("return", _context2.sent);
+          return _context3.abrupt("return", _context3.sent);
         case 15:
-          _context2.next = 21;
+          _context3.next = 21;
           break;
         case 17:
-          _context2.prev = 17;
-          _context2.t0 = _context2["catch"](3);
-          console.error('[BG Auth] Authentication failed:', _context2.t0);
-          throw _context2.t0;
+          _context3.prev = 17;
+          _context3.t0 = _context3["catch"](3);
+          console.error('[BG Auth] Authentication failed:', _context3.t0);
+          throw _context3.t0;
         case 21:
         case "end":
-          return _context2.stop();
+          return _context3.stop();
       }
-    }, _callee2, null, [[3, 17]]);
+    }, _callee3, null, [[3, 17]]);
   }));
   return _getGoogleAuthToken.apply(this, arguments);
 }
@@ -35211,39 +35218,39 @@ function authenticateWithGoogleAndFirebase() {
  * @returns {Promise<void>}
  */
 function _authenticateWithGoogleAndFirebase() {
-  _authenticateWithGoogleAndFirebase = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+  _authenticateWithGoogleAndFirebase = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
     var googleToken, userInfoResponse, googleUserInfo, exchangeResponse, errorData, _yield$exchangeRespon, firebaseCustomToken, firebaseUserInfo, userCredential, firebaseUser, authUser, userProfileData;
-    return _regeneratorRuntime().wrap(function _callee3$(_context3) {
-      while (1) switch (_context3.prev = _context3.next) {
+    return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+      while (1) switch (_context4.prev = _context4.next) {
         case 0:
-          _context3.prev = 0;
-          _context3.next = 3;
+          _context4.prev = 0;
+          _context4.next = 3;
           return getGoogleAuthToken(true);
         case 3:
-          googleToken = _context3.sent;
-          _context3.next = 6;
+          googleToken = _context4.sent;
+          _context4.next = 6;
           return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: {
               'Authorization': 'Bearer ' + googleToken
             }
           });
         case 6:
-          userInfoResponse = _context3.sent;
+          userInfoResponse = _context4.sent;
           if (userInfoResponse.ok) {
-            _context3.next = 9;
+            _context4.next = 9;
             break;
           }
           throw new Error('Failed to fetch user info: ' + userInfoResponse.statusText);
         case 9:
-          _context3.next = 11;
+          _context4.next = 11;
           return userInfoResponse.json();
         case 11:
-          googleUserInfo = _context3.sent;
+          googleUserInfo = _context4.sent;
           console.log('[BG Auth] Got Google user info:', googleUserInfo.email);
 
           // Exchange the Google token for a Firebase custom token using our secure service
           console.log('[BG Auth] Exchanging Google token for Firebase custom token');
-          _context3.next = 16;
+          _context4.next = 16;
           return fetch("".concat(FIREBASE_AUTH_SERVICE_URL, "/auth/exchange-token"), {
             method: 'POST',
             headers: {
@@ -35254,31 +35261,31 @@ function _authenticateWithGoogleAndFirebase() {
             })
           });
         case 16:
-          exchangeResponse = _context3.sent;
+          exchangeResponse = _context4.sent;
           if (exchangeResponse.ok) {
-            _context3.next = 22;
+            _context4.next = 22;
             break;
           }
-          _context3.next = 20;
+          _context4.next = 20;
           return exchangeResponse.json();
         case 20:
-          errorData = _context3.sent;
+          errorData = _context4.sent;
           throw new Error('Token exchange failed: ' + (errorData.error || exchangeResponse.statusText));
         case 22:
-          _context3.next = 24;
+          _context4.next = 24;
           return exchangeResponse.json();
         case 24:
-          _yield$exchangeRespon = _context3.sent;
+          _yield$exchangeRespon = _context4.sent;
           firebaseCustomToken = _yield$exchangeRespon.token;
           firebaseUserInfo = _yield$exchangeRespon.user;
           console.log('[BG Auth] Got Firebase custom token');
 
           // Sign in to Firebase with the custom token and wait for auth state
-          _context3.next = 30;
+          _context4.next = 30;
           return signInWithCustomToken(auth, firebaseCustomToken);
         case 30:
-          userCredential = _context3.sent;
-          _context3.next = 33;
+          userCredential = _context4.sent;
+          _context4.next = 33;
           return new Promise(function (resolve) {
             var unsubscribe = auth.onAuthStateChanged(function (user) {
               if (user) {
@@ -35291,7 +35298,7 @@ function _authenticateWithGoogleAndFirebase() {
           // Get the current user after auth state is ready
           firebaseUser = auth.currentUser;
           if (firebaseUser) {
-            _context3.next = 36;
+            _context4.next = 36;
             break;
           }
           throw new Error('Failed to get Firebase user after sign in');
@@ -35311,7 +35318,7 @@ function _authenticateWithGoogleAndFirebase() {
             photoURL: googleUserInfo.picture || firebaseUser.photoURL,
             lastSignIn: new Date().toISOString()
           }; // Store in chrome.storage for persistence
-          _context3.next = 40;
+          _context4.next = 40;
           return chrome.storage.local.set({
             googleAuthToken: googleToken,
             firebaseCustomToken: firebaseCustomToken,
@@ -35332,24 +35339,24 @@ function _authenticateWithGoogleAndFirebase() {
           console.log('[BG Auth] Authentication successful with Firebase UID:', firebaseUser.uid);
 
           // Create/update the user document in Firestore
-          _context3.next = 45;
+          _context4.next = 45;
           return ensureUserDocumentExists(firebaseUser.uid, userProfileData);
         case 45:
-          return _context3.abrupt("return", {
+          return _context4.abrupt("return", {
             firebaseUser: firebaseUser,
             googleUser: googleUserInfo,
             profile: userProfileData
           });
         case 48:
-          _context3.prev = 48;
-          _context3.t0 = _context3["catch"](0);
-          console.error('[BG Auth] Authentication failed:', _context3.t0);
-          throw _context3.t0;
+          _context4.prev = 48;
+          _context4.t0 = _context4["catch"](0);
+          console.error('[BG Auth] Authentication failed:', _context4.t0);
+          throw _context4.t0;
         case 52:
         case "end":
-          return _context3.stop();
+          return _context4.stop();
       }
-    }, _callee3, null, [[0, 48]]);
+    }, _callee4, null, [[0, 48]]);
   }));
   return _authenticateWithGoogleAndFirebase.apply(this, arguments);
 }
@@ -35363,51 +35370,51 @@ function ensureUserDocumentExists(_x, _x2) {
  * @returns {Promise<boolean>} - Whether the save was successful
  */
 function _ensureUserDocumentExists() {
-  _ensureUserDocumentExists = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4(firebaseUid, userProfile) {
+  _ensureUserDocumentExists = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(firebaseUid, userProfile) {
     var currentUser, userDocRef, userDoc;
-    return _regeneratorRuntime().wrap(function _callee4$(_context4) {
-      while (1) switch (_context4.prev = _context4.next) {
+    return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+      while (1) switch (_context5.prev = _context5.next) {
         case 0:
           if (firebaseUid) {
-            _context4.next = 3;
+            _context5.next = 3;
             break;
           }
           console.error('[Firestore] Cannot create user document: No Firebase UID provided');
-          return _context4.abrupt("return");
+          return _context5.abrupt("return");
         case 3:
-          _context4.prev = 3;
+          _context5.prev = 3;
           // Get the current Firebase user
           currentUser = auth.currentUser;
           if (currentUser) {
-            _context4.next = 8;
+            _context5.next = 8;
             break;
           }
           console.error('[Firestore] Cannot create user document: No authenticated user');
-          return _context4.abrupt("return");
+          return _context5.abrupt("return");
         case 8:
           if (!(currentUser.uid !== firebaseUid)) {
-            _context4.next = 11;
+            _context5.next = 11;
             break;
           }
           console.error('[Firestore] Current user ID does not match provided UID');
-          return _context4.abrupt("return");
+          return _context5.abrupt("return");
         case 11:
           console.log('[Firestore] Working with user document ID:', firebaseUid);
 
           // Use the Firebase UID as the document ID in Firestore
           // This ensures compatibility with existing data and security rules
           userDocRef = doc(db, 'users', firebaseUid);
-          _context4.next = 15;
+          _context5.next = 15;
           return getDoc(userDocRef);
         case 15:
-          userDoc = _context4.sent;
+          userDoc = _context5.sent;
           if (userDoc.exists()) {
-            _context4.next = 23;
+            _context5.next = 23;
             break;
           }
           console.log('[Firestore] Document does not exist, creating new one');
           // Create the user document if it doesn't exist
-          _context4.next = 20;
+          _context5.next = 20;
           return setDoc(userDocRef, {
             profile: {
               uid: firebaseUid,
@@ -35427,12 +35434,12 @@ function _ensureUserDocumentExists() {
           });
         case 20:
           console.log('[Firestore] Created new user document for:', firebaseUid);
-          _context4.next = 27;
+          _context5.next = 27;
           break;
         case 23:
           console.log('[Firestore] Document exists, updating');
           // Update profile info if needed
-          _context4.next = 26;
+          _context5.next = 26;
           return setDoc(userDocRef, {
             profile: {
               lastSignIn: new Date().toISOString(),
@@ -35444,17 +35451,17 @@ function _ensureUserDocumentExists() {
         case 26:
           console.log('[Firestore] Updated existing user document for:', firebaseUid);
         case 27:
-          _context4.next = 32;
+          _context5.next = 32;
           break;
         case 29:
-          _context4.prev = 29;
-          _context4.t0 = _context4["catch"](3);
-          console.error('[Firestore] Error ensuring user document exists:', _context4.t0);
+          _context5.prev = 29;
+          _context5.t0 = _context5["catch"](3);
+          console.error('[Firestore] Error ensuring user document exists:', _context5.t0);
         case 32:
         case "end":
-          return _context4.stop();
+          return _context5.stop();
       }
-    }, _callee4, null, [[3, 29]]);
+    }, _callee5, null, [[3, 29]]);
   }));
   return _ensureUserDocumentExists.apply(this, arguments);
 }
@@ -35467,24 +35474,24 @@ function savePlayerDataToFirestore(_x3, _x4) {
  * @returns {Promise<Object>} - The loaded player data or null if not found
  */
 function _savePlayerDataToFirestore() {
-  _savePlayerDataToFirestore = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(userId, playerData) {
+  _savePlayerDataToFirestore = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6(userId, playerData) {
     var userDocRef, userDoc, needsFullOverwrite, existingData, existingPlayerIds, currentPlayerIds, deletedPlayerIds;
-    return _regeneratorRuntime().wrap(function _callee5$(_context5) {
-      while (1) switch (_context5.prev = _context5.next) {
+    return _regeneratorRuntime().wrap(function _callee6$(_context6) {
+      while (1) switch (_context6.prev = _context6.next) {
         case 0:
           if (userId) {
-            _context5.next = 3;
+            _context6.next = 3;
             break;
           }
           console.error('[Firestore] Cannot save player data: No user ID provided');
-          return _context5.abrupt("return", false);
+          return _context6.abrupt("return", false);
         case 3:
-          _context5.prev = 3;
+          _context6.prev = 3;
           userDocRef = doc(db, 'users', userId); // First, fetch the existing document to check what players need to be deleted
-          _context5.next = 7;
+          _context6.next = 7;
           return getDoc(userDocRef);
         case 7:
-          userDoc = _context5.sent;
+          userDoc = _context6.sent;
           needsFullOverwrite = false;
           if (userDoc.exists()) {
             existingData = userDoc.data();
@@ -35505,7 +35512,7 @@ function _savePlayerDataToFirestore() {
 
           // If players were deleted, overwrite the entire playerData object
           // Otherwise, just merge updates which is more efficient
-          _context5.next = 12;
+          _context6.next = 12;
           return setDoc(userDocRef, {
             playerData: {
               version: 1,
@@ -35517,17 +35524,17 @@ function _savePlayerDataToFirestore() {
           });
         case 12:
           console.log('[Firestore] Player data saved to Firestore for user:', userId);
-          return _context5.abrupt("return", true);
+          return _context6.abrupt("return", true);
         case 16:
-          _context5.prev = 16;
-          _context5.t0 = _context5["catch"](3);
-          console.error('[Firestore] Error saving player data to Firestore:', _context5.t0);
-          return _context5.abrupt("return", false);
+          _context6.prev = 16;
+          _context6.t0 = _context6["catch"](3);
+          console.error('[Firestore] Error saving player data to Firestore:', _context6.t0);
+          return _context6.abrupt("return", false);
         case 20:
         case "end":
-          return _context5.stop();
+          return _context6.stop();
       }
-    }, _callee5, null, [[3, 16]]);
+    }, _callee6, null, [[3, 16]]);
   }));
   return _savePlayerDataToFirestore.apply(this, arguments);
 }
@@ -35540,51 +35547,51 @@ function loadPlayerDataFromFirestore(_x5) {
  * @returns {Promise<Object>} - The synchronized player data
  */
 function _loadPlayerDataFromFirestore() {
-  _loadPlayerDataFromFirestore = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6(userId) {
+  _loadPlayerDataFromFirestore = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7(userId) {
     var userDocRef, userDoc, userData;
-    return _regeneratorRuntime().wrap(function _callee6$(_context6) {
-      while (1) switch (_context6.prev = _context6.next) {
+    return _regeneratorRuntime().wrap(function _callee7$(_context7) {
+      while (1) switch (_context7.prev = _context7.next) {
         case 0:
           if (userId) {
-            _context6.next = 3;
+            _context7.next = 3;
             break;
           }
           console.error('[Firestore] Cannot load player data: No user ID provided');
-          return _context6.abrupt("return", null);
+          return _context7.abrupt("return", null);
         case 3:
-          _context6.prev = 3;
+          _context7.prev = 3;
           userDocRef = doc(db, 'users', userId);
-          _context6.next = 7;
+          _context7.next = 7;
           return getDoc(userDocRef);
         case 7:
-          userDoc = _context6.sent;
+          userDoc = _context7.sent;
           if (userDoc.exists()) {
-            _context6.next = 11;
+            _context7.next = 11;
             break;
           }
           console.log('[Firestore] No user document found for:', userId);
-          return _context6.abrupt("return", null);
+          return _context7.abrupt("return", null);
         case 11:
           userData = userDoc.data();
           if (!(!userData.playerData || !userData.playerData.data)) {
-            _context6.next = 15;
+            _context7.next = 15;
             break;
           }
           console.log('[Firestore] User has no player data stored yet');
-          return _context6.abrupt("return", {});
+          return _context7.abrupt("return", {});
         case 15:
           console.log('[Firestore] Loaded player data from Firestore for user:', userId);
-          return _context6.abrupt("return", userData.playerData.data);
+          return _context7.abrupt("return", userData.playerData.data);
         case 19:
-          _context6.prev = 19;
-          _context6.t0 = _context6["catch"](3);
-          console.error('[Firestore] Error loading player data from Firestore:', _context6.t0);
-          return _context6.abrupt("return", null);
+          _context7.prev = 19;
+          _context7.t0 = _context7["catch"](3);
+          console.error('[Firestore] Error loading player data from Firestore:', _context7.t0);
+          return _context7.abrupt("return", null);
         case 23:
         case "end":
-          return _context6.stop();
+          return _context7.stop();
       }
-    }, _callee6, null, [[3, 19]]);
+    }, _callee7, null, [[3, 19]]);
   }));
   return _loadPlayerDataFromFirestore.apply(this, arguments);
 }
@@ -35596,72 +35603,72 @@ function syncPlayerData(_x6) {
  * @returns {Promise<void>}
  */
 function _syncPlayerData() {
-  _syncPlayerData = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7(userId) {
+  _syncPlayerData = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8(userId) {
     var localData, remoteData, mergedData;
-    return _regeneratorRuntime().wrap(function _callee7$(_context7) {
-      while (1) switch (_context7.prev = _context7.next) {
+    return _regeneratorRuntime().wrap(function _callee8$(_context8) {
+      while (1) switch (_context8.prev = _context8.next) {
         case 0:
           if (userId) {
-            _context7.next = 3;
+            _context8.next = 3;
             break;
           }
           console.error('[Firestore] Cannot sync player data: No user ID provided');
-          return _context7.abrupt("return", null);
+          return _context8.abrupt("return", null);
         case 3:
-          _context7.prev = 3;
-          _context7.next = 6;
+          _context8.prev = 3;
+          _context8.next = 6;
           return new Promise(function (resolve) {
             chrome.storage.local.get('playerData', function (result) {
               resolve(result.playerData || {});
             });
           });
         case 6:
-          localData = _context7.sent;
-          _context7.next = 9;
+          localData = _context8.sent;
+          _context8.next = 9;
           return loadPlayerDataFromFirestore(userId);
         case 9:
-          remoteData = _context7.sent;
+          remoteData = _context8.sent;
           if (remoteData) {
-            _context7.next = 16;
+            _context8.next = 16;
             break;
           }
           if (!(Object.keys(localData).length > 0)) {
-            _context7.next = 15;
+            _context8.next = 15;
             break;
           }
-          _context7.next = 14;
+          _context8.next = 14;
           return savePlayerDataToFirestore(userId, localData);
         case 14:
           console.log('[Firestore] Uploaded local player data to Firestore');
         case 15:
-          return _context7.abrupt("return", localData);
+          return _context8.abrupt("return", localData);
         case 16:
           // Merge local and remote data (simple strategy: prefer remote data)
           // In a more sophisticated version, you might want to do a field-by-field comparison
           // based on timestamps or implement a more complex conflict resolution strategy
           mergedData = _objectSpread(_objectSpread({}, localData), remoteData); // Save merged data locally
-          _context7.next = 19;
+          _context8.next = 19;
           return new Promise(function (resolve) {
             chrome.storage.local.set({
               playerData: mergedData
             }, resolve);
           });
         case 19:
-          _context7.next = 21;
+          _context8.next = 21;
           return savePlayerDataToFirestore(userId, mergedData);
         case 21:
           console.log('[Firestore] Player data synchronized successfully');
-          return _context7.abrupt("return", mergedData);
+          return _context8.abrupt("return", mergedData);
         case 25:
-          _context7.prev = 25;
-          _context7.t0 = _context7["catch"](3);
-          console.error('[Firestore] Error syncing player data:', _context7.t0);
-          return _context7.abrupt("return", null);
+          _context8.prev = 25;
+          _context8.t0 = _context8["catch"](3);
+          console.error('[Firestore] Error syncing player data:', _context8.t0);
+          return _context8.abrupt("return", null);
         case 29:
         case "end":
-          return _context7.stop();
+          return _context8.stop();
       }
-    }, _callee7, null, [[3, 25]]);
+    }, _callee8, null, [[3, 25]]);
   }));
   return _syncPlayerData.apply(this, arguments);
 }
@@ -35673,31 +35680,31 @@ function signOutUser() {
  * @returns {Promise<Object|null>} The authenticated user or null
  */
 function _signOutUser() {
-  _signOutUser = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
+  _signOutUser = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
     var _yield$chrome$storage, googleAuthToken;
-    return _regeneratorRuntime().wrap(function _callee8$(_context8) {
-      while (1) switch (_context8.prev = _context8.next) {
+    return _regeneratorRuntime().wrap(function _callee9$(_context9) {
+      while (1) switch (_context9.prev = _context9.next) {
         case 0:
-          _context8.prev = 0;
-          _context8.next = 3;
+          _context9.prev = 0;
+          _context9.next = 3;
           return auth.signOut();
         case 3:
           console.log('[BG Auth] Signed out from Firebase');
 
           // Get the current Google token to revoke it
-          _context8.next = 6;
+          _context9.next = 6;
           return chrome.storage.local.get('googleAuthToken');
         case 6:
-          _yield$chrome$storage = _context8.sent;
+          _yield$chrome$storage = _context9.sent;
           googleAuthToken = _yield$chrome$storage.googleAuthToken;
           if (!googleAuthToken) {
-            _context8.next = 14;
+            _context9.next = 14;
             break;
           }
-          _context8.next = 11;
+          _context9.next = 11;
           return fetch("https://accounts.google.com/o/oauth2/revoke?token=".concat(googleAuthToken));
         case 11:
-          _context8.next = 13;
+          _context9.next = 13;
           return new Promise(function (resolve, reject) {
             chrome.identity.removeCachedAuthToken({
               token: googleAuthToken
@@ -35712,7 +35719,7 @@ function _signOutUser() {
         case 13:
           console.log('[BG Auth] Revoked Google token');
         case 14:
-          _context8.next = 16;
+          _context9.next = 16;
           return chrome.storage.local.remove(['googleAuthToken', 'firebaseCustomToken', 'authUser']);
         case 16:
           console.log('[BG Auth] Cleared auth data');
@@ -35722,17 +35729,17 @@ function _signOutUser() {
             type: 'AUTH_STATE_CHANGED',
             payload: null
           });
-          return _context8.abrupt("return", true);
+          return _context9.abrupt("return", true);
         case 21:
-          _context8.prev = 21;
-          _context8.t0 = _context8["catch"](0);
-          console.error('[BG Auth] Error during sign out:', _context8.t0);
-          throw _context8.t0;
+          _context9.prev = 21;
+          _context9.t0 = _context9["catch"](0);
+          console.error('[BG Auth] Error during sign out:', _context9.t0);
+          throw _context9.t0;
         case 25:
         case "end":
-          return _context8.stop();
+          return _context9.stop();
       }
-    }, _callee8, null, [[0, 21]]);
+    }, _callee9, null, [[0, 21]]);
   }));
   return _signOutUser.apply(this, arguments);
 }
@@ -35740,11 +35747,11 @@ function checkAuthState() {
   return _checkAuthState.apply(this, arguments);
 } // Initialize by checking auth state
 function _checkAuthState() {
-  _checkAuthState = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
-    return _regeneratorRuntime().wrap(function _callee9$(_context9) {
-      while (1) switch (_context9.prev = _context9.next) {
+  _checkAuthState = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee0() {
+    return _regeneratorRuntime().wrap(function _callee0$(_context0) {
+      while (1) switch (_context0.prev = _context0.next) {
         case 0:
-          return _context9.abrupt("return", new Promise(function (resolve) {
+          return _context0.abrupt("return", new Promise(function (resolve) {
             chrome.storage.local.get('authUser', function (result) {
               if (result && result.authUser && result.authUser.uid) {
                 console.log('[BG Auth] User is authenticated:', result.authUser.uid);
@@ -35757,9 +35764,9 @@ function _checkAuthState() {
           }));
         case 1:
         case "end":
-          return _context9.stop();
+          return _context0.stop();
       }
-    }, _callee9);
+    }, _callee0);
   }));
   return _checkAuthState.apply(this, arguments);
 }
@@ -35781,98 +35788,99 @@ function pushLocalDataToCloud() {
  * @returns {Promise<Object>} - Result of the operation
  */
 function _pushLocalDataToCloud() {
-  _pushLocalDataToCloud = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee0() {
+  _pushLocalDataToCloud = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee1() {
     var user, localData, success;
-    return _regeneratorRuntime().wrap(function _callee0$(_context0) {
-      while (1) switch (_context0.prev = _context0.next) {
+    return _regeneratorRuntime().wrap(function _callee1$(_context1) {
+      while (1) switch (_context1.prev = _context1.next) {
         case 0:
-          _context0.prev = 0;
+          _context1.prev = 0;
           // Get the current user
           user = auth.currentUser;
           if (user) {
-            _context0.next = 4;
+            _context1.next = 4;
             break;
           }
-          return _context0.abrupt("return", {
+          return _context1.abrupt("return", {
             success: false,
             error: 'User not signed in'
           });
         case 4:
-          _context0.next = 6;
+          _context1.next = 6;
           return new Promise(function (resolve) {
             chrome.storage.local.get('playerData', function (result) {
               resolve(result.playerData || {});
             });
           });
         case 6:
-          localData = _context0.sent;
+          localData = _context1.sent;
           if (!(!localData || Object.keys(localData).length === 0)) {
-            _context0.next = 9;
+            _context1.next = 9;
             break;
           }
-          return _context0.abrupt("return", {
+          return _context1.abrupt("return", {
             success: false,
             error: 'No local player data to push'
           });
         case 9:
-          _context0.next = 11;
+          _context1.next = 11;
           return savePlayerDataToFirestore(user.uid, localData);
         case 11:
-          success = _context0.sent;
-          return _context0.abrupt("return", {
+          success = _context1.sent;
+          return _context1.abrupt("return", {
             success: success,
             updated: success,
             error: success ? null : 'Failed to save data to Firestore'
           });
         case 15:
-          _context0.prev = 15;
-          _context0.t0 = _context0["catch"](0);
-          console.error('[Firestore] Error pushing local data to cloud:', _context0.t0);
-          return _context0.abrupt("return", {
+          _context1.prev = 15;
+          _context1.t0 = _context1["catch"](0);
+          console.error('[Firestore] Error pushing local data to cloud:', _context1.t0);
+          return _context1.abrupt("return", {
             success: false,
-            error: _context0.t0.message || 'Unknown error occurred'
+            error: _context1.t0.message || 'Unknown error occurred'
           });
         case 19:
         case "end":
-          return _context0.stop();
+          return _context1.stop();
       }
-    }, _callee0, null, [[0, 15]]);
+    }, _callee1, null, [[0, 15]]);
   }));
   return _pushLocalDataToCloud.apply(this, arguments);
 }
 function fetchCloudDataToLocal() {
   return _fetchCloudDataToLocal.apply(this, arguments);
-} // --- Message Listener from Content Script or Popup ---
+} // --- Username Refresh Queue System ---
+// Queue for username refresh requests
 function _fetchCloudDataToLocal() {
-  _fetchCloudDataToLocal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee1() {
+  _fetchCloudDataToLocal = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
     var authUser, currentUser, userId, cloudPlayerData;
-    return _regeneratorRuntime().wrap(function _callee1$(_context1) {
-      while (1) switch (_context1.prev = _context1.next) {
+    return _regeneratorRuntime().wrap(function _callee10$(_context10) {
+      while (1) switch (_context10.prev = _context10.next) {
         case 0:
-          _context1.prev = 0;
+          _context10.prev = 0;
           console.log('[Firestore] Fetching cloud data to local');
 
           // Get auth user from storage for better reliability across contexts
-          _context1.next = 4;
+          _context10.next = 4;
           return new Promise(function (resolve) {
             chrome.storage.local.get('authUser', function (result) {
               resolve(result.authUser || null);
             });
           });
         case 4:
-          authUser = _context1.sent;
+          authUser = _context10.sent;
           if (!(!authUser || !authUser.uid)) {
-            _context1.next = 12;
+            _context10.next = 12;
             break;
           }
           // Fallback to checking auth.currentUser directly if storage doesn't have it
           currentUser = auth.currentUser;
           if (currentUser) {
-            _context1.next = 10;
+            _context10.next = 10;
             break;
           }
           console.warn('[Firestore] Cannot fetch cloud data: User not authenticated');
-          return _context1.abrupt("return", {
+          return _context10.abrupt("return", {
             success: false,
             error: 'User not authenticated'
           });
@@ -35893,21 +35901,21 @@ function _fetchCloudDataToLocal() {
           console.log('[Firestore] Fetching data for user:', userId);
 
           // Load player data from Firestore
-          _context1.next = 16;
+          _context10.next = 16;
           return loadPlayerDataFromFirestore(userId);
         case 16:
-          cloudPlayerData = _context1.sent;
+          cloudPlayerData = _context10.sent;
           if (cloudPlayerData) {
-            _context1.next = 20;
+            _context10.next = 20;
             break;
           }
           console.warn('[Firestore] No cloud data found or permissions issue for user:', userId);
-          return _context1.abrupt("return", {
+          return _context10.abrupt("return", {
             success: false,
             error: 'No cloud data found or permissions issue'
           });
         case 20:
-          _context1.next = 22;
+          _context10.next = 22;
           return new Promise(function (resolve) {
             chrome.storage.local.set({
               playerData: cloudPlayerData
@@ -35915,25 +35923,348 @@ function _fetchCloudDataToLocal() {
           });
         case 22:
           console.log('[Firestore] Cloud data fetched and saved to local storage');
-          return _context1.abrupt("return", {
+          return _context10.abrupt("return", {
             success: true,
             playerData: cloudPlayerData
           });
         case 26:
-          _context1.prev = 26;
-          _context1.t0 = _context1["catch"](0);
-          console.error('[Firestore] Error fetching cloud data to local:', _context1.t0);
-          return _context1.abrupt("return", {
+          _context10.prev = 26;
+          _context10.t0 = _context10["catch"](0);
+          console.error('[Firestore] Error fetching cloud data to local:', _context10.t0);
+          return _context10.abrupt("return", {
             success: false,
-            error: _context1.t0.message || 'Unknown error'
+            error: _context10.t0.message || 'Unknown error'
           });
         case 30:
         case "end":
-          return _context1.stop();
+          return _context10.stop();
       }
-    }, _callee1, null, [[0, 26]]);
+    }, _callee10, null, [[0, 26]]);
   }));
   return _fetchCloudDataToLocal.apply(this, arguments);
+}
+var usernameRefreshQueue = [];
+var isProcessingQueue = false;
+var REFRESH_DELAY_MS = 2000; // 2 seconds between API calls to prevent rate limiting
+
+/**
+ * Add multiple player IDs to the username refresh queue
+ * @param {Array<string>} playerIds - Array of player IDs to refresh
+ * @returns {Promise<Object>} - Result with queue status
+ */
+function queueMultipleUsernameRefreshes(_x7) {
+  return _queueMultipleUsernameRefreshes.apply(this, arguments);
+}
+/**
+ * Process the username refresh queue with rate limiting
+ * This function will continue processing until the queue is empty
+ * It maintains state between popup sessions
+ */
+function _queueMultipleUsernameRefreshes() {
+  _queueMultipleUsernameRefreshes = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee11(playerIds) {
+    var validIds, uniqueIds, addedIds;
+    return _regeneratorRuntime().wrap(function _callee11$(_context11) {
+      while (1) switch (_context11.prev = _context11.next) {
+        case 0:
+          if (!(!Array.isArray(playerIds) || playerIds.length === 0)) {
+            _context11.next = 2;
+            break;
+          }
+          return _context11.abrupt("return", {
+            success: false,
+            message: 'No valid player IDs provided'
+          });
+        case 2:
+          // Filter out any null or undefined IDs
+          validIds = playerIds.filter(function (id) {
+            return id;
+          });
+          if (!(validIds.length === 0)) {
+            _context11.next = 5;
+            break;
+          }
+          return _context11.abrupt("return", {
+            success: false,
+            message: 'No valid player IDs provided after filtering'
+          });
+        case 5:
+          // Add unique IDs to the queue (avoid duplicates)
+          uniqueIds = _toConsumableArray(new Set(validIds));
+          addedIds = uniqueIds.filter(function (id) {
+            return !usernameRefreshQueue.includes(id);
+          });
+          usernameRefreshQueue = [].concat(_toConsumableArray(usernameRefreshQueue), _toConsumableArray(addedIds));
+          console.log("[Queue] Added ".concat(addedIds.length, " player IDs to refresh queue. Total queue size: ").concat(usernameRefreshQueue.length));
+
+          // Start processing if not already running
+          if (!isProcessingQueue) {
+            processUsernameRefreshQueue();
+          }
+          return _context11.abrupt("return", {
+            success: true,
+            message: "Added ".concat(addedIds.length, " players to refresh queue"),
+            queueSize: usernameRefreshQueue.length
+          });
+        case 11:
+        case "end":
+          return _context11.stop();
+      }
+    }, _callee11);
+  }));
+  return _queueMultipleUsernameRefreshes.apply(this, arguments);
+}
+function processUsernameRefreshQueue() {
+  return _processUsernameRefreshQueue.apply(this, arguments);
+}
+/**
+ * Update the queue status in storage for UI feedback
+ */
+function _processUsernameRefreshQueue() {
+  _processUsernameRefreshQueue = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee12() {
+    var playerId, result;
+    return _regeneratorRuntime().wrap(function _callee12$(_context12) {
+      while (1) switch (_context12.prev = _context12.next) {
+        case 0:
+          if (!(isProcessingQueue || usernameRefreshQueue.length === 0)) {
+            _context12.next = 2;
+            break;
+          }
+          return _context12.abrupt("return");
+        case 2:
+          isProcessingQueue = true;
+          console.log("[Queue] Starting to process username refresh queue. Items: ".concat(usernameRefreshQueue.length));
+        case 4:
+          if (!(usernameRefreshQueue.length > 0)) {
+            _context12.next = 24;
+            break;
+          }
+          playerId = usernameRefreshQueue.shift();
+          _context12.prev = 6;
+          console.log("[Queue] Processing player ID: ".concat(playerId));
+          _context12.next = 10;
+          return refreshUsernameById(playerId);
+        case 10:
+          result = _context12.sent;
+          console.log("[Queue] Refreshed username for player ".concat(playerId, ":"), result);
+          _context12.next = 17;
+          break;
+        case 14:
+          _context12.prev = 14;
+          _context12.t0 = _context12["catch"](6);
+          console.error("[Queue] Error refreshing username for player ".concat(playerId, ":"), _context12.t0);
+        case 17:
+          _context12.next = 19;
+          return updateQueueStatus();
+        case 19:
+          if (!(usernameRefreshQueue.length > 0)) {
+            _context12.next = 22;
+            break;
+          }
+          _context12.next = 22;
+          return new Promise(function (resolve) {
+            return setTimeout(resolve, REFRESH_DELAY_MS);
+          });
+        case 22:
+          _context12.next = 4;
+          break;
+        case 24:
+          isProcessingQueue = false;
+          console.log('[Queue] Username refresh queue processing completed');
+
+          // Final status update
+          _context12.next = 28;
+          return updateQueueStatus();
+        case 28:
+        case "end":
+          return _context12.stop();
+      }
+    }, _callee12, null, [[6, 14]]);
+  }));
+  return _processUsernameRefreshQueue.apply(this, arguments);
+}
+function updateQueueStatus() {
+  return _updateQueueStatus.apply(this, arguments);
+}
+/**
+ * Refresh a single username by player ID
+ * @param {string} playerId - The player ID to refresh
+ * @returns {Promise<Object>} - Result of the refresh operation
+ */
+function _updateQueueStatus() {
+  _updateQueueStatus = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee13() {
+    return _regeneratorRuntime().wrap(function _callee13$(_context13) {
+      while (1) switch (_context13.prev = _context13.next) {
+        case 0:
+          return _context13.abrupt("return", new Promise(function (resolve) {
+            chrome.storage.local.set({
+              usernameRefreshQueueStatus: {
+                queueSize: usernameRefreshQueue.length,
+                isProcessing: isProcessingQueue,
+                lastUpdated: Date.now()
+              }
+            }, function () {
+              resolve();
+            });
+          }));
+        case 1:
+        case "end":
+          return _context13.stop();
+      }
+    }, _callee13);
+  }));
+  return _updateQueueStatus.apply(this, arguments);
+}
+function refreshUsernameById(_x8) {
+  return _refreshUsernameById.apply(this, arguments);
+} // --- Message Listener from Content Script or Popup ---
+function _refreshUsernameById() {
+  _refreshUsernameById = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee14(playerId) {
+    var _authToken, response, errorData, data, username, playerData, player, oldUsername;
+    return _regeneratorRuntime().wrap(function _callee14$(_context14) {
+      while (1) switch (_context14.prev = _context14.next) {
+        case 0:
+          if (playerId) {
+            _context14.next = 2;
+            break;
+          }
+          return _context14.abrupt("return", {
+            success: false,
+            error: 'Invalid player ID'
+          });
+        case 2:
+          _context14.prev = 2;
+          _context14.next = 5;
+          return getAuthToken();
+        case 5:
+          _authToken = _context14.sent;
+          if (_authToken) {
+            _context14.next = 8;
+            break;
+          }
+          return _context14.abrupt("return", {
+            success: false,
+            error: 'Auth token not available'
+          });
+        case 8:
+          _context14.next = 10;
+          return fetch("https://botc.app/backend/user/".concat(playerId), {
+            headers: {
+              'Authorization': _authToken
+            }
+          });
+        case 10:
+          response = _context14.sent;
+          if (response.ok) {
+            _context14.next = 16;
+            break;
+          }
+          _context14.next = 14;
+          return response.json()["catch"](function () {
+            return {
+              message: response.statusText
+            };
+          });
+        case 14:
+          errorData = _context14.sent;
+          return _context14.abrupt("return", {
+            success: false,
+            error: "API error (".concat(response.status, "): ").concat(errorData.message || response.statusText)
+          });
+        case 16:
+          _context14.next = 18;
+          return response.json();
+        case 18:
+          data = _context14.sent;
+          username = data && data.user ? data.user.username : null;
+          if (username) {
+            _context14.next = 22;
+            break;
+          }
+          return _context14.abrupt("return", {
+            success: false,
+            error: 'Username not found in API response'
+          });
+        case 22:
+          _context14.next = 24;
+          return new Promise(function (resolve) {
+            chrome.storage.local.get('playerData', function (result) {
+              resolve(result.playerData || {});
+            });
+          });
+        case 24:
+          playerData = _context14.sent;
+          if (!playerData[playerId]) {
+            _context14.next = 39;
+            break;
+          }
+          player = playerData[playerId];
+          oldUsername = player.name; // If username changed, update history and save
+          if (!(oldUsername !== username)) {
+            _context14.next = 36;
+            break;
+          }
+          // Update username history
+          if (!player.usernameHistory) {
+            player.usernameHistory = [];
+          }
+          player.usernameHistory.push({
+            name: oldUsername,
+            timestamp: Date.now()
+          });
+
+          // Update the player name
+          player.name = username;
+          player.lastUpdated = Date.now();
+
+          // Save updated player data
+          _context14.next = 35;
+          return new Promise(function (resolve) {
+            chrome.storage.local.set({
+              playerData: playerData
+            }, function () {
+              resolve();
+            });
+          });
+        case 35:
+          return _context14.abrupt("return", {
+            success: true,
+            updated: true,
+            playerId: playerId,
+            oldUsername: oldUsername,
+            newUsername: username
+          });
+        case 36:
+          return _context14.abrupt("return", {
+            success: true,
+            updated: false,
+            playerId: playerId,
+            message: 'Username already up-to-date'
+          });
+        case 39:
+          return _context14.abrupt("return", {
+            success: true,
+            updated: false,
+            playerId: playerId,
+            message: 'Player not found in local data'
+          });
+        case 40:
+          _context14.next = 46;
+          break;
+        case 42:
+          _context14.prev = 42;
+          _context14.t0 = _context14["catch"](2);
+          console.error("Error refreshing username for player ".concat(playerId, ":"), _context14.t0);
+          return _context14.abrupt("return", {
+            success: false,
+            error: _context14.t0.message || 'Unknown error during username refresh'
+          });
+        case 46:
+        case "end":
+          return _context14.stop();
+      }
+    }, _callee14, null, [[2, 42]]);
+  }));
+  return _refreshUsernameById.apply(this, arguments);
 }
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   // Handle auth token requests
@@ -36122,7 +36453,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           }
         }, _callee, null, [[5, 12]]);
       }));
-      return function (_x7) {
+      return function (_x9) {
         return _ref.apply(this, arguments);
       };
     }());
@@ -36185,6 +36516,79 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       gameInfo: null
     });
     // This one is synchronous, no need to return true
+  } else if (request.type === 'REFRESH_ALL_USERNAMES') {
+    console.log('[BG Queue] Received request to refresh all usernames');
+
+    // Get all player IDs from storage
+    chrome.storage.local.get('playerData', /*#__PURE__*/function () {
+      var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(result) {
+        var playerData, playerIds, queueResult;
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              if (!chrome.runtime.lastError) {
+                _context2.next = 4;
+                break;
+              }
+              console.error('[BG Queue] Error getting player data:', chrome.runtime.lastError);
+              sendResponse({
+                success: false,
+                error: chrome.runtime.lastError.message
+              });
+              return _context2.abrupt("return");
+            case 4:
+              playerData = result.playerData || {};
+              playerIds = Object.keys(playerData);
+              if (!(playerIds.length === 0)) {
+                _context2.next = 9;
+                break;
+              }
+              sendResponse({
+                success: false,
+                message: 'No players found in storage'
+              });
+              return _context2.abrupt("return");
+            case 9:
+              _context2.prev = 9;
+              _context2.next = 12;
+              return queueMultipleUsernameRefreshes(playerIds);
+            case 12:
+              queueResult = _context2.sent;
+              sendResponse(queueResult);
+              _context2.next = 20;
+              break;
+            case 16:
+              _context2.prev = 16;
+              _context2.t0 = _context2["catch"](9);
+              console.error('[BG Queue] Error queuing username refreshes:', _context2.t0);
+              sendResponse({
+                success: false,
+                error: _context2.t0.message || 'Unknown error queuing refreshes'
+              });
+            case 20:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, null, [[9, 16]]);
+      }));
+      return function (_x0) {
+        return _ref2.apply(this, arguments);
+      };
+    }());
+    return true; // Indicate asynchronous response
+  } else if (request.type === 'GET_REFRESH_QUEUE_STATUS') {
+    // Return current queue status
+    chrome.storage.local.get('usernameRefreshQueueStatus', function (result) {
+      sendResponse({
+        success: true,
+        status: result.usernameRefreshQueueStatus || {
+          queueSize: usernameRefreshQueue.length,
+          isProcessing: isProcessingQueue,
+          lastUpdated: Date.now()
+        }
+      });
+    });
+    return true; // Indicate asynchronous response
   } else if (request.type === 'GET_USERNAME_BY_ID') {
     var playerIdToLookup = request.payload.playerId;
     if (!playerIdToLookup) {

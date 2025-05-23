@@ -162,6 +162,34 @@ button:hover {
     /* Inherits background, color (for icon), border, border-radius from default button */
 }
 
+/* Button style for action buttons that contain both icon and text */
+.action-button-with-text {
+    padding: 6px 12px; /* More horizontal padding for text */
+    min-width: 32px; /* Ensures a minimum clickable area */
+    height: 32px;    /* Fixed height for consistency */
+    font-size: 14px; /* Text size */
+    display: inline-flex; /* Use flex to center content */
+    align-items: center; /* Vertically center flex items */
+    justify-content: center; /* Horizontally center flex items */
+    text-align: center;
+    vertical-align: middle;
+    margin: 0 3px;
+    gap: 6px; /* Space between icon and text */
+    border-radius: 4px; /* Slightly rounded corners */
+    transition: all 0.2s ease;
+    white-space: nowrap; /* Keep text on single line */
+}
+
+.action-button-with-text:hover {
+    background-color: var(--button-hover-bg);
+    border-color: var(--button-hover-bg);
+}
+
+.action-button-with-text.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 button .button-icon {
     width: 1em;  /* Relative to button's font-size (14px for normal, 18px for player-action) */
     height: 1em; 

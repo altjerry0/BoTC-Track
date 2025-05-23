@@ -1,4 +1,5 @@
 // --- Firebase Initialization (v1.1.7 Chrome Web Store Compliance) ---
+// Version 1.2.1 - Added username refresh queue system
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getAuth, signInWithCustomToken } from "firebase/auth/web-extension";
@@ -621,6 +622,210 @@ async function fetchCloudDataToLocal() {
     }
 }
 
+// --- Username Refresh Queue System ---
+// Queue for username refresh requests
+let usernameRefreshQueue = [];
+let isProcessingQueue = false;
+const REFRESH_DELAY_MS = 2000; // 2 seconds between API calls to prevent rate limiting
+
+/**
+ * Add multiple player IDs to the username refresh queue
+ * @param {Array<string>} playerIds - Array of player IDs to refresh
+ * @returns {Promise<Object>} - Result with queue status
+ */
+async function queueMultipleUsernameRefreshes(playerIds) {
+    if (!Array.isArray(playerIds) || playerIds.length === 0) {
+        return { success: false, message: 'No valid player IDs provided' };
+    }
+    
+    // Filter out any null or undefined IDs
+    const validIds = playerIds.filter(id => id);
+    
+    if (validIds.length === 0) {
+        return { success: false, message: 'No valid player IDs provided after filtering' };
+    }
+    
+    // Add unique IDs to the queue (avoid duplicates)
+    const uniqueIds = [...new Set(validIds)];
+    const addedIds = uniqueIds.filter(id => !usernameRefreshQueue.includes(id));
+    usernameRefreshQueue = [...usernameRefreshQueue, ...addedIds];
+    
+    console.log(`[Queue] Added ${addedIds.length} player IDs to refresh queue. Total queue size: ${usernameRefreshQueue.length}`);
+    
+    // Start processing if not already running
+    if (!isProcessingQueue) {
+        processUsernameRefreshQueue();
+    }
+    
+    return { 
+        success: true, 
+        message: `Added ${addedIds.length} players to refresh queue`, 
+        queueSize: usernameRefreshQueue.length 
+    };
+}
+
+/**
+ * Process the username refresh queue with rate limiting
+ * This function will continue processing until the queue is empty
+ * It maintains state between popup sessions
+ */
+async function processUsernameRefreshQueue() {
+    if (isProcessingQueue || usernameRefreshQueue.length === 0) {
+        return;
+    }
+    
+    isProcessingQueue = true;
+    console.log(`[Queue] Starting to process username refresh queue. Items: ${usernameRefreshQueue.length}`);
+    
+    while (usernameRefreshQueue.length > 0) {
+        const playerId = usernameRefreshQueue.shift();
+        
+        try {
+            console.log(`[Queue] Processing player ID: ${playerId}`);
+            const result = await refreshUsernameById(playerId);
+            console.log(`[Queue] Refreshed username for player ${playerId}:`, result);
+        } catch (error) {
+            console.error(`[Queue] Error refreshing username for player ${playerId}:`, error);
+        }
+        
+        // Update queue status in storage for UI feedback
+        await updateQueueStatus();
+        
+        // Wait before processing next item to avoid rate limiting
+        if (usernameRefreshQueue.length > 0) {
+            await new Promise(resolve => setTimeout(resolve, REFRESH_DELAY_MS));
+        }
+    }
+    
+    isProcessingQueue = false;
+    console.log('[Queue] Username refresh queue processing completed');
+    
+    // Final status update
+    await updateQueueStatus();
+}
+
+/**
+ * Update the queue status in storage for UI feedback
+ */
+async function updateQueueStatus() {
+    return new Promise((resolve) => {
+        chrome.storage.local.set({
+            usernameRefreshQueueStatus: {
+                queueSize: usernameRefreshQueue.length,
+                isProcessing: isProcessingQueue,
+                lastUpdated: Date.now()
+            }
+        }, () => {
+            resolve();
+        });
+    });
+}
+
+/**
+ * Refresh a single username by player ID
+ * @param {string} playerId - The player ID to refresh
+ * @returns {Promise<Object>} - Result of the refresh operation
+ */
+async function refreshUsernameById(playerId) {
+    if (!playerId) {
+        return { success: false, error: 'Invalid player ID' };
+    }
+    
+    try {
+        // Get auth token from storage
+        const authToken = await getAuthToken();
+        if (!authToken) {
+            return { success: false, error: 'Auth token not available' };
+        }
+        
+        // Fetch username from API
+        const response = await fetch(`https://botc.app/backend/user/${playerId}`, {
+            headers: { 'Authorization': authToken }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: response.statusText }));
+            return { 
+                success: false, 
+                error: `API error (${response.status}): ${errorData.message || response.statusText}` 
+            };
+        }
+        
+        const data = await response.json();
+        const username = data && data.user ? data.user.username : null;
+        
+        if (!username) {
+            return { success: false, error: 'Username not found in API response' };
+        }
+        
+        // Get current player data
+        const playerData = await new Promise((resolve) => {
+            chrome.storage.local.get('playerData', (result) => {
+                resolve(result.playerData || {});
+            });
+        });
+        
+        // Check if player exists and update if needed
+        if (playerData[playerId]) {
+            const player = playerData[playerId];
+            const oldUsername = player.name;
+            
+            // If username changed, update history and save
+            if (oldUsername !== username) {
+                // Update username history
+                if (!player.usernameHistory) {
+                    player.usernameHistory = [];
+                }
+                
+                player.usernameHistory.push({
+                    name: oldUsername,
+                    timestamp: Date.now()
+                });
+                
+                // Update the player name
+                player.name = username;
+                player.lastUpdated = Date.now();
+                
+                // Save updated player data
+                await new Promise((resolve) => {
+                    chrome.storage.local.set({ playerData }, () => {
+                        resolve();
+                    });
+                });
+                
+                return { 
+                    success: true, 
+                    updated: true, 
+                    playerId, 
+                    oldUsername, 
+                    newUsername: username 
+                };
+            }
+            
+            return { 
+                success: true, 
+                updated: false, 
+                playerId, 
+                message: 'Username already up-to-date' 
+            };
+        } else {
+            // Player doesn't exist in stored data
+            return { 
+                success: true, 
+                updated: false, 
+                playerId,
+                message: 'Player not found in local data' 
+            };
+        }
+    } catch (error) {
+        console.error(`Error refreshing username for player ${playerId}:`, error);
+        return { 
+            success: false, 
+            error: error.message || 'Unknown error during username refresh' 
+        };
+    }
+}
+
 // --- Message Listener from Content Script or Popup ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Handle auth token requests
@@ -809,6 +1014,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ gameInfo: null });
         // This one is synchronous, no need to return true
 
+    } else if (request.type === 'REFRESH_ALL_USERNAMES') {
+        console.log('[BG Queue] Received request to refresh all usernames');
+        
+        // Get all player IDs from storage
+        chrome.storage.local.get('playerData', async (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('[BG Queue] Error getting player data:', chrome.runtime.lastError);
+                sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                return;
+            }
+            
+            const playerData = result.playerData || {};
+            const playerIds = Object.keys(playerData);
+            
+            if (playerIds.length === 0) {
+                sendResponse({ success: false, message: 'No players found in storage' });
+                return;
+            }
+            
+            try {
+                const queueResult = await queueMultipleUsernameRefreshes(playerIds);
+                sendResponse(queueResult);
+            } catch (error) {
+                console.error('[BG Queue] Error queuing username refreshes:', error);
+                sendResponse({ success: false, error: error.message || 'Unknown error queuing refreshes' });
+            }
+        });
+        return true; // Indicate asynchronous response
+        
+    } else if (request.type === 'GET_REFRESH_QUEUE_STATUS') {
+        // Return current queue status
+        chrome.storage.local.get('usernameRefreshQueueStatus', (result) => {
+            sendResponse({
+                success: true,
+                status: result.usernameRefreshQueueStatus || {
+                    queueSize: usernameRefreshQueue.length,
+                    isProcessing: isProcessingQueue,
+                    lastUpdated: Date.now()
+                }
+            });
+        });
+        return true; // Indicate asynchronous response
+        
     } else if (request.type === 'GET_USERNAME_BY_ID') {
         const playerIdToLookup = request.payload.playerId;
         if (!playerIdToLookup) {

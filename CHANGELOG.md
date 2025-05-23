@@ -10,7 +10,11 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-23.
 - Fixed a critical issue where the User Management tab would fail to load when the extension had an invalid auth token. Previously, the user list depended on successful session fetching, which required a valid token. Now, the User Management functionality works independently of session data, ensuring users can still view and manage their player database even with API errors.
 
 ### Added
-
+- **Refresh All Usernames**: Added a new button in the User Management tab to refresh all usernames at once. This feature:
+  - Rate-limits API calls (one request every 2 seconds) to prevent server overload
+  - Works in the background even if the popup is closed
+  - Provides real-time status updates on refresh progress
+  - Automatically updates username history when changes are detected
 
 ### Changed
 
