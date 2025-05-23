@@ -1262,10 +1262,8 @@ async function renderKnownPlayers(container, searchTerm = '') {
         console.error("Container element not provided for rendering known players.");
         return;
     }
-    if (!window.latestSessionData) {
-        console.warn('[renderKnownPlayers] Not rendering: session data not available.');
-        return;
-    }
+    // No longer dependent on session data
+    // We can render known players regardless of session data availability
     // Load the latest player data directly from storage each time
     const playerData = await loadPlayerData() || {};
 

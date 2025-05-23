@@ -1594,75 +1594,68 @@ function _renderKnownPlayers() {
           console.error("Container element not provided for rendering known players.");
           return _context13.abrupt("return");
         case 4:
-          if (window.latestSessionData) {
-            _context13.next = 7;
-            break;
-          }
-          console.warn('[renderKnownPlayers] Not rendering: session data not available.');
-          return _context13.abrupt("return");
-        case 7:
-          _context13.next = 9;
+          _context13.next = 6;
           return loadPlayerData();
-        case 9:
+        case 6:
           _context13.t0 = _context13.sent;
           if (_context13.t0) {
-            _context13.next = 12;
+            _context13.next = 9;
             break;
           }
           _context13.t0 = {};
-        case 12:
+        case 9:
           playerData = _context13.t0;
           if (!(_typeof(playerData) !== 'object')) {
-            _context13.next = 16;
+            _context13.next = 13;
             break;
           }
           console.error('Invalid player data format');
           return _context13.abrupt("return");
-        case 16:
+        case 13:
           // Fetch the latest set of online player IDs
           onlinePlayerIds = new Set();
-          _context13.prev = 17;
+          _context13.prev = 14;
           if (!(typeof window.fetchOnlinePlayerIds === 'function')) {
-            _context13.next = 25;
+            _context13.next = 22;
             break;
           }
-          _context13.next = 21;
+          _context13.next = 18;
           return window.fetchOnlinePlayerIds();
-        case 21:
+        case 18:
           ids = _context13.sent;
           // Ensure we have a valid Set
           onlinePlayerIds = ids instanceof Set ? ids : new Set();
-          _context13.next = 26;
+          _context13.next = 23;
+          break;
+        case 22:
+          console.warn("window.fetchOnlinePlayerIds function not found.");
+        case 23:
+          _context13.next = 28;
           break;
         case 25:
-          console.warn("window.fetchOnlinePlayerIds function not found.");
-        case 26:
-          _context13.next = 31;
-          break;
-        case 28:
-          _context13.prev = 28;
-          _context13.t1 = _context13["catch"](17);
+          _context13.prev = 25;
+          _context13.t1 = _context13["catch"](14);
           console.error("Error fetching online player IDs in renderKnownPlayers:", _context13.t1);
           // Continue with empty Set on error
-        case 31:
-          _context13.prev = 31;
-          _context13.next = 34;
+        case 28:
+          _context13.prev = 28;
+          _context13.next = 31;
           return displayKnownPlayers(container, searchTerm || '', playerData, onlinePlayerIds, typeof createUsernameHistoryModal === 'function' ? createUsernameHistoryModal : null, function () {
             return renderKnownPlayers(container, searchTerm);
           });
-        case 34:
-          _context13.next = 40;
+        case 31:
+          _context13.next = 37;
           break;
-        case 36:
-          _context13.prev = 36;
-          _context13.t2 = _context13["catch"](31);
+        case 33:
+          _context13.prev = 33;
+          _context13.t2 = _context13["catch"](28);
           console.error('Error displaying known players:', _context13.t2);
           container.innerHTML = '<p>Error displaying player list. Please try again.</p>';
-        case 40:
+        case 37:
         case "end":
           return _context13.stop();
       }
-    }, _callee13, null, [[17, 28], [31, 36]]);
+    }, _callee13, null, [[14, 25], [28, 33]]);
   }));
   return _renderKnownPlayers.apply(this, arguments);
 }
@@ -1864,7 +1857,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
         };
         _refreshDependentViews = function _refreshDependentView2() {
           _refreshDependentViews = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee9(updatedPlayerId) {
-            var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv4, _searchInput4;
+            var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv3, _searchInput3;
             return popup_regeneratorRuntime().wrap(function _callee9$(_context9) {
               while (1) switch (_context9.prev = _context9.next) {
                 case 0:
@@ -1899,12 +1892,12 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
 
                   // 2. Refresh Known Players list (User Management tab, if active)
                   userManagementTab = document.getElementById('userManagement');
-                  _knownPlayersDiv4 = document.getElementById('knownPlayers'); // ensure it's defined
-                  _searchInput4 = document.getElementById('userSearch'); // ensure it's defined
-                  if (userManagementTab && userManagementTab.classList.contains('active') && _knownPlayersDiv4) {
+                  _knownPlayersDiv3 = document.getElementById('knownPlayers'); // ensure it's defined
+                  _searchInput3 = document.getElementById('userSearch'); // ensure it's defined
+                  if (userManagementTab && userManagementTab.classList.contains('active') && _knownPlayersDiv3) {
                     console.log("[Popup] Refreshing Known Players list (targeted).");
                     // Note: renderKnownPlayers might need the updatedPlayerData directly
-                    window.userManager.renderKnownPlayers(_knownPlayersDiv4, _searchInput4 ? _searchInput4.value.trim() : '', currentPlayerData,
+                    window.userManager.renderKnownPlayers(_knownPlayersDiv3, _searchInput3 ? _searchInput3.value.trim() : '', currentPlayerData,
                     // Pass the fresh data
                     onlinePlayerIds, window.userManager.createUsernameHistoryModal, window.refreshAllViews // Actions on these cards still use full refresh for now
                     );
@@ -1929,7 +1922,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
         };
         _refreshAllViews = function _refreshAllViews3() {
           _refreshAllViews = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee8(initiatingAction) {
-            var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv3, _searchInput3;
+            var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv2, _searchInput2;
             return popup_regeneratorRuntime().wrap(function _callee8$(_context8) {
               while (1) switch (_context8.prev = _context8.next) {
                 case 0:
@@ -1968,14 +1961,14 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                   // 1. Refresh Known Players list (User Management tab)
                   // Check if the User Management tab is active before re-rendering it.
                   userManagementTab = document.getElementById('userManagement');
-                  _knownPlayersDiv3 = document.getElementById('knownPlayers'); // ensure it's defined
-                  _searchInput3 = document.getElementById('userSearch'); // ensure it's defined
-                  if (userManagementTab && userManagementTab.classList.contains('active') && _knownPlayersDiv3) {
+                  _knownPlayersDiv2 = document.getElementById('knownPlayers'); // ensure it's defined
+                  _searchInput2 = document.getElementById('userSearch'); // ensure it's defined
+                  if (userManagementTab && userManagementTab.classList.contains('active') && _knownPlayersDiv2) {
                     console.log("[Popup] Refreshing Known Players list.");
                     // renderKnownPlayers expects: container, searchTerm, playerData, onlinePlayerIds (Set), createUsernameHistoryModalFunc, refreshCallback
                     // We need to ensure createUsernameHistoryModal and a suitable refresh callback (e.g., refreshAllViews itself, or a limited version) are passed if needed by displayKnownPlayers' actions.
                     // For now, assuming renderKnownPlayers handles its own internal action callbacks or we address that separately.
-                    window.userManager.renderKnownPlayers(_knownPlayersDiv3, _searchInput3 ? _searchInput3.value.trim() : '', currentPlayerData, onlinePlayerIds, window.userManager.createUsernameHistoryModal,
+                    window.userManager.renderKnownPlayers(_knownPlayersDiv2, _searchInput2 ? _searchInput2.value.trim() : '', currentPlayerData, onlinePlayerIds, window.userManager.createUsernameHistoryModal,
                     // Pass the actual function
                     refreshAllViews // Pass refreshAllViews for actions within player cards
                     );
@@ -2074,9 +2067,9 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                       latestSessionData = sessionsData;
                       window.latestSessionData = sessionsData; // Update global
                       if (document.getElementById('userManagement').classList.contains('active') && window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                        var _knownPlayersDiv2 = document.getElementById('knownPlayers');
-                        var _searchInput2 = document.getElementById('userSearch');
-                        window.userManager.renderKnownPlayers(_knownPlayersDiv2, _searchInput2 ? _searchInput2.value.trim() : '');
+                        var _knownPlayersDiv = document.getElementById('knownPlayers');
+                        var _searchInput = document.getElementById('userSearch');
+                        window.userManager.renderKnownPlayers(_knownPlayersDiv, _searchInput ? _searchInput.value.trim() : '');
                       } else if (document.getElementById('userManagement').classList.contains('active')) {
                         console.error("User manager or renderKnownPlayers function not available (main load).");
                       }
@@ -2466,46 +2459,39 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                   tabName = button.dataset.tab;
                   showTab(tabName);
                   // Render known players when switching to userManagement tab
-                  if (!(tabName === 'userManagement')) {
-                    _context2.next = 11;
-                    break;
-                  }
-                  if (window.latestSessionData) {
-                    _context2.next = 10;
-                    break;
-                  }
-                  _context2.next = 8;
-                  return window.fetchAndDisplaySessions(addPlayer, createUsernameHistoryModal, window.updateOnlineFavoritesListFunc, sessionListDiv, {
-                    officialOnly: showOfficialOnly
-                  }, function (sessionsData, errorData) {
-                    if (loadingIndicator) loadingIndicator.style.display = 'none';
-                    if (errorData) {
-                      console.error("[Popup] Error reported by fetchAndDisplaySessions (filter change):", errorData);
-                      if (sessionListDiv) sessionListDiv.innerHTML = "<p class='error-message'>Failed to display sessions: ".concat(errorData, "</p>");
-                    } else {
-                      // Success path for filter change
-                      latestSessionData = sessionsData;
-                      window.latestSessionData = sessionsData; // Update global
-                      if (document.getElementById('userManagement').classList.contains('active') && window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                        var _knownPlayersDiv = document.getElementById('knownPlayers');
-                        var _searchInput = document.getElementById('userSearch');
-                        window.userManager.renderKnownPlayers(_knownPlayersDiv, _searchInput ? _searchInput.value.trim() : '');
-                      } else if (document.getElementById('userManagement').classList.contains('active')) {
-                        console.error("User management tab active, but userManager or renderKnownPlayers not available (filter change).");
+                  if (tabName === 'userManagement') {
+                    // Handle user management tab switching
+                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                      // Always attempt to render known players first - this shouldn't depend on session data
+                      window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+
+                      // Attempt to fetch session data in the background for online status, but don't block the UI
+                      if (!window.latestSessionData) {
+                        // No session data available, fetch it but don't block user management rendering
+                        window.fetchAndDisplaySessions(addPlayer, createUsernameHistoryModal, window.updateOnlineFavoritesListFunc, sessionListDiv, {
+                          officialOnly: showOfficialOnly
+                        }, function (sessionsData, errorData) {
+                          if (loadingIndicator) loadingIndicator.style.display = 'none';
+                          if (errorData) {
+                            console.warn("[Popup] Error fetching sessions: " + errorData + ". User management will continue with limited functionality.");
+                            if (sessionListDiv) sessionListDiv.innerHTML = "<p class='error-message'>Failed to display sessions: ".concat(errorData, "</p>");
+                          } else {
+                            // Success path for session data
+                            latestSessionData = sessionsData;
+                            window.latestSessionData = sessionsData; // Update global
+
+                            // If user management tab is still active, refresh it with online status
+                            if (document.getElementById('userManagement').classList.contains('active')) {
+                              window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                            }
+                          }
+                        });
                       }
+                    } else {
+                      console.error("User manager or renderKnownPlayers function not available.");
                     }
-                  });
-                case 8:
-                  _context2.next = 11;
-                  break;
-                case 10:
-                  // Render known players using existing session data
-                  if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                    window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
-                  } else {
-                    console.error("User manager or renderKnownPlayers function not available.");
                   }
-                case 11:
+                case 5:
                 case "end":
                   return _context2.stop();
               }

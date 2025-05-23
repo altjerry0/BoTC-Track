@@ -18,15 +18,10 @@ This file tracks active bugs and planned future enhancements for the BotC Player
 - **Cross-browser Support:** Add/ensure compatibility for other browsers:
   - Firefox (Mozilla Add-ons)
   - Microsoft Edge (Edge Add-ons, formerly Internet Explorer)
-  - **Brave**: Fix OAuth compatibility issue:
-    - Error: "Custom URI scheme is not supported on Chrome apps" occurs even with Shields disabled
-    - Investigate using `chrome.identity.launchWebAuthFlow()` instead of `getAuthToken()` for Brave
-    - Consider browser detection to use different auth flows based on the browser
-    - Research if setting `oauth2.auto_approve` in manifest might help
 
 ## Search Improvements
 
-*   [ ] Add score filtering to search (e.g., 'score:4' to filter players with a score of 4)
+*   [x] Add score filtering to search (e.g., 'score:4' to filter players with a score of 4)
 
 ## Future Features
 
