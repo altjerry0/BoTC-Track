@@ -11,13 +11,14 @@ const app = express();
 
 // Robust CORS handling for Chrome extension and localhost
 const allowedOrigins = [
-  'chrome-extension://leicmnbiojnfagjnciffpbejagpiaiod',
-  'chrome-extension://ecmkmfkmljmneefknldphpdjlmgpdhkc',
+  'chrome-extension://leicmnbiojnfagjnciffpbejagpiaiod', // Chrome - Developer
+  'chrome-extension://ecmkmfkmljmneefknldphpdjlmgpdhkc', // Chrome - Production
   'https://botctracker.web.app',
   'https://trackbotc.com',
   'https://www.trackbotc.com',
   'https://auth.trackbotc.com',
-  'https://auth-botctracker.web.app'
+  'https://auth-botctracker.web.app',
+  'chrome-extension://ejjmhmibnchnihofpaenhfinkdjbdlcd' // Brave - Philly
 ];
 const corsOptions = {
   origin: function (origin, callback) {

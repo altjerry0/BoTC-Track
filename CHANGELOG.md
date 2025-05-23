@@ -12,6 +12,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-21.
 ### Added
 - Advanced score-based filtering in User Management search. You can now use queries like `score > 2`, `score <= 4`, `score = 3`, etc., and combine with text search (e.g. `score >= 2 Alice`).
 - The extension version is now displayed at the bottom of the Account tab for easy reference.
+- Added Brave support for the extension.
 
 ### Changed
 - **Default Theme**: Dark mode is now the default theme for the extension. Users can still toggle to light mode.
