@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BotC Tracker",
-  "version": "1.1.9", 
+  "version": "1.1.10", 
   "description": "Track and rate players in Blood on the Clocktower games, with username history tracking and player analysis.",
   "permissions": [
     "webRequest",
@@ -44,7 +44,7 @@
     }
   ],
   "oauth2": {
-    "client_id": "234038964353-6dienniai2uaso131mp9o9cm9k8mkagd.apps.googleusercontent.com",
+    "client_id": "234038964353-n0d5jf4jfj5cunqlm8el1ull04trvj9v.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile"

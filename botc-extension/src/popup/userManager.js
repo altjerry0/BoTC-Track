@@ -370,6 +370,53 @@ async function displayKnownPlayers(container, searchTerm = '', playerData, onlin
     }
     const lowerSearchTerm = textSearch ? textSearch.toLowerCase() : '';
     container.innerHTML = '';
+    
+    // Create UI controls at the top of the player list
+    const controlsContainer = document.createElement('div');
+    controlsContainer.className = 'player-list-controls';
+    controlsContainer.style.display = 'flex';
+    controlsContainer.style.justifyContent = 'space-between';
+    controlsContainer.style.alignItems = 'center';
+    controlsContainer.style.marginBottom = '10px';
+    
+    // Create player count display
+    const playerCountSpan = document.createElement('span');
+    playerCountSpan.className = 'player-count';
+    
+    // Create refresh all button
+    const refreshAllButton = document.createElement('button');
+    refreshAllButton.className = 'action-button-with-text';
+    refreshAllButton.innerHTML = '<span style="font-size: 1.2em">↻</span><span>Refresh All</span>';
+    refreshAllButton.title = 'Refresh all usernames (rate limited: 1 per 2 seconds)';
+    
+    // Create status indicator span
+    const statusSpan = document.createElement('span');
+    statusSpan.id = 'refresh-all-status';
+    statusSpan.className = 'refresh-status';
+    statusSpan.style.marginLeft = '10px';
+    statusSpan.style.fontStyle = 'italic';
+    statusSpan.style.display = 'none';
+    
+    // Add event listener to the refresh all button
+    refreshAllButton.addEventListener('click', () => {
+        refreshAllUsernames(refreshAllButton, statusSpan);
+    });
+    
+    // Add elements to the controls container
+    controlsContainer.appendChild(playerCountSpan);
+    const rightControls = document.createElement('div');
+    rightControls.style.display = 'flex';
+    rightControls.style.alignItems = 'center';
+    rightControls.appendChild(refreshAllButton);
+    rightControls.appendChild(statusSpan);
+    controlsContainer.appendChild(rightControls);
+    
+    // Add controls container to the main container
+    container.appendChild(controlsContainer);
+    
+    // Check if there's an active refresh queue
+    checkRefreshQueueStatus(statusSpan);
+    
     // Filter and then sort the player data
     const entries = typeof playerData === 'object' && playerData !== null ? 
         Object.entries(playerData) : [];
@@ -406,12 +453,21 @@ async function displayKnownPlayers(container, searchTerm = '', playerData, onlin
             }
         }) : [];
 
+    // Update player count display
+    playerCountSpan.textContent = `${sortedPlayersArray.length} player${sortedPlayersArray.length !== 1 ? 's' : ''}`;
+    
     if (sortedPlayersArray.length === 0 && searchTerm) {
-        container.innerHTML = '<p>No players match your search.</p>';
+        // Keep the controls but add a message about no results
+        const noResultsMsg = document.createElement('p');
+        noResultsMsg.textContent = 'No players match your search.';
+        container.appendChild(noResultsMsg);
         return;
     }
     if (sortedPlayersArray.length === 0) {
-        container.innerHTML = '<p>No players known. Add some!</p>';
+        // Keep the controls but add a message about no players
+        const noPlayersMsg = document.createElement('p');
+        noPlayersMsg.textContent = 'No players known. Add some!';
+        container.appendChild(noPlayersMsg);
         return;
     }
 
@@ -1252,6 +1308,94 @@ async function editPlayerDetails(playerId, isNewPlayer = false, callback) {
 
 
 /**
+ * Check the status of the username refresh queue and update UI accordingly
+ * @param {HTMLElement} statusElement - The element to update with status
+ */
+async function checkRefreshQueueStatus(statusElement) {
+    if (!statusElement) return;
+    
+    try {
+        const response = await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ type: 'GET_REFRESH_QUEUE_STATUS' }, (response) => {
+                resolve(response);
+            });
+        });
+        
+        if (response && response.success && response.status) {
+            const { queueSize, isProcessing, lastUpdated } = response.status;
+            
+            if (queueSize > 0 || isProcessing) {
+                statusElement.textContent = `Processing: ${queueSize} usernames remaining`;
+                statusElement.style.display = 'inline';
+                
+                // Schedule another check in 2 seconds if the queue is still being processed
+                setTimeout(() => checkRefreshQueueStatus(statusElement), 2000);
+            } else {
+                statusElement.textContent = '';
+                statusElement.style.display = 'none';
+            }
+        } else {
+            statusElement.textContent = '';
+            statusElement.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error checking refresh queue status:', error);
+        statusElement.textContent = 'Error checking queue status';
+        statusElement.style.display = 'inline';
+    }
+}
+
+/**
+ * Trigger a refresh of all usernames by queuing them in the background
+ * @param {HTMLElement} buttonElement - The button element that was clicked
+ * @param {HTMLElement} statusElement - Element to display status updates
+ */
+async function refreshAllUsernames(buttonElement, statusElement) {
+    if (!buttonElement || !statusElement) return;
+    
+    try {
+        // Disable button during operation
+        buttonElement.disabled = true;
+        buttonElement.classList.add('disabled');
+        statusElement.textContent = 'Starting refresh...';
+        statusElement.style.display = 'inline';
+        
+        const response = await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ type: 'REFRESH_ALL_USERNAMES' }, (response) => {
+                resolve(response);
+            });
+        });
+        
+        if (response && response.success) {
+            statusElement.textContent = `Queued ${response.queueSize} usernames for refresh`;
+            
+            // Start checking queue status
+            setTimeout(() => checkRefreshQueueStatus(statusElement), 2000);
+        } else {
+            statusElement.textContent = response?.message || 'Failed to queue usernames for refresh';
+            setTimeout(() => {
+                statusElement.textContent = '';
+                statusElement.style.display = 'none';
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('Error refreshing all usernames:', error);
+        statusElement.textContent = `Error: ${error.message || 'Unknown error'}`;
+        setTimeout(() => {
+            statusElement.textContent = '';
+            statusElement.style.display = 'none';
+        }, 3000);
+    } finally {
+        // Re-enable button after a short delay
+        setTimeout(() => {
+            buttonElement.disabled = false;
+            buttonElement.classList.remove('disabled');
+        }, 3000);
+    }
+}
+
+
+/**
  * Render the known players list, optionally filtering by search term.
  * @param {HTMLElement} container - The container element to render into.
  * @param {string} [searchTerm=''] - Optional search term to filter players.
@@ -1262,10 +1406,8 @@ async function renderKnownPlayers(container, searchTerm = '') {
         console.error("Container element not provided for rendering known players.");
         return;
     }
-    if (!window.latestSessionData) {
-        console.warn('[renderKnownPlayers] Not rendering: session data not available.');
-        return;
-    }
+    // No longer dependent on session data
+    // We can render known players regardless of session data availability
     // Load the latest player data directly from storage each time
     const playerData = await loadPlayerData() || {};
 
@@ -1394,7 +1536,9 @@ window.userManager = {
     toggleFavoriteStatus,
     handleRefreshUserName,
     fetchAndUpdatePlayerName,
-    replaceAllPlayerDataAndSave
+    replaceAllPlayerDataAndSave,
+    refreshAllUsernames,
+    checkRefreshQueueStatus
 };
 
 // Export functions as a module
@@ -1417,7 +1561,9 @@ export {
     updateUsernameHistory,
     editPlayerDetails,
     renderKnownPlayers,
-    fetchAndUpdatePlayerName
+    fetchAndUpdatePlayerName,
+    refreshAllUsernames,
+    checkRefreshQueueStatus
 };
 
 // Make getRatingClass globally available as other modules might use it directly

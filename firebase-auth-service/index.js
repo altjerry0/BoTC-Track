@@ -17,8 +17,7 @@ const allowedOrigins = [
   'https://trackbotc.com',
   'https://www.trackbotc.com',
   'https://auth.trackbotc.com',
-  'https://auth-botctracker.web.app',
-  'chrome-extension://ejjmhmibnchnihofpaenhfinkdjbdlcd' // Brave - Philly
+  'https://auth-botctracker.web.app'
 ];
 const corsOptions = {
   origin: function (origin, callback) {

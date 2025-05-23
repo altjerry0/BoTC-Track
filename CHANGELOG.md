@@ -1,9 +1,25 @@
 <!--
-This CHANGELOG.md was last updated by Cascade on 2025-05-21.
+This CHANGELOG.md was last updated by Cascade on 2025-05-23.
 -->
 
 # BotC Player Tracker Extension - Changelog
 ---
+## [v1.1.10] - 2025-05-23
+### Fixed
+- Fixed an issue where the extension failed to detect if the user was part of a live game session. This was due to incorrect parsing of the `botc.app` JWT and a function scope problem that caused an older parsing logic to be used. The JWT is now correctly parsed for the player's game ID, ensuring accurate detection.
+- Fixed a critical issue where the User Management tab would fail to load when the extension had an invalid auth token. Previously, the user list depended on successful session fetching, which required a valid token. Now, the User Management functionality works independently of session data, ensuring users can still view and manage their player database even with API errors.
+
+### Added
+- **Refresh All Usernames**: Added a new button in the User Management tab to refresh all usernames at once. This feature:
+  - Rate-limits API calls (one request every 2 seconds) to prevent server overload
+  - Works in the background even if the popup is closed
+  - Provides real-time status updates on refresh progress
+  - Automatically updates username history when changes are detected
+- **Microsoft Edge Support**: Added support for Microsoft Edge browser by implementing a custom authentication flow similar to the Brave browser fix. This resolves authentication issues reported by Edge users when using Google authentication.
+
+### Changed
+
+
 
 ## [v1.1.9] - 2025-05-21
 ### Fixed

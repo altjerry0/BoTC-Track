@@ -408,9 +408,16 @@ function _displayKnownPlayers() {
       scoreFilter,
       textSearch,
       lowerSearchTerm,
+      controlsContainer,
+      playerCountSpan,
+      refreshAllButton,
+      statusSpan,
+      rightControls,
       entries,
       filteredPlayersArray,
       sortedPlayersArray,
+      noResultsMsg,
+      noPlayersMsg,
       _args4 = arguments;
     return _regeneratorRuntime().wrap(function _callee4$(_context4) {
       while (1) switch (_context4.prev = _context4.next) {
@@ -465,6 +472,53 @@ function _displayKnownPlayers() {
           }
           lowerSearchTerm = textSearch ? textSearch.toLowerCase() : '';
           container.innerHTML = '';
+
+          // Create UI controls at the top of the player list
+          controlsContainer = document.createElement('div');
+          controlsContainer.className = 'player-list-controls';
+          controlsContainer.style.display = 'flex';
+          controlsContainer.style.justifyContent = 'space-between';
+          controlsContainer.style.alignItems = 'center';
+          controlsContainer.style.marginBottom = '10px';
+
+          // Create player count display
+          playerCountSpan = document.createElement('span');
+          playerCountSpan.className = 'player-count';
+
+          // Create refresh all button
+          refreshAllButton = document.createElement('button');
+          refreshAllButton.className = 'action-button-with-text';
+          refreshAllButton.innerHTML = '<span style="font-size: 1.2em">↻</span><span>Refresh All</span>';
+          refreshAllButton.title = 'Refresh all usernames (rate limited: 1 per 2 seconds)';
+
+          // Create status indicator span
+          statusSpan = document.createElement('span');
+          statusSpan.id = 'refresh-all-status';
+          statusSpan.className = 'refresh-status';
+          statusSpan.style.marginLeft = '10px';
+          statusSpan.style.fontStyle = 'italic';
+          statusSpan.style.display = 'none';
+
+          // Add event listener to the refresh all button
+          refreshAllButton.addEventListener('click', function () {
+            refreshAllUsernames(refreshAllButton, statusSpan);
+          });
+
+          // Add elements to the controls container
+          controlsContainer.appendChild(playerCountSpan);
+          rightControls = document.createElement('div');
+          rightControls.style.display = 'flex';
+          rightControls.style.alignItems = 'center';
+          rightControls.appendChild(refreshAllButton);
+          rightControls.appendChild(statusSpan);
+          controlsContainer.appendChild(rightControls);
+
+          // Add controls container to the main container
+          container.appendChild(controlsContainer);
+
+          // Check if there's an active refresh queue
+          checkRefreshQueueStatus(statusSpan);
+
           // Filter and then sort the player data
           entries = _typeof(playerData) === 'object' && playerData !== null ? Object.entries(playerData) : [];
           filteredPlayersArray = entries.filter(function (_ref) {
@@ -497,21 +551,28 @@ function _displayKnownPlayers() {
               console.error('Error sorting players:', error);
               return 0; // Keep original order on error
             }
-          }) : [];
+          }) : []; // Update player count display
+          playerCountSpan.textContent = "".concat(sortedPlayersArray.length, " player").concat(sortedPlayersArray.length !== 1 ? 's' : '');
           if (!(sortedPlayersArray.length === 0 && searchTerm)) {
-            _context4.next = 18;
+            _context4.next = 49;
             break;
           }
-          container.innerHTML = '<p>No players match your search.</p>';
+          // Keep the controls but add a message about no results
+          noResultsMsg = document.createElement('p');
+          noResultsMsg.textContent = 'No players match your search.';
+          container.appendChild(noResultsMsg);
           return _context4.abrupt("return");
-        case 18:
+        case 49:
           if (!(sortedPlayersArray.length === 0)) {
-            _context4.next = 21;
+            _context4.next = 54;
             break;
           }
-          container.innerHTML = '<p>No players known. Add some!</p>';
+          // Keep the controls but add a message about no players
+          noPlayersMsg = document.createElement('p');
+          noPlayersMsg.textContent = 'No players known. Add some!';
+          container.appendChild(noPlayersMsg);
           return _context4.abrupt("return");
-        case 21:
+        case 54:
           // For each player, create a card
           sortedPlayersArray.forEach(function (_ref3) {
             var _ref4 = _slicedToArray(_ref3, 2),
@@ -692,7 +753,7 @@ function _displayKnownPlayers() {
             card.appendChild(buttonContainer);
             container.appendChild(card);
           });
-        case 22:
+        case 55:
         case "end":
           return _context4.stop();
       }
@@ -1320,9 +1381,8 @@ function editPlayerDetails(_x24) {
   return _editPlayerDetails.apply(this, arguments);
 }
 /**
- * Render the known players list, optionally filtering by search term.
- * @param {HTMLElement} container - The container element to render into.
- * @param {string} [searchTerm=''] - Optional search term to filter players.
+ * Check the status of the username refresh queue and update UI accordingly
+ * @param {HTMLElement} statusElement - The element to update with status
  */
 function _editPlayerDetails() {
   _editPlayerDetails = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee12(playerId) {
@@ -1568,7 +1628,149 @@ function _editPlayerDetails() {
   }));
   return _editPlayerDetails.apply(this, arguments);
 }
-function renderKnownPlayers(_x25) {
+function checkRefreshQueueStatus(_x25) {
+  return _checkRefreshQueueStatus.apply(this, arguments);
+}
+/**
+ * Trigger a refresh of all usernames by queuing them in the background
+ * @param {HTMLElement} buttonElement - The button element that was clicked
+ * @param {HTMLElement} statusElement - Element to display status updates
+ */
+function _checkRefreshQueueStatus() {
+  _checkRefreshQueueStatus = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee13(statusElement) {
+    var response, _response$status, queueSize, isProcessing, lastUpdated;
+    return _regeneratorRuntime().wrap(function _callee13$(_context13) {
+      while (1) switch (_context13.prev = _context13.next) {
+        case 0:
+          if (statusElement) {
+            _context13.next = 2;
+            break;
+          }
+          return _context13.abrupt("return");
+        case 2:
+          _context13.prev = 2;
+          _context13.next = 5;
+          return new Promise(function (resolve) {
+            chrome.runtime.sendMessage({
+              type: 'GET_REFRESH_QUEUE_STATUS'
+            }, function (response) {
+              resolve(response);
+            });
+          });
+        case 5:
+          response = _context13.sent;
+          if (response && response.success && response.status) {
+            _response$status = response.status, queueSize = _response$status.queueSize, isProcessing = _response$status.isProcessing, lastUpdated = _response$status.lastUpdated;
+            if (queueSize > 0 || isProcessing) {
+              statusElement.textContent = "Processing: ".concat(queueSize, " usernames remaining");
+              statusElement.style.display = 'inline';
+
+              // Schedule another check in 2 seconds if the queue is still being processed
+              setTimeout(function () {
+                return checkRefreshQueueStatus(statusElement);
+              }, 2000);
+            } else {
+              statusElement.textContent = '';
+              statusElement.style.display = 'none';
+            }
+          } else {
+            statusElement.textContent = '';
+            statusElement.style.display = 'none';
+          }
+          _context13.next = 14;
+          break;
+        case 9:
+          _context13.prev = 9;
+          _context13.t0 = _context13["catch"](2);
+          console.error('Error checking refresh queue status:', _context13.t0);
+          statusElement.textContent = 'Error checking queue status';
+          statusElement.style.display = 'inline';
+        case 14:
+        case "end":
+          return _context13.stop();
+      }
+    }, _callee13, null, [[2, 9]]);
+  }));
+  return _checkRefreshQueueStatus.apply(this, arguments);
+}
+function refreshAllUsernames(_x26, _x27) {
+  return _refreshAllUsernames.apply(this, arguments);
+}
+/**
+ * Render the known players list, optionally filtering by search term.
+ * @param {HTMLElement} container - The container element to render into.
+ * @param {string} [searchTerm=''] - Optional search term to filter players.
+ */
+function _refreshAllUsernames() {
+  _refreshAllUsernames = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee14(buttonElement, statusElement) {
+    var response;
+    return _regeneratorRuntime().wrap(function _callee14$(_context14) {
+      while (1) switch (_context14.prev = _context14.next) {
+        case 0:
+          if (!(!buttonElement || !statusElement)) {
+            _context14.next = 2;
+            break;
+          }
+          return _context14.abrupt("return");
+        case 2:
+          _context14.prev = 2;
+          // Disable button during operation
+          buttonElement.disabled = true;
+          buttonElement.classList.add('disabled');
+          statusElement.textContent = 'Starting refresh...';
+          statusElement.style.display = 'inline';
+          _context14.next = 9;
+          return new Promise(function (resolve) {
+            chrome.runtime.sendMessage({
+              type: 'REFRESH_ALL_USERNAMES'
+            }, function (response) {
+              resolve(response);
+            });
+          });
+        case 9:
+          response = _context14.sent;
+          if (response && response.success) {
+            statusElement.textContent = "Queued ".concat(response.queueSize, " usernames for refresh");
+
+            // Start checking queue status
+            setTimeout(function () {
+              return checkRefreshQueueStatus(statusElement);
+            }, 2000);
+          } else {
+            statusElement.textContent = (response === null || response === void 0 ? void 0 : response.message) || 'Failed to queue usernames for refresh';
+            setTimeout(function () {
+              statusElement.textContent = '';
+              statusElement.style.display = 'none';
+            }, 3000);
+          }
+          _context14.next = 18;
+          break;
+        case 13:
+          _context14.prev = 13;
+          _context14.t0 = _context14["catch"](2);
+          console.error('Error refreshing all usernames:', _context14.t0);
+          statusElement.textContent = "Error: ".concat(_context14.t0.message || 'Unknown error');
+          setTimeout(function () {
+            statusElement.textContent = '';
+            statusElement.style.display = 'none';
+          }, 3000);
+        case 18:
+          _context14.prev = 18;
+          // Re-enable button after a short delay
+          setTimeout(function () {
+            buttonElement.disabled = false;
+            buttonElement.classList.remove('disabled');
+          }, 3000);
+          return _context14.finish(18);
+        case 21:
+        case "end":
+          return _context14.stop();
+      }
+    }, _callee14, null, [[2, 13, 18, 21]]);
+  }));
+  return _refreshAllUsernames.apply(this, arguments);
+}
+function renderKnownPlayers(_x28) {
   return _renderKnownPlayers.apply(this, arguments);
 }
 /**
@@ -1577,112 +1779,105 @@ function renderKnownPlayers(_x25) {
  * @param {Function} [refreshListCallback] - Optional callback to refresh the list after updating.
  */
 function _renderKnownPlayers() {
-  _renderKnownPlayers = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee13(container) {
+  _renderKnownPlayers = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee15(container) {
     var searchTerm,
       playerData,
       onlinePlayerIds,
       ids,
-      _args13 = arguments;
-    return _regeneratorRuntime().wrap(function _callee13$(_context13) {
-      while (1) switch (_context13.prev = _context13.next) {
+      _args15 = arguments;
+    return _regeneratorRuntime().wrap(function _callee15$(_context15) {
+      while (1) switch (_context15.prev = _context15.next) {
         case 0:
-          searchTerm = _args13.length > 1 && _args13[1] !== undefined ? _args13[1] : '';
+          searchTerm = _args15.length > 1 && _args15[1] !== undefined ? _args15[1] : '';
           if (container) {
-            _context13.next = 4;
+            _context15.next = 4;
             break;
           }
           console.error("Container element not provided for rendering known players.");
-          return _context13.abrupt("return");
+          return _context15.abrupt("return");
         case 4:
-          if (window.latestSessionData) {
-            _context13.next = 7;
-            break;
-          }
-          console.warn('[renderKnownPlayers] Not rendering: session data not available.');
-          return _context13.abrupt("return");
-        case 7:
-          _context13.next = 9;
+          _context15.next = 6;
           return loadPlayerData();
-        case 9:
-          _context13.t0 = _context13.sent;
-          if (_context13.t0) {
-            _context13.next = 12;
+        case 6:
+          _context15.t0 = _context15.sent;
+          if (_context15.t0) {
+            _context15.next = 9;
             break;
           }
-          _context13.t0 = {};
-        case 12:
-          playerData = _context13.t0;
+          _context15.t0 = {};
+        case 9:
+          playerData = _context15.t0;
           if (!(_typeof(playerData) !== 'object')) {
-            _context13.next = 16;
+            _context15.next = 13;
             break;
           }
           console.error('Invalid player data format');
-          return _context13.abrupt("return");
-        case 16:
+          return _context15.abrupt("return");
+        case 13:
           // Fetch the latest set of online player IDs
           onlinePlayerIds = new Set();
-          _context13.prev = 17;
+          _context15.prev = 14;
           if (!(typeof window.fetchOnlinePlayerIds === 'function')) {
-            _context13.next = 25;
+            _context15.next = 22;
             break;
           }
-          _context13.next = 21;
+          _context15.next = 18;
           return window.fetchOnlinePlayerIds();
-        case 21:
-          ids = _context13.sent;
+        case 18:
+          ids = _context15.sent;
           // Ensure we have a valid Set
           onlinePlayerIds = ids instanceof Set ? ids : new Set();
-          _context13.next = 26;
+          _context15.next = 23;
+          break;
+        case 22:
+          console.warn("window.fetchOnlinePlayerIds function not found.");
+        case 23:
+          _context15.next = 28;
           break;
         case 25:
-          console.warn("window.fetchOnlinePlayerIds function not found.");
-        case 26:
-          _context13.next = 31;
-          break;
-        case 28:
-          _context13.prev = 28;
-          _context13.t1 = _context13["catch"](17);
-          console.error("Error fetching online player IDs in renderKnownPlayers:", _context13.t1);
+          _context15.prev = 25;
+          _context15.t1 = _context15["catch"](14);
+          console.error("Error fetching online player IDs in renderKnownPlayers:", _context15.t1);
           // Continue with empty Set on error
-        case 31:
-          _context13.prev = 31;
-          _context13.next = 34;
+        case 28:
+          _context15.prev = 28;
+          _context15.next = 31;
           return displayKnownPlayers(container, searchTerm || '', playerData, onlinePlayerIds, typeof createUsernameHistoryModal === 'function' ? createUsernameHistoryModal : null, function () {
             return renderKnownPlayers(container, searchTerm);
           });
-        case 34:
-          _context13.next = 40;
+        case 31:
+          _context15.next = 37;
           break;
-        case 36:
-          _context13.prev = 36;
-          _context13.t2 = _context13["catch"](31);
-          console.error('Error displaying known players:', _context13.t2);
+        case 33:
+          _context15.prev = 33;
+          _context15.t2 = _context15["catch"](28);
+          console.error('Error displaying known players:', _context15.t2);
           container.innerHTML = '<p>Error displaying player list. Please try again.</p>';
-        case 40:
+        case 37:
         case "end":
-          return _context13.stop();
+          return _context15.stop();
       }
-    }, _callee13, null, [[17, 28], [31, 36]]);
+    }, _callee15, null, [[14, 25], [28, 33]]);
   }));
   return _renderKnownPlayers.apply(this, arguments);
 }
-function fetchAndUpdatePlayerName(_x26, _x27) {
+function fetchAndUpdatePlayerName(_x29, _x30) {
   return _fetchAndUpdatePlayerName.apply(this, arguments);
 } // Export functions to window for non-module access
 function _fetchAndUpdatePlayerName() {
-  _fetchAndUpdatePlayerName = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee14(playerId, refreshListCallback) {
+  _fetchAndUpdatePlayerName = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee16(playerId, refreshListCallback) {
     var authToken, response, errorData, data, newUsername, currentPlayerData, player, oldUsername;
-    return _regeneratorRuntime().wrap(function _callee14$(_context14) {
-      while (1) switch (_context14.prev = _context14.next) {
+    return _regeneratorRuntime().wrap(function _callee16$(_context16) {
+      while (1) switch (_context16.prev = _context16.next) {
         case 0:
           if (playerId) {
-            _context14.next = 2;
+            _context16.next = 2;
             break;
           }
-          return _context14.abrupt("return");
+          return _context16.abrupt("return");
         case 2:
-          _context14.prev = 2;
-          _context14.next = 5;
+          _context16.prev = 2;
+          _context16.next = 5;
           return new Promise(function (resolve, reject) {
             chrome.storage.local.get('authToken', function (result) {
               if (chrome.runtime.lastError) {
@@ -1692,49 +1887,49 @@ function _fetchAndUpdatePlayerName() {
             });
           });
         case 5:
-          authToken = _context14.sent;
+          authToken = _context16.sent;
           if (authToken) {
-            _context14.next = 9;
+            _context16.next = 9;
             break;
           }
           ModalManager.showAlert('Error', 'Authentication token not found for API call. Please log in.');
           throw new Error('Auth token not found for API call');
         case 9:
-          _context14.next = 11;
+          _context16.next = 11;
           return fetch("https://botc.app/backend/user/".concat(playerId), {
             headers: {
               'Authorization': authToken
             }
           });
         case 11:
-          response = _context14.sent;
+          response = _context16.sent;
           if (response.ok) {
-            _context14.next = 17;
+            _context16.next = 17;
             break;
           }
-          _context14.next = 15;
+          _context16.next = 15;
           return response.json()["catch"](function () {
             return {
               message: response.statusText
             };
           });
         case 15:
-          errorData = _context14.sent;
+          errorData = _context16.sent;
           throw new Error("API request failed: ".concat(errorData.message || response.statusText));
         case 17:
-          _context14.next = 19;
+          _context16.next = 19;
           return response.json();
         case 19:
-          data = _context14.sent;
+          data = _context16.sent;
           newUsername = data && data.user ? data.user.username : null;
           if (!newUsername) {
-            _context14.next = 29;
+            _context16.next = 29;
             break;
           }
-          _context14.next = 24;
+          _context16.next = 24;
           return loadPlayerData();
         case 24:
-          currentPlayerData = _context14.sent;
+          currentPlayerData = _context16.sent;
           // Load current data
           player = currentPlayerData[playerId];
           if (player) {
@@ -1759,23 +1954,23 @@ function _fetchAndUpdatePlayerName() {
             ModalManager.showAlert('Notice', "Player ".concat(playerId, " not found in local data. You may add them if desired."));
             // Optionally trigger add player flow here if it's desired behavior
           }
-          _context14.next = 30;
+          _context16.next = 30;
           break;
         case 29:
           ModalManager.showAlert('Warning', "Could not retrieve a valid username for player ".concat(playerId, " from API."));
         case 30:
-          _context14.next = 36;
+          _context16.next = 36;
           break;
         case 32:
-          _context14.prev = 32;
-          _context14.t0 = _context14["catch"](2);
-          console.error("Error fetching or updating player ".concat(playerId, " name:"), _context14.t0);
-          ModalManager.showAlert('Error', "Failed to fetch/update player name: ".concat(_context14.t0.message));
+          _context16.prev = 32;
+          _context16.t0 = _context16["catch"](2);
+          console.error("Error fetching or updating player ".concat(playerId, " name:"), _context16.t0);
+          ModalManager.showAlert('Error', "Failed to fetch/update player name: ".concat(_context16.t0.message));
         case 36:
         case "end":
-          return _context14.stop();
+          return _context16.stop();
       }
-    }, _callee14, null, [[2, 32]]);
+    }, _callee16, null, [[2, 32]]);
   }));
   return _fetchAndUpdatePlayerName.apply(this, arguments);
 }
@@ -1794,7 +1989,9 @@ window.userManager = {
   toggleFavoriteStatus: toggleFavoriteStatus,
   handleRefreshUserName: handleRefreshUserName,
   fetchAndUpdatePlayerName: fetchAndUpdatePlayerName,
-  replaceAllPlayerDataAndSave: replaceAllPlayerDataAndSave
+  replaceAllPlayerDataAndSave: replaceAllPlayerDataAndSave,
+  refreshAllUsernames: refreshAllUsernames,
+  checkRefreshQueueStatus: checkRefreshQueueStatus
 };
 
 // Export functions as a module
@@ -1864,7 +2061,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
         };
         _refreshDependentViews = function _refreshDependentView2() {
           _refreshDependentViews = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee9(updatedPlayerId) {
-            var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv4, _searchInput4;
+            var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv3, _searchInput3;
             return popup_regeneratorRuntime().wrap(function _callee9$(_context9) {
               while (1) switch (_context9.prev = _context9.next) {
                 case 0:
@@ -1899,12 +2096,12 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
 
                   // 2. Refresh Known Players list (User Management tab, if active)
                   userManagementTab = document.getElementById('userManagement');
-                  _knownPlayersDiv4 = document.getElementById('knownPlayers'); // ensure it's defined
-                  _searchInput4 = document.getElementById('userSearch'); // ensure it's defined
-                  if (userManagementTab && userManagementTab.classList.contains('active') && _knownPlayersDiv4) {
+                  _knownPlayersDiv3 = document.getElementById('knownPlayers'); // ensure it's defined
+                  _searchInput3 = document.getElementById('userSearch'); // ensure it's defined
+                  if (userManagementTab && userManagementTab.classList.contains('active') && _knownPlayersDiv3) {
                     console.log("[Popup] Refreshing Known Players list (targeted).");
                     // Note: renderKnownPlayers might need the updatedPlayerData directly
-                    window.userManager.renderKnownPlayers(_knownPlayersDiv4, _searchInput4 ? _searchInput4.value.trim() : '', currentPlayerData,
+                    window.userManager.renderKnownPlayers(_knownPlayersDiv3, _searchInput3 ? _searchInput3.value.trim() : '', currentPlayerData,
                     // Pass the fresh data
                     onlinePlayerIds, window.userManager.createUsernameHistoryModal, window.refreshAllViews // Actions on these cards still use full refresh for now
                     );
@@ -1929,7 +2126,7 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
         };
         _refreshAllViews = function _refreshAllViews3() {
           _refreshAllViews = popup_asyncToGenerator(/*#__PURE__*/popup_regeneratorRuntime().mark(function _callee8(initiatingAction) {
-            var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv3, _searchInput3;
+            var currentPlayerData, onlinePlayerIds, onlinePlayersObjectForFavorites, userManagementTab, _knownPlayersDiv2, _searchInput2;
             return popup_regeneratorRuntime().wrap(function _callee8$(_context8) {
               while (1) switch (_context8.prev = _context8.next) {
                 case 0:
@@ -1968,14 +2165,14 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                   // 1. Refresh Known Players list (User Management tab)
                   // Check if the User Management tab is active before re-rendering it.
                   userManagementTab = document.getElementById('userManagement');
-                  _knownPlayersDiv3 = document.getElementById('knownPlayers'); // ensure it's defined
-                  _searchInput3 = document.getElementById('userSearch'); // ensure it's defined
-                  if (userManagementTab && userManagementTab.classList.contains('active') && _knownPlayersDiv3) {
+                  _knownPlayersDiv2 = document.getElementById('knownPlayers'); // ensure it's defined
+                  _searchInput2 = document.getElementById('userSearch'); // ensure it's defined
+                  if (userManagementTab && userManagementTab.classList.contains('active') && _knownPlayersDiv2) {
                     console.log("[Popup] Refreshing Known Players list.");
                     // renderKnownPlayers expects: container, searchTerm, playerData, onlinePlayerIds (Set), createUsernameHistoryModalFunc, refreshCallback
                     // We need to ensure createUsernameHistoryModal and a suitable refresh callback (e.g., refreshAllViews itself, or a limited version) are passed if needed by displayKnownPlayers' actions.
                     // For now, assuming renderKnownPlayers handles its own internal action callbacks or we address that separately.
-                    window.userManager.renderKnownPlayers(_knownPlayersDiv3, _searchInput3 ? _searchInput3.value.trim() : '', currentPlayerData, onlinePlayerIds, window.userManager.createUsernameHistoryModal,
+                    window.userManager.renderKnownPlayers(_knownPlayersDiv2, _searchInput2 ? _searchInput2.value.trim() : '', currentPlayerData, onlinePlayerIds, window.userManager.createUsernameHistoryModal,
                     // Pass the actual function
                     refreshAllViews // Pass refreshAllViews for actions within player cards
                     );
@@ -2074,9 +2271,9 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                       latestSessionData = sessionsData;
                       window.latestSessionData = sessionsData; // Update global
                       if (document.getElementById('userManagement').classList.contains('active') && window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                        var _knownPlayersDiv2 = document.getElementById('knownPlayers');
-                        var _searchInput2 = document.getElementById('userSearch');
-                        window.userManager.renderKnownPlayers(_knownPlayersDiv2, _searchInput2 ? _searchInput2.value.trim() : '');
+                        var _knownPlayersDiv = document.getElementById('knownPlayers');
+                        var _searchInput = document.getElementById('userSearch');
+                        window.userManager.renderKnownPlayers(_knownPlayersDiv, _searchInput ? _searchInput.value.trim() : '');
                       } else if (document.getElementById('userManagement').classList.contains('active')) {
                         console.error("User manager or renderKnownPlayers function not available (main load).");
                       }
@@ -2466,46 +2663,39 @@ document.addEventListener('DOMContentLoaded', /*#__PURE__*/popup_asyncToGenerato
                   tabName = button.dataset.tab;
                   showTab(tabName);
                   // Render known players when switching to userManagement tab
-                  if (!(tabName === 'userManagement')) {
-                    _context2.next = 11;
-                    break;
-                  }
-                  if (window.latestSessionData) {
-                    _context2.next = 10;
-                    break;
-                  }
-                  _context2.next = 8;
-                  return window.fetchAndDisplaySessions(addPlayer, createUsernameHistoryModal, window.updateOnlineFavoritesListFunc, sessionListDiv, {
-                    officialOnly: showOfficialOnly
-                  }, function (sessionsData, errorData) {
-                    if (loadingIndicator) loadingIndicator.style.display = 'none';
-                    if (errorData) {
-                      console.error("[Popup] Error reported by fetchAndDisplaySessions (filter change):", errorData);
-                      if (sessionListDiv) sessionListDiv.innerHTML = "<p class='error-message'>Failed to display sessions: ".concat(errorData, "</p>");
-                    } else {
-                      // Success path for filter change
-                      latestSessionData = sessionsData;
-                      window.latestSessionData = sessionsData; // Update global
-                      if (document.getElementById('userManagement').classList.contains('active') && window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                        var _knownPlayersDiv = document.getElementById('knownPlayers');
-                        var _searchInput = document.getElementById('userSearch');
-                        window.userManager.renderKnownPlayers(_knownPlayersDiv, _searchInput ? _searchInput.value.trim() : '');
-                      } else if (document.getElementById('userManagement').classList.contains('active')) {
-                        console.error("User management tab active, but userManager or renderKnownPlayers not available (filter change).");
+                  if (tabName === 'userManagement') {
+                    // Handle user management tab switching
+                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                      // Always attempt to render known players first - this shouldn't depend on session data
+                      window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+
+                      // Attempt to fetch session data in the background for online status, but don't block the UI
+                      if (!window.latestSessionData) {
+                        // No session data available, fetch it but don't block user management rendering
+                        window.fetchAndDisplaySessions(addPlayer, createUsernameHistoryModal, window.updateOnlineFavoritesListFunc, sessionListDiv, {
+                          officialOnly: showOfficialOnly
+                        }, function (sessionsData, errorData) {
+                          if (loadingIndicator) loadingIndicator.style.display = 'none';
+                          if (errorData) {
+                            console.warn("[Popup] Error fetching sessions: " + errorData + ". User management will continue with limited functionality.");
+                            if (sessionListDiv) sessionListDiv.innerHTML = "<p class='error-message'>Failed to display sessions: ".concat(errorData, "</p>");
+                          } else {
+                            // Success path for session data
+                            latestSessionData = sessionsData;
+                            window.latestSessionData = sessionsData; // Update global
+
+                            // If user management tab is still active, refresh it with online status
+                            if (document.getElementById('userManagement').classList.contains('active')) {
+                              window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                            }
+                          }
+                        });
                       }
+                    } else {
+                      console.error("User manager or renderKnownPlayers function not available.");
                     }
-                  });
-                case 8:
-                  _context2.next = 11;
-                  break;
-                case 10:
-                  // Render known players using existing session data
-                  if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                    window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
-                  } else {
-                    console.error("User manager or renderKnownPlayers function not available.");
                   }
-                case 11:
+                case 5:
                 case "end":
                   return _context2.stop();
               }

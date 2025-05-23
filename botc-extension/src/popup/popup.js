@@ -384,41 +384,39 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Render known players when switching to userManagement tab
             if (tabName === 'userManagement') {
                 // Handle user management tab switching
-                if (!window.latestSessionData) {
-                    // No session data available, fetch it first
-                    await window.fetchAndDisplaySessions(
-                        addPlayer,
-                        createUsernameHistoryModal,
-                        window.updateOnlineFavoritesListFunc,
-                        sessionListDiv,
-                        { officialOnly: showOfficialOnly },
-                        (sessionsData, errorData) => { 
-                            if (loadingIndicator) loadingIndicator.style.display = 'none';
-                            if (errorData) {
-                                console.error("[Popup] Error reported by fetchAndDisplaySessions (filter change):", errorData);
-                                if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>Failed to display sessions: ${errorData}</p>`;
-                            } else {
-                                // Success path for filter change
-                                latestSessionData = sessionsData;
-                                window.latestSessionData = sessionsData; // Update global
-                                if (document.getElementById('userManagement').classList.contains('active') && 
-                                    window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                                    const knownPlayersDiv = document.getElementById('knownPlayers');
-                                    const searchInput = document.getElementById('userSearch');
-                                    window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
-                                } else if (document.getElementById('userManagement').classList.contains('active')) {
-                                    console.error("User management tab active, but userManager or renderKnownPlayers not available (filter change).");
+                if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
+                    // Always attempt to render known players first - this shouldn't depend on session data
+                    window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                    
+                    // Attempt to fetch session data in the background for online status, but don't block the UI
+                    if (!window.latestSessionData) {
+                        // No session data available, fetch it but don't block user management rendering
+                        window.fetchAndDisplaySessions(
+                            addPlayer,
+                            createUsernameHistoryModal,
+                            window.updateOnlineFavoritesListFunc,
+                            sessionListDiv,
+                            { officialOnly: showOfficialOnly },
+                            (sessionsData, errorData) => { 
+                                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                                if (errorData) {
+                                    console.warn("[Popup] Error fetching sessions: " + errorData + ". User management will continue with limited functionality.");
+                                    if (sessionListDiv) sessionListDiv.innerHTML = `<p class='error-message'>Failed to display sessions: ${errorData}</p>`;
+                                } else {
+                                    // Success path for session data
+                                    latestSessionData = sessionsData;
+                                    window.latestSessionData = sessionsData; // Update global
+                                    
+                                    // If user management tab is still active, refresh it with online status
+                                    if (document.getElementById('userManagement').classList.contains('active')) {
+                                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
+                                    }
                                 }
                             }
-                        }
-                    );
-                } else {
-                    // Render known players using existing session data
-                    if (window.userManager && typeof window.userManager.renderKnownPlayers === 'function') {
-                        window.userManager.renderKnownPlayers(knownPlayersDiv, searchInput ? searchInput.value.trim() : '');
-                    } else {
-                        console.error("User manager or renderKnownPlayers function not available.");
+                        );
                     }
+                } else {
+                    console.error("User manager or renderKnownPlayers function not available.");
                 }
             }
         });
