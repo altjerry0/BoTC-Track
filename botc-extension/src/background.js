@@ -49,27 +49,48 @@ function isBraveBrowser() {
 }
 
 /**
+ * Detects if the current browser is Microsoft Edge
+ * @returns {boolean} True if the browser is Edge
+ */
+function isEdgeBrowser() {
+  // Check for Edge in the user agent
+  return /edg/i.test(navigator.userAgent);
+}
+
+/**
  * Gets an auth token from Google using the appropriate method for the current browser
  * @param {boolean} interactive - Whether to show interactive auth dialogs
  * @returns {Promise<string>} The Google auth token
  */
 async function getGoogleAuthToken(interactive = true) {
   const isBrave = isBraveBrowser();
-  console.log('[BG Auth] Browser detected as:', isBrave ? 'Brave' : 'Other (Chrome/Edge)');
+  const isEdge = isEdgeBrowser();
+  console.log('[BG Auth] Browser detected as:', isBrave ? 'Brave' : isEdge ? 'Edge' : 'Other (Chrome)');
   
   try {
-    if (isBrave && authConfig.braveClientId !== 'YOUR_WEB_APPLICATION_CLIENT_ID') {
-      // For Brave, use launchWebAuthFlow with the Web Application client ID
-      console.log('[BG Auth] Using Brave-specific OAuth flow with Web Application client ID');
+    // For Brave or Edge, use launchWebAuthFlow with the Web Application client ID
+    if ((isBrave && authConfig.braveClientId !== 'YOUR_WEB_APPLICATION_CLIENT_ID') || 
+        (isEdge && authConfig.edgeClientId !== 'YOUR_WEB_APPLICATION_CLIENT_ID')) {
+      
+      // Log which browser-specific flow we're using
+      if (isBrave) {
+        console.log('[BG Auth] Using Brave-specific OAuth flow with Web Application client ID');
+      } else if (isEdge) {
+        console.log('[BG Auth] Using Edge-specific OAuth flow with Web Application client ID');
+      }
+      
       return await new Promise((resolve, reject) => {
         try {
           const redirectURL = chrome.identity.getRedirectURL();
           console.log('[BG Auth] Redirect URL:', redirectURL);
           
+          // Determine which client ID to use
+          const clientId = isBrave ? authConfig.braveClientId : authConfig.edgeClientId;
+          
           // Construct the auth URL with necessary parameters
           const authURL = 
             `https://accounts.google.com/o/oauth2/auth?` +
-            `client_id=${authConfig.braveClientId}&` +
+            `client_id=${clientId}&` +
             `redirect_uri=${encodeURIComponent(redirectURL)}&` +
             `response_type=token&` +
             `scope=${encodeURIComponent(authConfig.scopes.join(' '))}`;
@@ -109,7 +130,7 @@ async function getGoogleAuthToken(interactive = true) {
         }
       });
     } else {
-      // For Chrome, Edge or if the braveClientId hasn't been set, use standard getAuthToken
+      // For Chrome or if the clientIds haven't been set, use standard getAuthToken
       console.log('[BG Auth] Using chrome.identity.getAuthToken for authentication');
       return await new Promise((resolve, reject) => {
         chrome.identity.getAuthToken({ interactive: interactive }, (token) => {

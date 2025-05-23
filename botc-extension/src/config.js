@@ -14,6 +14,9 @@ export const authConfig = {
   // TODO: Replace this placeholder with your Web Application OAuth client ID
   braveClientId: "234038964353-3rfnfsdh051r8g9aqrl4h7uo9f9c339u.apps.googleusercontent.com",
   
+  // Web Application client ID for Edge - same as Brave for now, update if needed
+  edgeClientId: "234038964353-3rfnfsdh051r8g9aqrl4h7uo9f9c339u.apps.googleusercontent.com",
+  
   // For backward compatibility (used in places where we haven't updated code yet)
   get clientId() {
     return this.chromeClientId;

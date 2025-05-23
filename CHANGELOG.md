@@ -15,6 +15,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-23.
   - Works in the background even if the popup is closed
   - Provides real-time status updates on refresh progress
   - Automatically updates username history when changes are detected
+- **Microsoft Edge Support**: Added support for Microsoft Edge browser by implementing a custom authentication flow similar to the Brave browser fix. This resolves authentication issues reported by Edge users when using Google authentication.
 
 ### Changed
 
