@@ -35012,6 +35012,8 @@ var authConfig = {
   // Web Application client ID for Brave - needs to be created in Google Cloud Console
   // TODO: Replace this placeholder with your Web Application OAuth client ID
   braveClientId: "234038964353-3rfnfsdh051r8g9aqrl4h7uo9f9c339u.apps.googleusercontent.com",
+  // Web Application client ID for Edge - same as Brave for now, update if needed
+  edgeClientId: "234038964353-3rfnfsdh051r8g9aqrl4h7uo9f9c339u.apps.googleusercontent.com",
   // For backward compatibility (used in places where we haven't updated code yet)
   get clientId() {
     return this.chromeClientId;
@@ -35103,6 +35105,15 @@ function isBraveBrowser() {
 }
 
 /**
+ * Detects if the current browser is Microsoft Edge
+ * @returns {boolean} True if the browser is Edge
+ */
+function isEdgeBrowser() {
+  // Check for Edge in the user agent
+  return /edg/i.test(navigator.userAgent);
+}
+
+/**
  * Gets an auth token from Google using the appropriate method for the current browser
  * @param {boolean} interactive - Whether to show interactive auth dialogs
  * @returns {Promise<string>} The Google auth token
@@ -35119,28 +35130,37 @@ function _getGoogleAuthToken() {
   _getGoogleAuthToken = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
     var interactive,
       isBrave,
+      isEdge,
       _args3 = arguments;
     return _regeneratorRuntime().wrap(function _callee3$(_context3) {
       while (1) switch (_context3.prev = _context3.next) {
         case 0:
           interactive = _args3.length > 0 && _args3[0] !== undefined ? _args3[0] : true;
           isBrave = isBraveBrowser();
-          console.log('[BG Auth] Browser detected as:', isBrave ? 'Brave' : 'Other (Chrome/Edge)');
-          _context3.prev = 3;
-          if (!(isBrave && authConfig.braveClientId !== 'YOUR_WEB_APPLICATION_CLIENT_ID')) {
-            _context3.next = 11;
+          isEdge = isEdgeBrowser();
+          console.log('[BG Auth] Browser detected as:', isBrave ? 'Brave' : isEdge ? 'Edge' : 'Other (Chrome)');
+          _context3.prev = 4;
+          if (!(isBrave && authConfig.braveClientId !== 'YOUR_WEB_APPLICATION_CLIENT_ID' || isEdge && authConfig.edgeClientId !== 'YOUR_WEB_APPLICATION_CLIENT_ID')) {
+            _context3.next = 12;
             break;
           }
-          // For Brave, use launchWebAuthFlow with the Web Application client ID
-          console.log('[BG Auth] Using Brave-specific OAuth flow with Web Application client ID');
-          _context3.next = 8;
+          // Log which browser-specific flow we're using
+          if (isBrave) {
+            console.log('[BG Auth] Using Brave-specific OAuth flow with Web Application client ID');
+          } else if (isEdge) {
+            console.log('[BG Auth] Using Edge-specific OAuth flow with Web Application client ID');
+          }
+          _context3.next = 9;
           return new Promise(function (resolve, reject) {
             try {
               var redirectURL = chrome.identity.getRedirectURL();
               console.log('[BG Auth] Redirect URL:', redirectURL);
 
+              // Determine which client ID to use
+              var clientId = isBrave ? authConfig.braveClientId : authConfig.edgeClientId;
+
               // Construct the auth URL with necessary parameters
-              var authURL = "https://accounts.google.com/o/oauth2/auth?" + "client_id=".concat(authConfig.braveClientId, "&") + "redirect_uri=".concat(encodeURIComponent(redirectURL), "&") + "response_type=token&" + "scope=".concat(encodeURIComponent(authConfig.scopes.join(' ')));
+              var authURL = "https://accounts.google.com/o/oauth2/auth?" + "client_id=".concat(clientId, "&") + "redirect_uri=".concat(encodeURIComponent(redirectURL), "&") + "response_type=token&" + "scope=".concat(encodeURIComponent(authConfig.scopes.join(' ')));
               chrome.identity.launchWebAuthFlow({
                 url: authURL,
                 interactive: interactive
@@ -35171,12 +35191,12 @@ function _getGoogleAuthToken() {
               reject(error);
             }
           });
-        case 8:
+        case 9:
           return _context3.abrupt("return", _context3.sent);
-        case 11:
-          // For Chrome, Edge or if the braveClientId hasn't been set, use standard getAuthToken
+        case 12:
+          // For Chrome or if the clientIds haven't been set, use standard getAuthToken
           console.log('[BG Auth] Using chrome.identity.getAuthToken for authentication');
-          _context3.next = 14;
+          _context3.next = 15;
           return new Promise(function (resolve, reject) {
             chrome.identity.getAuthToken({
               interactive: interactive
@@ -35190,21 +35210,21 @@ function _getGoogleAuthToken() {
               }
             });
           });
-        case 14:
-          return _context3.abrupt("return", _context3.sent);
         case 15:
-          _context3.next = 21;
+          return _context3.abrupt("return", _context3.sent);
+        case 16:
+          _context3.next = 22;
           break;
-        case 17:
-          _context3.prev = 17;
-          _context3.t0 = _context3["catch"](3);
+        case 18:
+          _context3.prev = 18;
+          _context3.t0 = _context3["catch"](4);
           console.error('[BG Auth] Authentication failed:', _context3.t0);
           throw _context3.t0;
-        case 21:
+        case 22:
         case "end":
           return _context3.stop();
       }
-    }, _callee3, null, [[3, 17]]);
+    }, _callee3, null, [[4, 18]]);
   }));
   return _getGoogleAuthToken.apply(this, arguments);
 }

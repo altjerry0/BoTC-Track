@@ -9,7 +9,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "firebase": "^10.7.0"
+    "firebase": "^10.14.1",
+    "undici": "^6.21.2"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^13.0.0",
