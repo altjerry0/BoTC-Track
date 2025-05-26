@@ -3,6 +3,8 @@
  * Handles all CSV import and export functionality for player data.
  */
 
+import { toStorageTimestamp, fromStorageTimestamp } from '../utils/timestampUtils.js';
+
 // Helper function to escape CSV special characters (double quotes, commas, newlines).
 // If a field contains a comma, newline, or double quote, it should be enclosed in double quotes.
 // Existing double quotes within the field should be doubled.
@@ -173,7 +175,7 @@ function importPlayerDataCSV(file, successCallback, statusCallback) {
             }
 
             player.uniqueSessionCount = headerMap.uniqueSessionCount !== undefined && values[headerMap.uniqueSessionCount] !== '' ? parseInt(values[headerMap.uniqueSessionCount], 10) : 0;
-            player.lastSeenTimestamp = headerMap.lastSeenTimestamp !== undefined && values[headerMap.lastSeenTimestamp] !== '' ? parseInt(values[headerMap.lastSeenTimestamp], 10) : null;
+            player.lastSeenTimestamp = headerMap.lastSeenTimestamp !== undefined && values[headerMap.lastSeenTimestamp] !== '' ? toStorageTimestamp(parseInt(values[headerMap.lastSeenTimestamp], 10)) : null;
             player.lastSeenSessionId = headerMap.lastSeenSessionId !== undefined ? values[headerMap.lastSeenSessionId] || '' : '';
             
             // Basic validation for score
@@ -182,7 +184,7 @@ function importPlayerDataCSV(file, successCallback, statusCallback) {
                 player.score = null; 
             }
             if (isNaN(player.uniqueSessionCount)) player.uniqueSessionCount = 0;
-            if (isNaN(player.lastSeenTimestamp)) player.lastSeenTimestamp = null;
+            player.lastSeenTimestamp = fromStorageTimestamp(player.lastSeenTimestamp);
 
             newPlayerData[id] = player;
             playersImportedCount++;

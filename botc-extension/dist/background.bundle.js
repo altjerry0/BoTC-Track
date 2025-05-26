@@ -34997,6 +34997,105 @@ registerAuth("WebExtension" /* ClientPlatform.WEB_EXTENSION */);
 
 //# sourceMappingURL=index.esm.js.map
 
+;// ./src/utils/timestampUtils.js
+/**
+ * Utility functions for consistent timestamp handling
+ */
+
+/**
+ * Converts any timestamp value to milliseconds format for storage
+ * Always use this function when storing timestamps in chrome.storage
+ * @param {Date|number|string} timestamp - The timestamp to convert
+ * @returns {number} Timestamp in milliseconds
+ */
+function toStorageTimestamp(timestamp) {
+  if (timestamp instanceof Date) {
+    return timestamp.getTime();
+  } else if (typeof timestamp === 'string') {
+    // Handle ISO strings or other string formats
+    var parsed = Date.parse(timestamp);
+    return isNaN(parsed) ? null : parsed;
+  } else if (typeof timestamp === 'number') {
+    return timestamp;
+  }
+  return null;
+}
+
+/**
+ * Validates and ensures a timestamp is in the correct milliseconds format
+ * @param {any} timestamp - The timestamp to validate
+ * @returns {number|null} Timestamp in milliseconds or null if invalid
+ */
+function fromStorageTimestamp(timestamp) {
+  if (typeof timestamp === 'number' && !isNaN(timestamp) && timestamp > 0) {
+    return timestamp;
+  }
+  return null;
+}
+
+/**
+ * Converts a timestamp to a Firebase compatible format based on the field type
+ * Use at Firebase boundaries when writing data
+ * @param {number} timestamp - Timestamp in milliseconds
+ * @param {boolean} useServerTimestamp - Whether to use serverTimestamp() instead
+ * @returns {number} Timestamp in milliseconds (unchanged)
+ */
+function toFirebaseTimestamp(timestamp) {
+  // Firebase can handle millisecond timestamps directly
+  // We just ensure it's a valid number
+  return fromStorageTimestamp(timestamp);
+}
+
+/**
+ * Formats a timestamp for display in a locale-sensitive way
+ * @param {number} timestamp - Timestamp in milliseconds
+ * @returns {string} Formatted date and time string
+ */
+function formatTimestampForDisplay(timestamp) {
+  var validTimestamp = fromStorageTimestamp(timestamp);
+  if (!validTimestamp) {
+    return "N/A";
+  }
+  var date = new Date(validTimestamp);
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+/**
+ * Formats a timestamp into a human-readable 'time ago' string
+ * @param {number} timestamp - Timestamp in milliseconds
+ * @returns {string} Human-readable "time ago" string
+ */
+function formatTimeSince(timestamp) {
+  var validTimestamp = fromStorageTimestamp(timestamp);
+  if (!validTimestamp) {
+    return "Not seen yet";
+  }
+  var now = Date.now();
+  var seconds = Math.round((now - validTimestamp) / 1000);
+  if (seconds < 0) {
+    return "In the future";
+  } else if (seconds < 60) {
+    return seconds + (seconds === 1 ? " sec ago" : " secs ago");
+  }
+  var minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return minutes + (minutes === 1 ? " min ago" : " mins ago");
+  }
+  var hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return hours + (hours === 1 ? " hour ago" : " hours ago");
+  }
+  var days = Math.round(hours / 24);
+  if (days < 30) {
+    return days + (days === 1 ? " day ago" : " days ago");
+  }
+  var months = Math.round(days / 30);
+  if (months < 12) {
+    return months + (months === 1 ? " month ago" : " months ago");
+  }
+  var years = Math.round(months / 12);
+  return years + (years === 1 ? " year ago" : " years ago");
+}
 ;// ./src/config.js
 /**
  * Environment-specific configuration for the BotC Tracker extension
@@ -35056,6 +35155,7 @@ function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 // --- Firebase Initialization (v1.1.7 Chrome Web Store Compliance) ---
 // Version 1.2.1 - Added username refresh queue system
+
 
 
 
@@ -35336,7 +35436,7 @@ function _authenticateWithGoogleAndFirebase() {
             email: googleUserInfo.email || firebaseUser.email,
             displayName: googleUserInfo.name || firebaseUser.displayName,
             photoURL: googleUserInfo.picture || firebaseUser.photoURL,
-            lastSignIn: new Date().toISOString()
+            lastSignIn: toStorageTimestamp(new Date().getTime())
           }; // Store in chrome.storage for persistence
           _context4.next = 40;
           return chrome.storage.local.set({
@@ -35442,13 +35542,13 @@ function _ensureUserDocumentExists() {
               email: userProfile.email || null,
               displayName: userProfile.displayName || null,
               photoURL: userProfile.photoURL || null,
-              lastSignIn: new Date().toISOString(),
+              lastSignIn: fromStorageTimestamp(userProfile.lastSignIn),
               lastSyncTimestamp: serverTimestamp()
             },
             // Initialize with empty player data
             playerData: {
               version: 1,
-              lastUpdated: Date.now(),
+              lastUpdated: toStorageTimestamp(Date.now()),
               data: {}
             }
           });
@@ -35462,7 +35562,7 @@ function _ensureUserDocumentExists() {
           _context5.next = 26;
           return setDoc(userDocRef, {
             profile: {
-              lastSignIn: new Date().toISOString(),
+              lastSignIn: fromStorageTimestamp(userProfile.lastSignIn),
               lastSyncTimestamp: serverTimestamp()
             }
           }, {
@@ -35536,7 +35636,7 @@ function _savePlayerDataToFirestore() {
           return setDoc(userDocRef, {
             playerData: {
               version: 1,
-              lastUpdated: Date.now(),
+              lastUpdated: toStorageTimestamp(Date.now()),
               data: playerData || {}
             }
           }, {
@@ -36120,7 +36220,7 @@ function _updateQueueStatus() {
               usernameRefreshQueueStatus: {
                 queueSize: usernameRefreshQueue.length,
                 isProcessing: isProcessingQueue,
-                lastUpdated: Date.now()
+                lastUpdated: toStorageTimestamp(Date.now())
               }
             }, function () {
               resolve();
@@ -36229,12 +36329,12 @@ function _refreshUsernameById() {
           }
           player.usernameHistory.push({
             name: oldUsername,
-            timestamp: Date.now()
+            timestamp: toStorageTimestamp(Date.now())
           });
 
           // Update the player name
           player.name = username;
-          player.lastUpdated = Date.now();
+          player.lastUpdated = toStorageTimestamp(Date.now());
 
           // Save updated player data
           _context14.next = 35;
@@ -36604,7 +36704,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         status: result.usernameRefreshQueueStatus || {
           queueSize: usernameRefreshQueue.length,
           isProcessing: isProcessingQueue,
-          lastUpdated: Date.now()
+          lastUpdated: toStorageTimestamp(Date.now())
         }
       });
     });
@@ -36894,7 +36994,7 @@ function fetchAndProcessSessionsInBackground(token, playerData) {
                 if (oldUsername && (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase())) {
                   player.usernameHistory.unshift({
                     username: oldUsername,
-                    timestamp: Date.now()
+                    timestamp: toStorageTimestamp(Date.now())
                   });
                   console.log("[BG_FETCH] Username change for ID ".concat(userId, ": '").concat(oldUsername, "' -> '").concat(userNameFromApi, "'. History updated."));
                 }
@@ -36903,8 +37003,8 @@ function fetchAndProcessSessionsInBackground(token, playerData) {
                 playerActivityUpdatedThisCycle = true;
               }
               var now = Date.now();
-              if (Math.abs(now - (player.lastSeenTimestamp || 0)) > 1000) {
-                player.lastSeenTimestamp = now;
+              if (Math.abs(now - fromStorageTimestamp(player.lastSeenTimestamp || 0)) > 1000) {
+                player.lastSeenTimestamp = toStorageTimestamp(now);
                 playerActivityUpdatedThisCycle = true;
               }
               if (currentSessionIdentifier) {

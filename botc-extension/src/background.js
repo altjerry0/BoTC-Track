@@ -4,6 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getAuth, signInWithCustomToken } from "firebase/auth/web-extension";
 import { parseJwt } from "./utils/auth.js";
+import { toStorageTimestamp, fromStorageTimestamp } from "./utils/timestampUtils.js";
 import { authConfig, firebaseConfig, isProduction, debugLogging } from "./config.js";
 
 // Initialize Firebase with minimal config
@@ -226,7 +227,7 @@ async function authenticateWithGoogleAndFirebase() {
       email: googleUserInfo.email || firebaseUser.email,
       displayName: googleUserInfo.name || firebaseUser.displayName,
       photoURL: googleUserInfo.picture || firebaseUser.photoURL,
-      lastSignIn: new Date().toISOString()
+      lastSignIn: toStorageTimestamp(new Date().getTime())
     };
     
     // Store in chrome.storage for persistence
@@ -306,13 +307,13 @@ async function ensureUserDocumentExists(firebaseUid, userProfile) {
                     email: userProfile.email || null,
                     displayName: userProfile.displayName || null,
                     photoURL: userProfile.photoURL || null,
-                    lastSignIn: new Date().toISOString(),
+                    lastSignIn: fromStorageTimestamp(userProfile.lastSignIn),
                     lastSyncTimestamp: serverTimestamp()
                 },
                 // Initialize with empty player data
                 playerData: {
                     version: 1,
-                    lastUpdated: Date.now(),
+                    lastUpdated: toStorageTimestamp(Date.now()),
                     data: {}
                 }
             });
@@ -322,7 +323,7 @@ async function ensureUserDocumentExists(firebaseUid, userProfile) {
             // Update profile info if needed
             await setDoc(userDocRef, {
                 profile: {
-                    lastSignIn: new Date().toISOString(),
+                    lastSignIn: fromStorageTimestamp(userProfile.lastSignIn),
                     lastSyncTimestamp: serverTimestamp()
                 }
             }, { merge: true });
@@ -375,7 +376,7 @@ async function savePlayerDataToFirestore(userId, playerData) {
         await setDoc(userDocRef, {
             playerData: {
                 version: 1,
-                lastUpdated: Date.now(),
+                lastUpdated: toStorageTimestamp(Date.now()),
                 data: playerData || {}
             }
         }, { merge: !needsFullOverwrite });
@@ -734,7 +735,7 @@ async function updateQueueStatus() {
             usernameRefreshQueueStatus: {
                 queueSize: usernameRefreshQueue.length,
                 isProcessing: isProcessingQueue,
-                lastUpdated: Date.now()
+                lastUpdated: toStorageTimestamp(Date.now())
             }
         }, () => {
             resolve();
@@ -800,12 +801,12 @@ async function refreshUsernameById(playerId) {
                 
                 player.usernameHistory.push({
                     name: oldUsername,
-                    timestamp: Date.now()
+                    timestamp: toStorageTimestamp(Date.now())
                 });
                 
                 // Update the player name
                 player.name = username;
-                player.lastUpdated = Date.now();
+                player.lastUpdated = toStorageTimestamp(Date.now());
                 
                 // Save updated player data
                 await new Promise((resolve) => {
@@ -1072,7 +1073,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 status: result.usernameRefreshQueueStatus || {
                     queueSize: usernameRefreshQueue.length,
                     isProcessing: isProcessingQueue,
-                    lastUpdated: Date.now()
+                    lastUpdated: toStorageTimestamp(Date.now())
                 }
             });
         });
@@ -1324,7 +1325,7 @@ function fetchAndProcessSessionsInBackground(token, playerData) {
                                 // Add old username to history if it's different from the new one and not already the most recent entry
                                 const lastHistoryEntry = player.usernameHistory.length > 0 ? player.usernameHistory[0].username : null;
                                 if (oldUsername && (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase())) {
-                                    player.usernameHistory.unshift({ username: oldUsername, timestamp: Date.now() });
+                                    player.usernameHistory.unshift({ username: oldUsername, timestamp: toStorageTimestamp(Date.now()) });
                                     console.log(`[BG_FETCH] Username change for ID ${userId}: '${oldUsername}' -> '${userNameFromApi}'. History updated.`);
                                 }
                                 
@@ -1333,8 +1334,8 @@ function fetchAndProcessSessionsInBackground(token, playerData) {
                             }
 
                             const now = Date.now();
-                            if (Math.abs(now - (player.lastSeenTimestamp || 0)) > 1000) {
-                                player.lastSeenTimestamp = now;
+                            if (Math.abs(now - fromStorageTimestamp(player.lastSeenTimestamp || 0)) > 1000) {
+                                player.lastSeenTimestamp = toStorageTimestamp(now);
                                 playerActivityUpdatedThisCycle = true;
                             }
 

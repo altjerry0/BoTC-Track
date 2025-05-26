@@ -7,6 +7,7 @@
  */
 
 import { parseJwt } from "../utils/auth.js";
+import { toStorageTimestamp, fromStorageTimestamp, formatTimestampForDisplay, formatTimeSince as formatTimeSinceUtil } from '../utils/timestampUtils.js';
 
 // Store reference to player data
 let allPlayerData = null;
@@ -62,14 +63,15 @@ async function getAllPlayerData() {
     return JSON.parse(JSON.stringify(allPlayerData || {})); // Return deep copy of cache or empty object
 }
 
+// Timestamp utility functions
+
 /**
  * Format timestamp to readable date and time
  * @param {number} timestamp - Timestamp to format
  * @returns {string} Formatted date and time
  */
 function formatTimestamp(timestamp) {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    return formatTimestampForDisplay(timestamp);
 }
 
 /**
@@ -79,42 +81,7 @@ function formatTimestamp(timestamp) {
  * @returns {string} A human-readable string representing the time since the timestamp, or "Not seen yet" if timestamp is invalid.
  */
 function formatTimeSince(timestamp) {
-    if (!timestamp || isNaN(timestamp) || timestamp <= 0) {
-        return "Not seen yet";
-    }
-
-    const now = Date.now();
-    const seconds = Math.round((now - timestamp) / 1000);
-
-    if (seconds < 0) { // Timestamp is in the future
-        return "In the future"; // Or handle as an error/default
-    }
-    if (seconds < 60) {
-        return seconds + " sec ago";
-    }
-
-    const minutes = Math.round(seconds / 60);
-    if (minutes < 60) {
-        return minutes + (minutes === 1 ? " min ago" : " mins ago");
-    }
-
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) {
-        return hours + (hours === 1 ? " hour ago" : " hours ago");
-    }
-
-    const days = Math.round(hours / 24);
-    if (days < 30) {
-        return days + (days === 1 ? " day ago" : " days ago");
-    }
-
-    const months = Math.round(days / 30);
-    if (months < 12) {
-        return months + (months === 1 ? " month ago" : " months ago");
-    }
-
-    const years = Math.round(months / 12);
-    return years + (years === 1 ? " year ago" : " years ago");
+    return formatTimeSinceUtil(timestamp);
 }
 
 /**
@@ -553,17 +520,12 @@ async function displayKnownPlayers(container, searchTerm = '', playerData, onlin
             if (addedSessionInfo) { // Add a separator if session info was already added
                 const separator = document.createElement('span');
                 separator.textContent = ' | ';
-                separator.style.color = 'var(--subtle-text-color)';
-                separator.style.marginLeft = '5px'; 
-                separator.style.marginRight = '5px';
                 metaInfoContainer.appendChild(separator);
             }
-            const lastSeenTextContent = player.lastSeenTimestamp && player.lastSeenTimestamp > 0 ? formatTimeSince(player.lastSeenTimestamp) : 'Never';
-            const lastSeenElement = document.createElement('span');
-            lastSeenElement.textContent = `Last seen: ${lastSeenTextContent}`;
-            lastSeenElement.className = 'last-seen-text'; 
-            lastSeenElement.style.color = 'var(--subtle-text-color)';
-            metaInfoContainer.appendChild(lastSeenElement);
+            const lastSeenText = document.createElement('span');
+            lastSeenText.textContent = `Last seen: ${formatTimeSince(player.lastSeenTimestamp)}`;
+            lastSeenText.style.color = 'var(--subtle-text-color)';
+            metaInfoContainer.appendChild(lastSeenText);
             hasMetaInfo = true;
         }
 
@@ -685,7 +647,7 @@ async function addPlayer(id, name, score, notes, isFavorite, updateUICallback) {
     // Check if player exists for potential update
     const isUpdate = !!playerData[id];
     const oldPlayerData = isUpdate ? { ...playerData[id] } : null;
-
+    
     // Preserve or initialize username history
     let usernameHistory = (isUpdate && playerData[id].usernameHistory) ? [...playerData[id].usernameHistory] : [];
     // Preserve or initialize session history
@@ -707,7 +669,7 @@ async function addPlayer(id, name, score, notes, isFavorite, updateUICallback) {
     // If updating, check if name changed and update history
     if (isUpdate && playerData[id].name !== name) {
         // console.log(`Updating name for ${id}: "${playerData[id].name}" -> "${name}"`);
-        usernameHistory.unshift({ username: playerData[id].name, timestamp: Date.now() });
+        usernameHistory.unshift({ username: playerData[id].name, timestamp: toStorageTimestamp(Date.now()) });
         // Limit history size if needed (e.g., keep last 10)
         if (usernameHistory.length > 10) {
              usernameHistory = usernameHistory.slice(0, 10);
@@ -771,7 +733,7 @@ async function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPla
         
         // Add the *previous* name to history only if it's not already the latest entry
         if (!latestHistoryEntry || latestHistoryEntry.username !== currentStoredName) {
-            history.push({ username: currentStoredName, timestamp: Date.now() });
+            history.push({ username: currentStoredName, timestamp: toStorageTimestamp(Date.now()) });
             // console.log(`[Username History] Added '${currentStoredName}' to history for player ${player.id}. New name: '${sessionUsername}'.`);
             needsSave = true;
         }
@@ -782,7 +744,7 @@ async function updateUsernameHistoryIfNeeded(userId, sessionUsername, currentPla
     } else {
         // If names match, ensure the current name is at least the first entry if history is empty
         if (history.length === 0 && currentStoredName) {
-            history.push({ username: currentStoredName, timestamp: Date.now() });
+            history.push({ username: currentStoredName, timestamp: toStorageTimestamp(Date.now()) });
             needsSave = true;
         }
     }
@@ -857,7 +819,7 @@ async function updateSessionHistoryIfNeeded(userId, currentSessionId, currentPla
     }
 
     // Always update lastSeenTimestamp if processing this player from a session
-    const newTimestamp = Date.now();
+    const newTimestamp = toStorageTimestamp(Date.now());
     if (player.lastSeenTimestamp !== newTimestamp) { // Could be redundant if always updating, but good for explicitness
         player.lastSeenTimestamp = newTimestamp;
         changed = true;
@@ -1110,7 +1072,7 @@ function updateUsernameHistory(playerObject, oldUsername) {
         
         // Add the *previous* name to history only if it's not already the latest entry
         if (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase()) {
-            playerObject.usernameHistory.unshift({ username: oldUsername, timestamp: Date.now() });
+            playerObject.usernameHistory.unshift({ username: oldUsername, timestamp: toStorageTimestamp(Date.now()) });
             // console.log(`[Username History] Added '${oldUsername}' to history for player ${playerObject.id}. New name: '${newUsername}'.`);
             return true; // Indicates history was updated
         }

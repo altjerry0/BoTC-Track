@@ -1,6 +1,8 @@
 // accountTab.js - Handles the Account/Cloud Sync tab UI and logic
 // Account Tab module for handling user authentication and cloud sync features
 
+import { toStorageTimestamp, formatTimestampForDisplay } from '../utils/timestampUtils.js';
+
 // DOM references
 let accountTab, accountStatus, signInBtn, signOutBtn;
 // Cloud sync elements
@@ -100,7 +102,7 @@ function initAccountTab() {
 }
 
 function pushToCloud() {
-    const now = Date.now();
+    const now = toStorageTimestamp(Date.now());
     const timeElapsed = now - RATE_LIMIT.lastPushTime;
     
     // Check if we're within the cooldown period
@@ -132,7 +134,7 @@ function pushToCloud() {
 }
 
 function fetchFromCloud() {
-    const now = Date.now();
+    const now = toStorageTimestamp(Date.now());
     const timeElapsed = now - RATE_LIMIT.lastFetchTime;
     
     // Check if we're within the cooldown period
@@ -235,9 +237,9 @@ function disableSyncButtons(disabled) {
 }
 
 function saveLastSyncTime() {
-    const now = new Date();
-    chrome.storage.local.set({ lastSyncTime: now.toISOString() });
-    updateLastSyncTime(now.toISOString());
+    const now = toStorageTimestamp(Date.now());
+    chrome.storage.local.set({ lastSyncTime: now });
+    updateLastSyncTime(now);
 }
 
 function loadLastSyncTime() {
@@ -250,16 +252,14 @@ function loadLastSyncTime() {
     });
 }
 
-function updateLastSyncTime(isoTimeString) {
-    if (!isoTimeString) {
+function updateLastSyncTime(timestamp) {
+    if (!timestamp) {
         lastSyncTime.textContent = 'Last synchronized: Never';
         return;
     }
     
-    const syncDate = new Date(isoTimeString);
-    const formattedDate = syncDate.toLocaleDateString();
-    const formattedTime = syncDate.toLocaleTimeString();
-    lastSyncTime.textContent = `Last synchronized: ${formattedDate} ${formattedTime}`;
+    const formattedTimestamp = formatTimestampForDisplay(timestamp);
+    lastSyncTime.textContent = `Last synchronized: ${formattedTimestamp}`;
 }
 
 function pollAuthState() {
