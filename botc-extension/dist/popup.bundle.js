@@ -1,6 +1,105 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 
+;// ./src/utils/timestampUtils.js
+/**
+ * Utility functions for consistent timestamp handling
+ */
+
+/**
+ * Converts any timestamp value to milliseconds format for storage
+ * Always use this function when storing timestamps in chrome.storage
+ * @param {Date|number|string} timestamp - The timestamp to convert
+ * @returns {number} Timestamp in milliseconds
+ */
+function toStorageTimestamp(timestamp) {
+  if (timestamp instanceof Date) {
+    return timestamp.getTime();
+  } else if (typeof timestamp === 'string') {
+    // Handle ISO strings or other string formats
+    var parsed = Date.parse(timestamp);
+    return isNaN(parsed) ? null : parsed;
+  } else if (typeof timestamp === 'number') {
+    return timestamp;
+  }
+  return null;
+}
+
+/**
+ * Validates and ensures a timestamp is in the correct milliseconds format
+ * @param {any} timestamp - The timestamp to validate
+ * @returns {number|null} Timestamp in milliseconds or null if invalid
+ */
+function fromStorageTimestamp(timestamp) {
+  if (typeof timestamp === 'number' && !isNaN(timestamp) && timestamp > 0) {
+    return timestamp;
+  }
+  return null;
+}
+
+/**
+ * Converts a timestamp to a Firebase compatible format based on the field type
+ * Use at Firebase boundaries when writing data
+ * @param {number} timestamp - Timestamp in milliseconds
+ * @param {boolean} useServerTimestamp - Whether to use serverTimestamp() instead
+ * @returns {number} Timestamp in milliseconds (unchanged)
+ */
+function toFirebaseTimestamp(timestamp) {
+  // Firebase can handle millisecond timestamps directly
+  // We just ensure it's a valid number
+  return fromStorageTimestamp(timestamp);
+}
+
+/**
+ * Formats a timestamp for display in a locale-sensitive way
+ * @param {number} timestamp - Timestamp in milliseconds
+ * @returns {string} Formatted date and time string
+ */
+function formatTimestampForDisplay(timestamp) {
+  var validTimestamp = fromStorageTimestamp(timestamp);
+  if (!validTimestamp) {
+    return "N/A";
+  }
+  var date = new Date(validTimestamp);
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+/**
+ * Formats a timestamp into a human-readable 'time ago' string
+ * @param {number} timestamp - Timestamp in milliseconds
+ * @returns {string} Human-readable "time ago" string
+ */
+function formatTimeSince(timestamp) {
+  var validTimestamp = fromStorageTimestamp(timestamp);
+  if (!validTimestamp) {
+    return "Not seen yet";
+  }
+  var now = Date.now();
+  var seconds = Math.round((now - validTimestamp) / 1000);
+  if (seconds < 0) {
+    return "In the future";
+  } else if (seconds < 60) {
+    return seconds + (seconds === 1 ? " sec ago" : " secs ago");
+  }
+  var minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return minutes + (minutes === 1 ? " min ago" : " mins ago");
+  }
+  var hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return hours + (hours === 1 ? " hour ago" : " hours ago");
+  }
+  var days = Math.round(hours / 24);
+  if (days < 30) {
+    return days + (days === 1 ? " day ago" : " days ago");
+  }
+  var months = Math.round(days / 30);
+  if (months < 12) {
+    return months + (months === 1 ? " month ago" : " months ago");
+  }
+  var years = Math.round(months / 12);
+  return years + (years === 1 ? " year ago" : " years ago");
+}
 ;// ./src/popup/userManager.js
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
@@ -28,6 +127,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
  * - Username history tracking
  * - User interface for managing players
  */
+
 
 
 
@@ -108,7 +208,7 @@ function _savePlayerData() {
 }
 function getAllPlayerData() {
   return _getAllPlayerData.apply(this, arguments);
-}
+} // Timestamp utility functions
 /**
  * Format timestamp to readable date and time
  * @param {number} timestamp - Timestamp to format
@@ -136,8 +236,7 @@ function _getAllPlayerData() {
   return _getAllPlayerData.apply(this, arguments);
 }
 function formatTimestamp(timestamp) {
-  var date = new Date(timestamp);
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  return formatTimestampForDisplay(timestamp);
 }
 
 /**
@@ -146,37 +245,8 @@ function formatTimestamp(timestamp) {
  * @param {number} timestamp - The Unix timestamp in milliseconds.
  * @returns {string} A human-readable string representing the time since the timestamp, or "Not seen yet" if timestamp is invalid.
  */
-function formatTimeSince(timestamp) {
-  if (!timestamp || isNaN(timestamp) || timestamp <= 0) {
-    return "Not seen yet";
-  }
-  var now = Date.now();
-  var seconds = Math.round((now - timestamp) / 1000);
-  if (seconds < 0) {
-    // Timestamp is in the future
-    return "In the future"; // Or handle as an error/default
-  }
-  if (seconds < 60) {
-    return seconds + " sec ago";
-  }
-  var minutes = Math.round(seconds / 60);
-  if (minutes < 60) {
-    return minutes + (minutes === 1 ? " min ago" : " mins ago");
-  }
-  var hours = Math.round(minutes / 60);
-  if (hours < 24) {
-    return hours + (hours === 1 ? " hour ago" : " hours ago");
-  }
-  var days = Math.round(hours / 24);
-  if (days < 30) {
-    return days + (days === 1 ? " day ago" : " days ago");
-  }
-  var months = Math.round(days / 30);
-  if (months < 12) {
-    return months + (months === 1 ? " month ago" : " months ago");
-  }
-  var years = Math.round(months / 12);
-  return years + (years === 1 ? " year ago" : " years ago");
+function userManager_formatTimeSince(timestamp) {
+  return formatTimeSince(timestamp);
 }
 
 /**
@@ -652,17 +722,12 @@ function _displayKnownPlayers() {
                 // Add a separator if session info was already added
                 var separator = document.createElement('span');
                 separator.textContent = ' | ';
-                separator.style.color = 'var(--subtle-text-color)';
-                separator.style.marginLeft = '5px';
-                separator.style.marginRight = '5px';
                 metaInfoContainer.appendChild(separator);
               }
-              var lastSeenTextContent = player.lastSeenTimestamp && player.lastSeenTimestamp > 0 ? formatTimeSince(player.lastSeenTimestamp) : 'Never';
-              var lastSeenElement = document.createElement('span');
-              lastSeenElement.textContent = "Last seen: ".concat(lastSeenTextContent);
-              lastSeenElement.className = 'last-seen-text';
-              lastSeenElement.style.color = 'var(--subtle-text-color)';
-              metaInfoContainer.appendChild(lastSeenElement);
+              var lastSeenText = document.createElement('span');
+              lastSeenText.textContent = "Last seen: ".concat(userManager_formatTimeSince(player.lastSeenTimestamp));
+              lastSeenText.style.color = 'var(--subtle-text-color)';
+              metaInfoContainer.appendChild(lastSeenText);
               hasMetaInfo = true;
             }
             if (hasMetaInfo) {
@@ -813,7 +878,7 @@ function _addPlayer() {
             // console.log(`Updating name for ${id}: "${playerData[id].name}" -> "${name}"`);
             usernameHistory.unshift({
               username: playerData[id].name,
-              timestamp: Date.now()
+              timestamp: toStorageTimestamp(Date.now())
             });
             // Limit history size if needed (e.g., keep last 10)
             if (usernameHistory.length > 10) {
@@ -889,7 +954,7 @@ function _updateUsernameHistoryIfNeeded() {
             if (!latestHistoryEntry || latestHistoryEntry.username !== currentStoredName) {
               history.push({
                 username: currentStoredName,
-                timestamp: Date.now()
+                timestamp: toStorageTimestamp(Date.now())
               });
               // console.log(`[Username History] Added '${currentStoredName}' to history for player ${player.id}. New name: '${sessionUsername}'.`);
               needsSave = true;
@@ -903,7 +968,7 @@ function _updateUsernameHistoryIfNeeded() {
             if (history.length === 0 && currentStoredName) {
               history.push({
                 username: currentStoredName,
-                timestamp: Date.now()
+                timestamp: toStorageTimestamp(Date.now())
               });
               needsSave = true;
             }
@@ -997,7 +1062,7 @@ function _updateSessionHistoryIfNeeded() {
           }
 
           // Always update lastSeenTimestamp if processing this player from a session
-          newTimestamp = Date.now();
+          newTimestamp = toStorageTimestamp(Date.now());
           if (player.lastSeenTimestamp !== newTimestamp) {
             // Could be redundant if always updating, but good for explicitness
             player.lastSeenTimestamp = newTimestamp;
@@ -1362,7 +1427,7 @@ function updateUsernameHistory(playerObject, oldUsername) {
     if (!lastHistoryEntry || lastHistoryEntry.toLowerCase() !== oldUsername.toLowerCase()) {
       playerObject.usernameHistory.unshift({
         username: oldUsername,
-        timestamp: Date.now()
+        timestamp: toStorageTimestamp(Date.now())
       });
       // console.log(`[Username History] Added '${oldUsername}' to history for player ${playerObject.id}. New name: '${newUsername}'.`);
       return true; // Indicates history was updated

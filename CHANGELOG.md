@@ -18,7 +18,7 @@ This CHANGELOG.md was last updated by Cascade on 2025-05-23.
 - **Microsoft Edge Support**: Added support for Microsoft Edge browser by implementing a custom authentication flow similar to the Brave browser fix. This resolves authentication issues reported by Edge users when using Google authentication.
 
 ### Changed
-
+- **Standardized Timestamp Handling**: Implemented a comprehensive timestamp utility module to ensure consistent timestamp handling across the extension. All timestamps are now stored in milliseconds internally and properly converted when interacting with Firebase or displaying to users. This standardization improves data integrity, ensures consistent formatting, and resolves inconsistencies between the extension and web application.
 
 
 ## [v1.1.9] - 2025-05-21

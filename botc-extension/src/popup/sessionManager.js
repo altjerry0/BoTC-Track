@@ -7,6 +7,8 @@
  * - Handling game edition information
  */
 
+import { toStorageTimestamp, fromStorageTimestamp } from '../utils/timestampUtils.js';
+
 /**
  * Get display name for game edition
  * @param {Object} edition - Edition data 
@@ -445,8 +447,8 @@ async function checkHistoryAndRender(
             if (!aIsActiveTabGame && bIsActiveTabGame) return 1;  // b comes first
 
             // 3. Fallback: Sort by creation timestamp (most recent first)
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
+            const dateA = toStorageTimestamp(a.createdAt);
+            const dateB = toStorageTimestamp(b.createdAt);
             return dateB - dateA; // Sort descending by time
         });
     }
