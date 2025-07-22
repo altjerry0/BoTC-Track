@@ -10,7 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "firebase": "^10.14.1",
-    "undici": "^6.21.2"
+    "undici": "^7.5.0"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^13.0.0",
